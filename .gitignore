@@ -18,6 +18,10 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# iOS
+ios/Podfile.lock
+ios/HuniLive.xcodeproj/*.pbxproj
+
 # Metro
 .metro-health-check*
 
@@ -32,12 +36,23 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env.development
+.env.production
 
 # typescript
 *.tsbuildinfo
 
-example
+app-example
 
-# generated native folders
-/ios
-/android
+# local AI workflow docs
+.claude/**/*.md
+agents/**/*.md
+
+.env
+.env.local
+.env.staging
+.env.production
+
+credentials.json
+
+/credentials
