@@ -18,7 +18,7 @@ export const Colors = {
     accent: BrandColors.accent,
     text: "#1A2B4C",
     textSecondary: BrandColors.secondary,
-    textMuted: '#9C9C9C', 
+    textMuted: "#9C9C9C",
     textInverse: "#FFFFFF",
     background: "#FFFFFF",
     backgroundElement: "#F8FAFC",
@@ -27,11 +27,12 @@ export const Colors = {
     border: "#D9D9D9",
     borderFocus: BrandColors.accent,
     inputBackground: "#FFFFFF",
+    buttonMuted: "#767676",
     error: BrandColors.error,
     success: BrandColors.success,
     warning: BrandColors.warning,
   },
-  //BLOCKED: dark themes
+  //BLOCKED: dark themes (MESSY PA DARK THEME)
   dark: {
     primary: "#3B82F6",
     secondary: BrandColors.secondary,
@@ -56,106 +57,75 @@ export const Colors = {
 export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;
 
 export const FontFamily = {
-  display: "EloquiaDisplay",
-  sans: "Geist",
+  eloquiaExtraBold: "EloquiaDisplay-ExtraBold",
+  eloquiaTextLight: "EloquiaText-ExtraLight",
+  geistRegular: "Geist-Regular",
+  geistMedium: "Geist-Medium",
+  geistSemiBold: "Geist-SemiBold",
+  geistThin: "Geist-Thin",
 };
-
-export const Fonts = Platform.select({
-  ios: {
-    display: FontFamily.display,
-    sans: FontFamily.sans,
-    mono: "ui-monospace",
-  },
-  android: {
-    display: FontFamily.display,
-    sans: FontFamily.sans,
-    mono: "monospace",
-  },
-  web: {
-    display: "var(--font-display)",
-    sans: "var(--font-sans)",
-    mono: "var(--font-mono)",
-  },
-  default: {
-    display: "normal",
-    sans: "normal",
-    mono: "monospace",
-  },
-});
 
 export const Typography = {
   largeTitle: {
     fontSize: 32,
     lineHeight: 40,
-    fontWeight: "800" as const,
-    fontFamily: Fonts?.display,
+    fontFamily: FontFamily.eloquiaExtraBold,
   },
   h1: {
     fontSize: 26,
     lineHeight: 34,
-    fontWeight: "700" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistSemiBold,
   },
   h2: {
     fontSize: 22,
     lineHeight: 28,
-    fontWeight: "600" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistSemiBold,
   },
   h3: {
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: "600" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistSemiBold,
   },
   h4: {
     fontSize: 17,
     lineHeight: 22,
-    fontWeight: "600" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistSemiBold,
   },
   bodyLarge: {
     fontSize: 16,
     lineHeight: 24,
-    fontWeight: "400" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistRegular,
   },
   body: {
     fontSize: 14,
     lineHeight: 20,
-    fontWeight: "400" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistRegular,
   },
   bodySmall: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: "400" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistRegular,
   },
   caption: {
     fontSize: 12,
     lineHeight: 16,
-    fontWeight: "500" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistMedium,
   },
   button: {
     fontSize: 15,
     lineHeight: 20,
-    fontWeight: "600" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistSemiBold,
   },
   label: {
     fontSize: 11,
     lineHeight: 14,
-    fontWeight: "600" as const,
     letterSpacing: 0.5,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistMedium,
   },
   input: {
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: "400" as const,
-    fontFamily: Fonts?.sans,
+    fontFamily: FontFamily.geistRegular,
   },
 } as const;
 
