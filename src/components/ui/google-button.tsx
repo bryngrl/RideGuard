@@ -88,17 +88,20 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   content: {
+    width: "100%",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
   },
   iconContainer: {
-    marginRight: Spacing.three,
+    position: "absolute",
+    left: 0,
   },
   title: {
     ...Typography.button,
     fontWeight: "600",
     fontSize: 15,
+    textAlign: "center",
   },
   pressed: {
     opacity: 0.85,
