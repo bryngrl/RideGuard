@@ -1,3 +1,5 @@
+// Draft only:
+
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
@@ -13,9 +15,9 @@ export default function RegisterScreen() {
   const theme = useTheme();
 
   const [formData, setFormData] = useState({
-    lastName: "",
-    firstName: "",
-    phone: "",
+    vehicleName: "",
+    plateNumber: "",
+    color: "",
   });
 
   const handleNextStep = () => {
@@ -28,7 +30,7 @@ export default function RegisterScreen() {
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
           <Stepper
-            currentStep={1}
+            currentStep={2}
             steps={3}
             size={28}
             containerStyle={{ width: "70%" }}
@@ -59,43 +61,33 @@ export default function RegisterScreen() {
 
         <View style={styles.formContainer}>
           <CustomTextInput
-            label="Last Name"
+            label="Vehicle Name"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.lastName}
+            value={formData.vehicleName}
             onChangeText={(text) =>
-              setFormData({ ...formData, lastName: text })
+              setFormData({ ...formData, vehicleName: text })
             }
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
-            label="First Name"
+            label="Plate Number"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.firstName}
+            value={formData.plateNumber}
             onChangeText={(text) =>
-              setFormData({ ...formData, firstName: text })
+              setFormData({ ...formData, plateNumber: text })
             }
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
-            label="Phone Number"
+            label="Color"
             labelStyle={{ color: BrandColors.primary }}
-            keyboardType="phone-pad"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            value={formData.color}
+            onChangeText={(text) => setFormData({ ...formData, color: text })}
             containerStyle={{ paddingBottom: Spacing.two }}
-            leftIcon={
-              <Text
-                style={[
-                  Typography.input,
-                  { color: theme.textMuted, fontWeight: "600" },
-                ]}
-              >
-                +63
-              </Text>
-            }
           />
+
           <View style={styles.buttonContainer}>
             <Button
               title="Next"

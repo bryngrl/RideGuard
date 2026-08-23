@@ -1,3 +1,5 @@
+// Draft only:
+
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
@@ -13,14 +15,18 @@ export default function RegisterScreen() {
   const theme = useTheme();
 
   const [formData, setFormData] = useState({
-    lastName: "",
-    firstName: "",
-    phone: "",
+    vehicleName: "",
+    plateNumber: "",
+    color: "",
   });
 
-  const handleNextStep = () => {
-    // Next step logic here
-    console.log("Profile Data Captured:", formData);
+  const handleSubmit = () => {
+    // submit logic here
+    console.log("Emergency Info Captured:", formData);
+  };
+  const handleSkip = () => {
+    // skip logic here
+    console.log("Data Skipped");
   };
 
   return (
@@ -28,7 +34,7 @@ export default function RegisterScreen() {
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
           <Stepper
-            currentStep={1}
+            currentStep={2}
             steps={3}
             size={28}
             containerStyle={{ width: "70%" }}
@@ -45,7 +51,7 @@ export default function RegisterScreen() {
 
         <View style={styles.headerContainer}>
           <Text style={[Typography.largeTitle, { color: theme.text }]}>
-            Your Profile
+            Emergency Contact
           </Text>
           <Text
             style={[
@@ -53,57 +59,60 @@ export default function RegisterScreen() {
               { color: theme.textMuted, marginTop: Spacing.half },
             ]}
           >
-            Let's get started.
+            They'll get an SOS text with your location if you trigger an alert or if an attack is detected.
           </Text>
         </View>
 
         <View style={styles.formContainer}>
           <CustomTextInput
-            label="Last Name"
+            label="Vehicle Name"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.lastName}
+            value={formData.vehicleName}
             onChangeText={(text) =>
-              setFormData({ ...formData, lastName: text })
+              setFormData({ ...formData, vehicleName: text })
             }
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
-            label="First Name"
+            label="Plate Number"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.firstName}
+            value={formData.plateNumber}
             onChangeText={(text) =>
-              setFormData({ ...formData, firstName: text })
+              setFormData({ ...formData, plateNumber: text })
             }
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
-            label="Phone Number"
+            label="Color"
             labelStyle={{ color: BrandColors.primary }}
-            keyboardType="phone-pad"
-            value={formData.phone}
-            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            value={formData.color}
+            onChangeText={(text) => setFormData({ ...formData, color: text })}
             containerStyle={{ paddingBottom: Spacing.two }}
-            leftIcon={
-              <Text
-                style={[
-                  Typography.input,
-                  { color: theme.textMuted, fontWeight: "600" },
-                ]}
-              >
-                +63
-              </Text>
-            }
           />
+
           <View style={styles.buttonContainer}>
             <Button
-              title="Next"
+              title="Add now"
               variant="primary"
               size="md"
               fullWidth={false}
               style={{ width: "48%", alignSelf: "flex-start" }}
-              onPress={handleNextStep}
+              onPress={handleSubmit}
+            />
+            <Button
+              title="Skip"
+              variant="secondary"
+              size="md"
+              fullWidth={false}
+              style={{
+                width: "48%",
+                borderWidth: 0,
+                borderColor: "transparent",
+                backgroundColor: "transparent",
+              }}
+              onPress={handleSkip}
             />
           </View>
         </View>
@@ -138,6 +147,8 @@ const styles = StyleSheet.create({
     paddingLeft: Spacing.two,
   },
   buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: "auto",
     paddingTop: Spacing.three,
   },

@@ -25,6 +25,7 @@ export interface CustomTextInputProps extends RNTextInputProps {
   isPassword?: boolean;
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
+  labelStyle?: StyleProp<TextStyle>;
 }
 
 export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
@@ -38,6 +39,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       isPassword = false,
       containerStyle,
       inputStyle,
+      labelStyle,
       onFocus,
       onBlur,
       ...rest
@@ -57,6 +59,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             style={[
               styles.label,
               { color: hasError ? theme.error : theme.textSecondary },
+              labelStyle, 
             ]}
           >
             {label}
