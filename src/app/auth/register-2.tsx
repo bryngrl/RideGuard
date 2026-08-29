@@ -1,5 +1,3 @@
-// Draft only:
-
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
@@ -7,55 +5,37 @@ import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { useAuthStore } from "@/store/useAuthStore";
 
-export default function RegisterScreen() {
+export default function RegisterStepTwoScreen() {
   const router = useRouter();
   const theme = useTheme();
-
-  const [formData, setFormData] = useState({
-    vehicleName: "",
-    plateNumber: "",
-    color: "",
-  });
+  const { vehicleName, plateNumber, color, updateProfile } = useAuthStore();
 
   const handleNextStep = () => {
-    // Next step logic here
-    console.log("Profile Data Captured:", formData);
+    if (!vehicleName.trim() || !plateNumber.trim()) {
+      Alert.alert("Missing Fields", "Please enter your vehicle name and plate number.");
+      return;
+    }
+    router.push("/auth/register-3");
   };
 
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper
-            currentStep={2}
-            steps={3}
-            size={28}
-            containerStyle={{ width: "70%" }}
-          />
+          <Stepper currentStep={2} steps={3} size={28} containerStyle={{ width: "70%" }} />
         </View>
 
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/logo.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
         </View>
 
         <View style={styles.headerContainer}>
-          <Text style={[Typography.largeTitle, { color: theme.text }]}>
-            Your Profile
-          </Text>
-          <Text
-            style={[
-              Typography.body,
-              { color: theme.textMuted, marginTop: Spacing.half },
-            ]}
-          >
-            Let's get started.
+          <Text style={[Typography.largeTitle, { color: theme.text }]}>Your Vehicle</Text>
+          <Text style={[Typography.body, { color: theme.textMuted, marginTop: Spacing.half }]}>
+            What will you be driving?
           </Text>
         </View>
 
@@ -63,28 +43,24 @@ export default function RegisterScreen() {
           <CustomTextInput
             label="Vehicle Name"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.vehicleName}
-            onChangeText={(text) =>
-              setFormData({ ...formData, vehicleName: text })
-            }
+            value={vehicleName}
+            onChangeText={(text) => updateProfile({ vehicleName: text })}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
             label="Plate Number"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.plateNumber}
-            onChangeText={(text) =>
-              setFormData({ ...formData, plateNumber: text })
-            }
+            value={plateNumber}
+            onChangeText={(text) => updateProfile({ plateNumber: text })}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
-            label="Color"
+            label="Color (Optional)"
             labelStyle={{ color: BrandColors.primary }}
-            value={formData.color}
-            onChangeText={(text) => setFormData({ ...formData, color: text })}
+            value={color}
+            onChangeText={(text) => updateProfile({ color: text })}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 

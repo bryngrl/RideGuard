@@ -1,5 +1,5 @@
 // TODO: SVG Icon of Google
-import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,9 +12,8 @@ import {
 
 import {
   BorderRadius,
-  BrandColors,
   Spacing,
-  Typography,
+  Typography
 } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -59,10 +58,10 @@ export function GoogleButton({
       ) : (
         <View style={styles.content}>
           <View style={styles.iconContainer}>
-            <Ionicons
-              name="logo-google"
-              size={20}
-              color={BrandColors.primary}
+            <Image
+              source={require("@/assets/images/google-logo.png")}
+              style={styles.googleLogo}
+              contentFit="contain"
             />
           </View>
           <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
@@ -91,6 +90,10 @@ const styles = StyleSheet.create({
   iconContainer: {
     position: "absolute",
     left: 0,
+  },
+  googleLogo: {
+    width: 20,
+    height: 20,
   },
   title: {
     ...Typography.button,
