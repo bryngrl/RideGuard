@@ -4,9 +4,9 @@ import Stepper from "@/components/ui/stepper";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
-import { useAuthStore } from "@/store/useAuthStore";
 
 export default function RegisterStepTwoScreen() {
   const router = useRouter();
@@ -15,7 +15,10 @@ export default function RegisterStepTwoScreen() {
 
   const handleNextStep = () => {
     if (!vehicleName.trim() || !plateNumber.trim()) {
-      Alert.alert("Missing Fields", "Please enter your vehicle name and plate number.");
+      Alert.alert(
+        "Missing Fields",
+        "Please enter your vehicle name and plate number.",
+      );
       return;
     }
     router.push("/auth/register-3");
@@ -25,17 +28,33 @@ export default function RegisterStepTwoScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper currentStep={2} steps={3} size={28} containerStyle={{ width: "70%" }} />
+          <Stepper
+            currentStep={2}
+            steps={3}
+            size={28}
+            containerStyle={{ width: "70%" }}
+          />
         </View>
 
         <View style={styles.logoContainer}>
-          <Image source={require("@/assets/images/logo.png")} style={styles.logo} resizeMode="contain" />
+          <Image
+            source={require("@/assets/images/Primary-Icon.png")}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         <View style={styles.headerContainer}>
-          <Text style={[Typography.largeTitle, { color: theme.text }]}>Your Vehicle</Text>
-          <Text style={[Typography.body, { color: theme.textMuted, marginTop: Spacing.half }]}>
-            What will you be driving?
+          <Text style={[Typography.largeTitle, { color: theme.text }]}>
+            Your Vehicle
+          </Text>
+          <Text
+            style={[
+              Typography.body,
+              { color: theme.textMuted, marginTop: Spacing.three },
+            ]}
+          >
+            Let's get started.
           </Text>
         </View>
 
@@ -93,17 +112,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
   },
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
-    paddingLeft: Spacing.two,
   },
   formContainer: {
+    marginTop: Spacing.three,
     marginBottom: Spacing.five,
-    paddingLeft: Spacing.two,
   },
   buttonContainer: {
     marginTop: "auto",

@@ -96,7 +96,7 @@ export default function RegisterStepThreeScreen() {
 
       console.log("Redirecting to dashboard...");
       // redirect
-      router.replace("/(tabs)");
+      // router.replace("/(tabs)");
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
 
@@ -135,7 +135,7 @@ export default function RegisterStepThreeScreen() {
 
           <View style={styles.logoContainer}>
             <Image
-              source={require("@/assets/images/logo.png")}
+              source={require("@/assets/images/Primary-Icon.png")}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -148,7 +148,7 @@ export default function RegisterStepThreeScreen() {
             <Text
               style={[
                 Typography.body,
-                { color: theme.textMuted, marginTop: Spacing.half },
+                { color: theme.textMuted, marginTop: Spacing.three },
               ]}
             >
               They'll get an SOS text with your location if you trigger an alert
@@ -315,17 +315,16 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.three,
   },
   logo: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
   },
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
-    paddingLeft: Spacing.two,
   },
   formContainer: {
+    marginTop: Spacing.three,
     marginBottom: Spacing.five,
-    paddingLeft: Spacing.two,
   },
   buttonContainer: {
     flexDirection: "row",

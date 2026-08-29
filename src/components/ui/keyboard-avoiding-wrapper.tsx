@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -9,11 +9,11 @@ import {
   TouchableWithoutFeedback,
   View,
   ViewStyle,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { MaxContentWidth, Spacing } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { MaxContentWidth, Spacing } from "@/constants/theme";
+import { useTheme } from "@/hooks/use-theme";
 
 export interface KeyboardAvoidingWrapperProps {
   children: React.ReactNode;
@@ -37,18 +37,22 @@ export function KeyboardAvoidingWrapper({
   );
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }, style]}>
+    <SafeAreaView
+      style={[styles.safeArea, { backgroundColor: theme.background }, style]}
+    >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
+      >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           {enableScrollView ? (
             <ScrollView
               style={styles.flex}
               contentContainerStyle={styles.scrollContent}
               keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}>
+              showsVerticalScrollIndicator={false}
+            >
               {content}
             </ScrollView>
           ) : (
@@ -69,13 +73,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    alignItems: 'center',
+    alignItems: "center",
   },
   innerContainer: {
-    width: '100%',
+    width: "100%",
     maxWidth: MaxContentWidth,
     flex: 1,
+
+    paddingTop: Spacing.four,
     paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.three,
+    paddingBottom: Spacing.five,
   },
 });
