@@ -113,7 +113,7 @@ export default function LoginScreen() {
 
         const credential = GoogleAuthProvider.credential(googleIdToken);
         await signInWithCredential(auth, credential);
-        router.replace("/auth/register");
+        router.replace("/auth/register-1");
       } catch (error: any) {
         alert(error instanceof Error ? error.message : "Unknown sign-in error");
       } finally {
@@ -240,10 +240,11 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: MaxContentWidth,
     alignSelf: "center",
-    paddingHorizontal: Spacing.four,
     justifyContent: "space-between",
+
+    paddingTop: Spacing.four,
+    paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.five,
-    paddingTop: Spacing.six,
   },
   heroWrapper: {
     flex: 1,
