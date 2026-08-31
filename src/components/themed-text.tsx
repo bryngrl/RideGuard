@@ -1,25 +1,58 @@
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
-import { Fonts, ThemeColor } from '@/constants/theme';
+import { ThemeColor, Typography } from '@/constants/theme';
+
 import { useTheme } from '@/hooks/use-theme';
 
 export type ThemedTextProps = TextProps & {
-  type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';
+  type?:
+    | 'largeTitle'
+    | 'h1'
+    | 'h2'
+    | 'h3'
+    | 'h4'
+    | 'bodyLarge'
+    | 'body'
+    | 'bodySmall'
+    | 'caption'
+    | 'button'
+    | 'label'
+    | 'input'
+    | 'title' // alias for largeTitle
+    | 'subtitle' // alias for h2
+    | 'default' // alias for bodyLarge
+    | 'small' // alias for bodySmall
+    | 'smallBold'
+    | 'link'
+    | 'linkPrimary'
+    | 'code';
   themeColor?: ThemeColor;
 };
 
-export function ThemedText({ style, type = 'default', themeColor, ...rest }: ThemedTextProps) {
+export function ThemedText({ style, type = 'body', themeColor, ...rest }: ThemedTextProps) {
   const theme = useTheme();
 
   return (
     <Text
       style={[
         { color: theme[themeColor ?? 'text'] },
-        type === 'default' && styles.default,
-        type === 'title' && styles.title,
-        type === 'small' && styles.small,
+        type === 'largeTitle' && styles.largeTitle,
+        type === 'title' && styles.largeTitle,
+        type === 'h1' && styles.h1,
+        type === 'h2' && styles.h2,
+        type === 'subtitle' && styles.h2,
+        type === 'h3' && styles.h3,
+        type === 'h4' && styles.h4,
+        type === 'bodyLarge' && styles.bodyLarge,
+        type === 'default' && styles.bodyLarge,
+        type === 'body' && styles.body,
+        type === 'bodySmall' && styles.bodySmall,
+        type === 'small' && styles.bodySmall,
         type === 'smallBold' && styles.smallBold,
-        type === 'subtitle' && styles.subtitle,
+        type === 'caption' && styles.caption,
+        type === 'button' && styles.button,
+        type === 'label' && styles.label,
+        type === 'input' && styles.input,
         type === 'link' && styles.link,
         type === 'linkPrimary' && styles.linkPrimary,
         type === 'code' && styles.code,
@@ -31,43 +64,59 @@ export function ThemedText({ style, type = 'default', themeColor, ...rest }: The
 }
 
 const styles = StyleSheet.create({
-  small: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 500,
+  largeTitle: {
+    ...Typography.largeTitle,
+  },
+  h1: {
+    ...Typography.h1,
+  },
+  h2: {
+    ...Typography.h2,
+  },
+  h3: {
+    ...Typography.h3,
+  },
+  h4: {
+    ...Typography.h4,
+  },
+  bodyLarge: {
+    ...Typography.bodyLarge,
+  },
+  body: {
+    ...Typography.body,
+  },
+  bodySmall: {
+    ...Typography.bodySmall,
   },
   smallBold: {
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: 700,
+    ...Typography.bodySmall,
+    fontWeight: '700',
   },
-  default: {
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: 500,
+  caption: {
+    ...Typography.caption,
   },
-  title: {
-    fontSize: 48,
-    fontWeight: 600,
-    lineHeight: 52,
+  button: {
+    ...Typography.button,
   },
-  subtitle: {
-    fontSize: 32,
-    lineHeight: 44,
-    fontWeight: 600,
+  label: {
+    ...Typography.label,
+  },
+  input: {
+    ...Typography.input,
   },
   link: {
-    lineHeight: 30,
-    fontSize: 14,
+    ...Typography.body,
+    textDecorationLine: 'underline',
   },
   linkPrimary: {
-    lineHeight: 30,
-    fontSize: 14,
-    color: '#3c87f7',
+    ...Typography.body,
+    color: '#133476',
+    fontWeight: '600',
   },
   code: {
-    fontFamily: Fonts.mono,
-    fontWeight: Platform.select({ android: 700 }) ?? 500,
+    fontFamily: Platform.select({ ios: 'ui-monospace', android: 'monospace', default: 'monospace' }),
+    fontWeight: Platform.select({ android: '700' }) ?? '500',
     fontSize: 12,
   },
 });
+
