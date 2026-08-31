@@ -2,13 +2,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
 import {
-    Pressable,
-    ScrollView,
-    StyleProp,
-    StyleSheet,
-    Text,
-    View,
-    ViewStyle,
+  Pressable,
+  ScrollView,
+  StyleProp,
+  StyleSheet,
+  Text,
+  View,
+  ViewStyle,
 } from "react-native";
 
 import { Spacing, Typography } from "@/constants/theme";
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 48,
+    height: 52,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -158,13 +158,13 @@ const styles = StyleSheet.create({
   },
 
   divider: {
-    height: 1,
+    height: 2,
     width: "100%",
   },
 
   content: {
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.five,
     paddingBottom: Spacing.five,
   },
 
