@@ -36,19 +36,19 @@ export function PageLayout({
   const router = useRouter();
 
   const handleBack = () => {
-    // 1. Use custom back behavior if provided
+    // custom
     if (onBack) {
       onBack();
       return;
     }
 
-    // 2. Otherwise, go back if there is a previous screen
+    // if theres a screen earlier
     if (router.canGoBack()) {
       router.back();
       return;
     }
 
-    // 3. Fallback if there is no previous screen
+    // fall back to home
     router.replace("/");
   };
 

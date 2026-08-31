@@ -18,7 +18,6 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ExternalLink } from "@/components/external-link";
 import { ThemedText } from "@/components/themed-text";
 import { GoogleButton } from "@/components/ui/google-button";
 import {
@@ -207,21 +206,19 @@ export default function LoginScreen() {
           <View style={styles.legalContainer}>
             <ThemedText style={[styles.legalText, { color: theme.textMuted }]}>
               By continuing, you agree to our{" "}
-              <ExternalLink href="https://rideguard.app/terms">
-                <ThemedText
-                  style={[styles.legalLink, { color: BrandColors.accent }]}
-                >
-                  Terms of service
-                </ThemedText>
-                {" and "}
-              </ExternalLink>
-              <ExternalLink href="https://rideguard.app/privacy">
-                <ThemedText
-                  style={[styles.legalLink, { color: BrandColors.accent }]}
-                >
-                  Privacy Policy
-                </ThemedText>
-              </ExternalLink>
+              <ThemedText
+                onPress={() => router.push("/settings/terms")}
+                style={[styles.legalLink, { color: BrandColors.accent }]}
+              >
+                Terms of service
+              </ThemedText>
+              {" and "}
+              <ThemedText
+                onPress={() => router.push("/settings/privacy")}
+                style={[styles.legalLink, { color: BrandColors.accent }]}
+              >
+                Privacy Policy
+              </ThemedText>
               .
             </ThemedText>
           </View>
