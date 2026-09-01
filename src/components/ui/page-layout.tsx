@@ -18,7 +18,6 @@ interface PageLayoutProps {
   title: string;
   children: ReactNode;
 
-  // Optional custom back behavior
   onBack?: () => void;
 
   scrollable?: boolean;
