@@ -29,7 +29,13 @@ import {
 } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { auth } from "@/lib/firebase";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { checkIsOldUser } from "@/services/api";
+import {
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithCredential,
+  User,
+} from "firebase/auth";
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -45,6 +51,7 @@ export default function LoginScreen() {
   const [typedText, setTypedText] = useState("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   const googleAndroidClientId =
     process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
@@ -92,7 +99,48 @@ export default function LoginScreen() {
 
     return () => clearTimeout(typingTimeout);
   }, []);
+   const animatedHeroStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: logoScale.value },
+      { translateY: heroTranslateY.value },
+    ],
+  }));
+  const handleAuthenticatedUser = async (user: User) => {
+    const firebaseToken = await user.getIdToken();
 
+    const isOldUser = await checkIsOldUser(firebaseToken);
+
+    if (isOldUser) {
+      router.replace("/(tabs)/index");
+    } else {
+      router.replace("/auth/register-1");
+    }
+  };
+
+  // check existing firebase session
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsCheckingAuth(false);
+        return;
+      }
+
+      try {
+        setIsCheckingAuth(true);
+        await handleAuthenticatedUser(user);
+      } catch (error) {
+        console.error(
+          "Failed to check authenticated user:",
+          error,
+        );
+        setIsCheckingAuth(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // Google login resp
   useEffect(() => {
     if (response?.type !== "success") {
       return;
@@ -102,19 +150,24 @@ export default function LoginScreen() {
       try {
         setIsGoogleLoading(true);
         const googleIdToken =
-          response.params.id_token ?? response.authentication?.idToken;
+          response.params.id_token ??
+          response.authentication?.idToken;
 
         if (!googleIdToken) {
-          alert("Google auth succeeded, but no id_token was returned.");
-          setIsGoogleLoading(false);
+          alert(
+            "Google authentication succeeded, but no ID token was returned.",
+          );
           return;
         }
 
         const credential = GoogleAuthProvider.credential(googleIdToken);
-        await signInWithCredential(auth, credential);
-        router.replace("/auth/register-1");
-      } catch (error: any) {
-        alert(error instanceof Error ? error.message : "Unknown sign-in error");
+        const userCredential = await signInWithCredential(auth, credential);
+        await handleAuthenticatedUser(userCredential.user);
+      } catch (error) {
+        alert( error instanceof Error
+            ? error.message
+            : "Unknown sign-in error",
+        );
       } finally {
         setIsGoogleLoading(false);
       }
@@ -123,12 +176,6 @@ export default function LoginScreen() {
     void loginWithFirebase();
   }, [response]);
 
-  const animatedHeroStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { translateY: heroTranslateY.value },
-    ],
-  }));
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
