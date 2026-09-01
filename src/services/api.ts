@@ -11,6 +11,7 @@ export interface ProfilePayload {
 
 const API_BASE_URL = "http://localhost:5565/v1";
 
+// Profile Creation
 export const submitProfile = async (
   payload: ProfilePayload,
   firebaseToken: string,
@@ -39,4 +40,22 @@ export const submitProfile = async (
     console.error("API Error:", error);
     throw error;
   }
+};
+// Is the user already have a data?
+export const checkIsOldUser = async (firebaseToken: string) => {
+  const response = await fetch(`${API_BASE_URL}/auth/is-old-user`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${firebaseToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.message || "Failed to check user status.");
+  }
+
+  return data.data;
 };
