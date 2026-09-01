@@ -18,6 +18,7 @@ import { useTheme } from "@/hooks/use-theme";
 
 export interface CustomTextInputProps extends RNTextInputProps {
   label?: string;
+  required?: boolean;
   error?: string;
   hint?: string;
   leftIcon?: React.ReactNode;
@@ -33,6 +34,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     {
       label,
       error,
+      required = false,
       hint,
       leftIcon,
       rightIcon,
@@ -59,7 +61,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             style={[
               styles.label,
               { color: hasError ? theme.error : theme.textSecondary },
-              labelStyle, 
+              labelStyle,
             ]}
           >
             {label}

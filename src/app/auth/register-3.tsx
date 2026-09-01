@@ -74,24 +74,10 @@ export default function RegisterStepThreeScreen() {
           "Auth Error",
           "You must be signed in to complete registration.",
         );
-
         return;
       }
-
-      console.log("Getting Firebase token...");
-
       const firebaseToken = await user.getIdToken();
-
-      console.log("Firebase token received");
-
-      console.log("Sending profile to backend...");
-
       const response = await submitProfile(payload, firebaseToken);
-
-      console.log("Backend response:", response);
-
-      console.log("Profile successfully submitted!");
-
       store.resetForm();
 
       console.log("Redirecting to dashboard...");
@@ -172,9 +158,11 @@ export default function RegisterStepThreeScreen() {
               labelStyle={{ color: BrandColors.primary }}
               keyboardType="phone-pad"
               value={store.emergencyPhone}
-              onChangeText={(text) =>
-                store.updateProfile({ emergencyPhone: text })
-              }
+              maxLength={10}
+              onChangeText={(text) => {
+                const digitsOnly = text.replace(/\D/g, "");
+                store.updateProfile({ emergencyPhone: digitsOnly });
+              }}
               containerStyle={{ paddingBottom: Spacing.two }}
               leftIcon={
                 <Text

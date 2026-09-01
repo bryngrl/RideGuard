@@ -1,24 +1,43 @@
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
+import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function RegisterStepTwoScreen() {
   const router = useRouter();
   const theme = useTheme();
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertDescription, setAlertDescription] = useState("");
   const { vehicleName, plateNumber, color, updateProfile } = useAuthStore();
 
   const handleNextStep = () => {
-    if (!vehicleName.trim() || !plateNumber.trim()) {
-      Alert.alert(
-        "Missing Fields",
-        "Please enter your vehicle name and plate number.",
-      );
+    if (!vehicleName.trim()) {
+      setAlertTitle("Missing Vehicle Name");
+      setAlertDescription("Please enter your vehicle name.");
+      setShowAlert(true);
+      return;
+    }
+
+    if (!plateNumber.trim()) {
+      setAlertTitle("Missing Plate Number");
+      setAlertDescription("Please enter your plate number.");
+      setShowAlert(true);
+      return;
+    }
+
+    if (!color.trim()) {
+      setAlertTitle("Missing Vehicle Color");
+      setAlertDescription("Please enter your vehicle color.");
+      setShowAlert(true);
       return;
     }
     router.push("/auth/register-3");
@@ -76,7 +95,7 @@ export default function RegisterStepTwoScreen() {
           />
 
           <CustomTextInput
-            label="Color (Optional)"
+            label="Color"
             labelStyle={{ color: BrandColors.primary }}
             value={color}
             onChangeText={(text) => updateProfile({ color: text })}
@@ -95,6 +114,15 @@ export default function RegisterStepTwoScreen() {
           </View>
         </View>
       </View>
+      <SweetAlert
+        visible={showAlert}
+        type="warning"
+        title={alertTitle}
+        description={alertDescription}
+        primaryButtonText="OK"
+        onPrimaryPress={() => setShowAlert(false)}
+        onClose={() => setShowAlert(false)}
+      />
     </KeyboardAvoidingWrapper>
   );
 }

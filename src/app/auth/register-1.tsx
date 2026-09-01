@@ -1,22 +1,57 @@
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
+import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
-import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import {
+  BrandColors,
+  FontFamily,
+  Spacing,
+  Typography,
+} from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const [showAlert, setShowAlert] = useState(false);
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertDescription, setAlertDescription] = useState("");
 
   const { lastName, firstName, phone, updateProfile } = useAuthStore();
 
   const handleNextStep = () => {
-    if (!lastName.trim() || !firstName.trim() || !phone.trim()) {
-      Alert.alert("Missing Fields", "Please fill out all profile information.");
+    if (!lastName.trim()) {
+      setAlertTitle("Missing Last Name");
+      setAlertDescription("Please enter your last name.");
+      setShowAlert(true);
+      return;
+    }
+
+    if (!firstName.trim()) {
+      setAlertTitle("Missing First Name");
+      setAlertDescription("Please enter your first name.");
+      setShowAlert(true);
+      return;
+    }
+
+    if (!phone.trim()) {
+      setAlertTitle("Missing Phone Number");
+      setAlertDescription("Please enter your phone number.");
+      setShowAlert(true);
+      return;
+    }
+
+    if (!/^9\d{9}$/.test(phone)) {
+      setAlertTitle("Invalid Phone Number");
+      setAlertDescription(
+        "Please enter a valid 10-digit Philippine mobile number.",
+      );
+      setShowAlert(true);
       return;
     }
     router.push("/auth/register-2");
@@ -59,6 +94,7 @@ export default function RegisterScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Last Name"
+            required
             labelStyle={{ color: BrandColors.primary }}
             value={lastName}
             onChangeText={(text) => updateProfile({ lastName: text })}
@@ -67,6 +103,7 @@ export default function RegisterScreen() {
 
           <CustomTextInput
             label="First Name"
+            required
             labelStyle={{ color: BrandColors.primary }}
             value={firstName}
             onChangeText={(text) => updateProfile({ firstName: text })}
@@ -75,16 +112,24 @@ export default function RegisterScreen() {
 
           <CustomTextInput
             label="Phone Number"
+            required
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
             value={phone}
-            onChangeText={(text) => updateProfile({ phone: text })}
+            maxLength={10}
+            onChangeText={(text) => {
+              const digitsOnly = text.replace(/\D/g, "");
+              updateProfile({ phone: digitsOnly });
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
             leftIcon={
               <Text
                 style={[
                   Typography.input,
-                  { color: theme.textMuted, fontWeight: "600" },
+                  {
+                    color: theme.textMuted,
+                    fontFamily: FontFamily.geistSemiBold,
+                  },
                 ]}
               >
                 +63
@@ -103,6 +148,15 @@ export default function RegisterScreen() {
           </View>
         </View>
       </View>
+      <SweetAlert
+        visible={showAlert}
+        type="warning"
+        title={alertTitle}
+        description={alertDescription}
+        primaryButtonText="OK"
+        onPrimaryPress={() => setShowAlert(false)}
+        onClose={() => setShowAlert(false)}
+      />
     </KeyboardAvoidingWrapper>
   );
 }
