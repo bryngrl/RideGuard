@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
-import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
 import {
   BrandColors,
@@ -18,42 +17,37 @@ import { Image, StyleSheet, Text, View } from "react-native";
 export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertDescription, setAlertDescription] = useState("");
 
   const { lastName, firstName, phone, updateProfile } = useAuthStore();
+  const [lastNameError, setLastNameError] = useState("");
+  const [firstNameError, setFirstNameError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
 
   const handleNextStep = () => {
+    setLastNameError("");
+    setFirstNameError("");
+    setPhoneError("");
+
+    let isValid = true;
+
     if (!lastName.trim()) {
-      setAlertTitle("Missing Last Name");
-      setAlertDescription("Please enter your last name.");
-      setShowAlert(true);
-      return;
+      setLastNameError("Please enter your last name.");
+      isValid = false;
     }
 
     if (!firstName.trim()) {
-      setAlertTitle("Missing First Name");
-      setAlertDescription("Please enter your first name.");
-      setShowAlert(true);
-      return;
+      setFirstNameError("Please enter your first name.");
+      isValid = false;
     }
 
     if (!phone.trim()) {
-      setAlertTitle("Missing Phone Number");
-      setAlertDescription("Please enter your phone number.");
-      setShowAlert(true);
-      return;
+      setPhoneError("Please enter your phone number.");
+      isValid = false;
+    } else if (!/^9\d{9}$/.test(phone)) {
+      setPhoneError("Please enter a valid 10-digit Philippine mobile number.");
+      isValid = false;
     }
-
-    if (!/^9\d{9}$/.test(phone)) {
-      setAlertTitle("Invalid Phone Number");
-      setAlertDescription(
-        "Please enter a valid 10-digit Philippine mobile number.",
-      );
-      setShowAlert(true);
-      return;
-    }
+    if (!isValid) return;
     router.push("/auth/register-2");
   };
 
@@ -97,7 +91,11 @@ export default function RegisterScreen() {
             required
             labelStyle={{ color: BrandColors.primary }}
             value={lastName}
-            onChangeText={(text) => updateProfile({ lastName: text })}
+            error={lastNameError}
+            onChangeText={(text) => {
+              updateProfile({ lastName: text });
+              if (lastNameError) setLastNameError("");
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
@@ -106,7 +104,11 @@ export default function RegisterScreen() {
             required
             labelStyle={{ color: BrandColors.primary }}
             value={firstName}
-            onChangeText={(text) => updateProfile({ firstName: text })}
+            error={firstNameError}
+            onChangeText={(text) => {
+              updateProfile({ firstName: text });
+              if (firstNameError) setFirstNameError("");
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
@@ -116,10 +118,12 @@ export default function RegisterScreen() {
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
             value={phone}
+            error={phoneError}
             maxLength={10}
             onChangeText={(text) => {
               const digitsOnly = text.replace(/\D/g, "");
               updateProfile({ phone: digitsOnly });
+              if (phoneError) setPhoneError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
             leftIcon={
@@ -148,15 +152,6 @@ export default function RegisterScreen() {
           </View>
         </View>
       </View>
-      <SweetAlert
-        visible={showAlert}
-        type="warning"
-        title={alertTitle}
-        description={alertDescription}
-        primaryButtonText="OK"
-        onPrimaryPress={() => setShowAlert(false)}
-        onClose={() => setShowAlert(false)}
-      />
     </KeyboardAvoidingWrapper>
   );
 }

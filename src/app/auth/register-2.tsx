@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
-import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
-import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -14,32 +14,35 @@ export default function RegisterStepTwoScreen() {
   const router = useRouter();
   const theme = useTheme();
 
-  const [showAlert, setShowAlert] = useState(false);
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertDescription, setAlertDescription] = useState("");
   const { vehicleName, plateNumber, color, updateProfile } = useAuthStore();
 
+  const [vehicleNameError, setVehicleNameError] = useState("");
+  const [plateNumberError, setPlateNumberError] = useState("");
+  const [colorError, setColorError] = useState("");
+
   const handleNextStep = () => {
+    setVehicleNameError("");
+    setPlateNumberError("");
+    setColorError("");
+
+    let isValid = true;
+
     if (!vehicleName.trim()) {
-      setAlertTitle("Missing Vehicle Name");
-      setAlertDescription("Please enter your vehicle name.");
-      setShowAlert(true);
-      return;
+      setVehicleNameError("Please enter your vehicle name.");
+      isValid = false;
     }
 
     if (!plateNumber.trim()) {
-      setAlertTitle("Missing Plate Number");
-      setAlertDescription("Please enter your plate number.");
-      setShowAlert(true);
-      return;
+      setPlateNumberError("Please enter your plate number.");
+      isValid = false;
     }
 
     if (!color.trim()) {
-      setAlertTitle("Missing Vehicle Color");
-      setAlertDescription("Please enter your vehicle color.");
-      setShowAlert(true);
-      return;
+      setColorError("Please enter your vehicle color.");
+      isValid = false;
     }
+    if (!isValid) return;
+
     router.push("/auth/register-3");
   };
 
@@ -80,29 +83,50 @@ export default function RegisterStepTwoScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Vehicle Name"
-            labelStyle={{ color: BrandColors.primary }}
             value={vehicleName}
-            onChangeText={(text) => updateProfile({ vehicleName: text })}
+            error={vehicleNameError}
+            onChangeText={(text) => {
+              updateProfile({ vehicleName: text });
+              if (vehicleNameError) setVehicleNameError("");
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
             label="Plate Number"
-            labelStyle={{ color: BrandColors.primary }}
             value={plateNumber}
-            onChangeText={(text) => updateProfile({ plateNumber: text })}
+            error={plateNumberError}
+            onChangeText={(text) => {
+              updateProfile({ plateNumber: text });
+              if (plateNumberError) setPlateNumberError("");
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
             label="Color"
-            labelStyle={{ color: BrandColors.primary }}
             value={color}
-            onChangeText={(text) => updateProfile({ color: text })}
+            error={colorError}
+            onChangeText={(text) => {
+              updateProfile({ color: text });
+              if (colorError) setColorError("");
+            }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <View style={styles.buttonContainer}>
+            <Button
+              title="Back"
+              variant="ghost"
+              fullWidth={false}
+              leftIcon={
+                <Ionicons name="chevron-back" size={24} color={theme.text} />
+              }
+              textStyle={{ color: theme.text }}
+              onPress={() => router.back()}
+              style={{ width: "48%" }}
+            />
+
             <Button
               title="Next"
               variant="primary"
@@ -114,15 +138,6 @@ export default function RegisterStepTwoScreen() {
           </View>
         </View>
       </View>
-      <SweetAlert
-        visible={showAlert}
-        type="warning"
-        title={alertTitle}
-        description={alertDescription}
-        primaryButtonText="OK"
-        onPrimaryPress={() => setShowAlert(false)}
-        onClose={() => setShowAlert(false)}
-      />
     </KeyboardAvoidingWrapper>
   );
 }
@@ -152,6 +167,9 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.five,
   },
   buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginTop: "auto",
     paddingTop: Spacing.three,
   },

@@ -21,9 +21,23 @@ export default function RegisterStepThreeScreen() {
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
 
+  const [contactNameError, setContactNameError] = useState("");
+  const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
+  const [relationshipError, setRelationshipError] = useState("");
+
+  const hasAnyInput = !!(
+    store.contactName.trim() ||
+    store.emergencyPhone.trim() ||
+    store.relationship.trim()
+  );
+
   const executeSubmission = async (includeEmergencyContact: boolean) => {
     console.log("=== STARTING PROFILE SUBMISSION ===");
     console.log("Include emergency contact:", includeEmergencyContact);
+
+    setContactNameError("");
+    setEmergencyPhoneError("");
+    setRelationshipError("");
 
     const payload: any = {
       first_name: store.firstName.trim(),
@@ -34,24 +48,32 @@ export default function RegisterStepThreeScreen() {
     };
 
     if (includeEmergencyContact) {
-      if (
-        !store.contactName.trim() ||
-        !store.emergencyPhone.trim() ||
-        !store.relationship.trim()
-      ) {
-        Alert.alert(
-          "Missing Info",
-          "Please fill out all emergency contact fields or press Skip.",
-        );
-        return;
+      let isValid = true;
+
+      if (!store.contactName.trim()) {
+        setContactNameError("Please enter an emergency contact name.");
+        isValid = false;
       }
 
-      payload.contact_name = store.contactName.trim();
+      if (!store.emergencyPhone.trim()) {
+        setEmergencyPhoneError("Please enter a phone number.");
+        isValid = false;
+      } else if (!/^9\d{9}$/.test(store.emergencyPhone)) {
+        setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
+        isValid = false;
+      }
 
+      if (!store.relationship.trim()) {
+        setRelationshipError("Please select a relationship.");
+        isValid = false;
+      }
+
+      if (!isValid) return;
+
+      payload.contact_name = store.contactName.trim();
       payload.emergency_phone_number = `+63${store.emergencyPhone
         .trim()
         .replace(/^0/, "")}`;
-
       payload.relationship = store.relationship.trim();
     }
 
@@ -59,7 +81,6 @@ export default function RegisterStepThreeScreen() {
 
     try {
       setIsLoading(true);
-
       console.log("Getting Firebase Auth...");
 
       const auth = getAuth();
@@ -69,38 +90,39 @@ export default function RegisterStepThreeScreen() {
 
       if (!user) {
         console.log("ERROR: No authenticated user found");
-
         Alert.alert(
           "Auth Error",
           "You must be signed in to complete registration.",
         );
         return;
       }
+
       const firebaseToken = await user.getIdToken();
       const response = await submitProfile(payload, firebaseToken);
       store.resetForm();
 
       console.log("Redirecting to dashboard...");
-      // redirect
       // router.replace("/(tabs)");
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
-
       Alert.alert("Error", error.message || "Failed to submit profile.");
     } finally {
       setIsLoading(false);
     }
   };
+
   const handleSkipPress = () => {
     if (!isLoading) {
       setIsSkipAlertVisible(true);
     }
   };
+
   const handleSkipAnyway = async () => {
     console.log("User chose to skip emergency contact");
     setIsSkipAlertVisible(false);
     await executeSubmission(false);
   };
+
   const handleAddContact = async () => {
     setIsSkipAlertVisible(false);
     await executeSubmission(true);
@@ -145,23 +167,25 @@ export default function RegisterStepThreeScreen() {
           <View style={styles.formContainer}>
             <CustomTextInput
               label="Contact Name"
-              labelStyle={{ color: BrandColors.primary }}
               value={store.contactName}
-              onChangeText={(text) =>
-                store.updateProfile({ contactName: text })
-              }
+              error={contactNameError}
+              onChangeText={(text) => {
+                store.updateProfile({ contactName: text });
+                if (contactNameError) setContactNameError("");
+              }}
               containerStyle={{ paddingBottom: Spacing.two }}
             />
 
             <CustomTextInput
               label="Phone Number"
-              labelStyle={{ color: BrandColors.primary }}
               keyboardType="phone-pad"
               value={store.emergencyPhone}
+              error={emergencyPhoneError}
               maxLength={10}
               onChangeText={(text) => {
                 const digitsOnly = text.replace(/\D/g, "");
                 store.updateProfile({ emergencyPhone: digitsOnly });
+                if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
               leftIcon={
@@ -176,14 +200,13 @@ export default function RegisterStepThreeScreen() {
               }
             />
 
-            {/* rs dropdown */}
             <View style={styles.relationshipDropdown}>
               <Pressable onPress={() => setIsRelationshipOpen((prev) => !prev)}>
                 <View pointerEvents="none">
                   <CustomTextInput
                     label="Relationship"
-                    labelStyle={{ color: BrandColors.primary }}
                     value={store.relationship}
+                    error={relationshipError}
                     placeholder="Select relationship"
                     editable={false}
                     rightIcon={
@@ -227,18 +250,11 @@ export default function RegisterStepThreeScreen() {
                         store.updateProfile({
                           relationship: item.value,
                         });
-
+                        if (relationshipError) setRelationshipError(""); // Clear error when selected
                         setIsRelationshipOpen(false);
                       }}
                     >
-                      <Text
-                        style={[
-                          Typography.input,
-                          {
-                            color: theme.text,
-                          },
-                        ]}
-                      >
+                      <Text style={[Typography.input, { color: theme.text }]}>
                         {item.label}
                       </Text>
 
@@ -257,21 +273,33 @@ export default function RegisterStepThreeScreen() {
 
             <View style={styles.buttonContainer}>
               <Button
-                title="Skip"
-                variant="primary"
+                title="Back"
+                variant="ghost"
+                fullWidth={false}
+                leftIcon={
+                  <Ionicons name="chevron-back" size={24} color={theme.text} />
+                }
+                textStyle={{ color: theme.text }}
+                onPress={() => router.back()}
+                style={{ width: "48%" }}
+              />
+
+              <Button
+                title={hasAnyInput ? "Submit" : "Skip"}
+                variant={hasAnyInput ? "primary" : "primary"}
                 size="md"
                 fullWidth={false}
                 isLoading={isLoading}
-                style={{
-                  width: "48%",
-                  alignSelf: "flex-start",
-                }}
-                onPress={handleSkipPress}
+                style={{ width: "48%" }}
+                onPress={
+                  hasAnyInput ? () => executeSubmission(true) : handleSkipPress
+                }
               />
             </View>
           </View>
         </View>
       </KeyboardAvoidingWrapper>
+
       <SweetAlert
         visible={isSkipAlertVisible}
         type="warning"
@@ -290,6 +318,7 @@ export default function RegisterStepThreeScreen() {
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -330,7 +359,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 0,
     marginTop: -Spacing.one,
   },
-
   dropdownItem: {
     flexDirection: "row",
     justifyContent: "space-between",

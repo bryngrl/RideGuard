@@ -60,8 +60,9 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           <Text
             style={[
               styles.label,
-              { color: hasError ? theme.error : theme.textSecondary },
+              { color: hasError ? theme.error : theme.text },
               labelStyle,
+              hasError && { color: theme.error },
             ]}
           >
             {label}
