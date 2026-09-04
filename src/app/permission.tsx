@@ -2,15 +2,82 @@ import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import * as Location from "expo-location";
+import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { AppState, Image, Linking, StyleSheet, Text, View } from "react-native";
 
 export default function PermissionsScreen() {
   const router = useRouter();
   const theme = useTheme();
 
+  const [locationGranted, setLocationGranted] = useState(false);
+  const [notificationsGranted, setNotificationsGranted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Check if we alr have a permission
+  const checkPermissions = async () => {
+    const location = await Location.getForegroundPermissionsAsync();
+    const notifications = await Notifications.getPermissionsAsync();
+
+    setLocationGranted(location.granted);
+    setNotificationsGranted(notifications.granted);
+  };
+
+  useEffect(() => {
+    checkPermissions();
+  }, []);
+
+  // check if the user returns from setting
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
+        checkPermissions();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
   const handleGoToSettings = () => {
-    // nid pa logic idolo
+    const handleGoToSettings = async () => {
+      if (isLoading) return;
+
+      setIsLoading(true);
+
+      try {
+        // Location
+        if (!locationGranted) {
+          const result = await Location.requestForegroundPermissionsAsync();
+
+          if (result.granted) {
+            setLocationGranted(true);
+          } else if (result.canAskAgain === false) {
+            await Linking.openSettings();
+          }
+
+          return;
+        }
+        // Notifications
+        if (!notificationsGranted) {
+          const result = await Notifications.requestPermissionsAsync();
+
+          if (result.granted) {
+            setNotificationsGranted(true);
+          } else if (result.canAskAgain === false) {
+            await Linking.openSettings();
+          }
+
+          return;
+        }
+
+        // redirection to provision token
+        router.replace("/(tabs)");
+      } finally {
+        setIsLoading(false);
+      }
+    };
   };
 
   return (
@@ -58,6 +125,7 @@ export default function PermissionsScreen() {
                 <Text style={[Typography.h4, { color: theme.text }]}>
                   Location
                 </Text>
+
                 <Text
                   style={[
                     Typography.bodySmall,
@@ -67,6 +135,14 @@ export default function PermissionsScreen() {
                   To include your location in SOS texts.
                 </Text>
               </View>
+              {/* palitan ng check icon */}
+              {locationGranted && (
+                <Image
+                  source={require("@/assets/icons/notification-icon.png")}
+                  style={styles.checkIcon}
+                  resizeMode="contain"
+                />
+              )}
             </View>
 
             {/* notifs */}
@@ -87,6 +163,7 @@ export default function PermissionsScreen() {
                 <Text style={[Typography.h4, { color: theme.text }]}>
                   Notifications
                 </Text>
+
                 <Text
                   style={[
                     Typography.bodySmall,
@@ -96,16 +173,32 @@ export default function PermissionsScreen() {
                   So alerts reach you the moment something's flagged.
                 </Text>
               </View>
+
+              {/* Palitan ng icon */}
+              {notificationsGranted && (
+                <Image
+                  source={require("@/assets/icons/notification-icon.png")}
+                  style={styles.checkIcon}
+                  resizeMode="contain"
+                />
+              )}
             </View>
           </View>
         </View>
         <View style={styles.buttonContainer}>
           <Button
-            title="Go to settings"
+            title={
+              !locationGranted
+                ? "Enable location"
+                : !notificationsGranted
+                  ? "Enable notifications"
+                  : "Continue"
+            }
             variant="primary"
             size="md"
             fullWidth={true}
             onPress={handleGoToSettings}
+            isLoading={isLoading}
           />
         </View>
       </View>
@@ -155,5 +248,14 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: "auto",
     paddingTop: Spacing.two,
+  },
+  checkIcon: {
+    width: 24,
+    height: 24,
+    marginLeft: Spacing.three,
+  },
+  permissionItem: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 });

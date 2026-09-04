@@ -9,7 +9,8 @@ export interface ProfilePayload {
   relationship?: string;
 }
 
-const API_BASE_URL = "http://localhost:5565/v1";
+const API_BASE_URL =
+  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
 
 // Profile Creation
 export const submitProfile = async (

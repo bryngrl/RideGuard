@@ -20,6 +20,7 @@ export default function RegisterStepThreeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
+  const [isSkippedAlertVisible, setIsSkippedAlertVisible] = useState(false);
 
   const [contactNameError, setContactNameError] = useState("");
   const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
@@ -31,10 +32,9 @@ export default function RegisterStepThreeScreen() {
     store.relationship.trim()
   );
 
-  const executeSubmission = async (includeEmergencyContact: boolean) => {
-    console.log("=== STARTING PROFILE SUBMISSION ===");
-    console.log("Include emergency contact:", includeEmergencyContact);
-
+  const executeSubmission = async (
+    includeEmergencyContact: boolean,
+  ): Promise<boolean> => {
     setContactNameError("");
     setEmergencyPhoneError("");
     setRelationshipError("");
@@ -68,7 +68,7 @@ export default function RegisterStepThreeScreen() {
         isValid = false;
       }
 
-      if (!isValid) return;
+      if (!isValid) return false;
 
       payload.contact_name = store.contactName.trim();
       payload.emergency_phone_number = `+63${store.emergencyPhone
@@ -94,18 +94,19 @@ export default function RegisterStepThreeScreen() {
           "Auth Error",
           "You must be signed in to complete registration.",
         );
-        return;
+        return false;
       }
 
       const firebaseToken = await user.getIdToken();
       const response = await submitProfile(payload, firebaseToken);
+
       store.resetForm();
 
-      console.log("Redirecting to dashboard...");
-      // router.replace("/(tabs)");
+      return true;
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
       Alert.alert("Error", error.message || "Failed to submit profile.");
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -118,9 +119,13 @@ export default function RegisterStepThreeScreen() {
   };
 
   const handleSkipAnyway = async () => {
-    console.log("User chose to skip emergency contact");
     setIsSkipAlertVisible(false);
-    await executeSubmission(false);
+
+    const success = await executeSubmission(false);
+
+    if (success) {
+      setIsSkippedAlertVisible(true);
+    }
   };
 
   const handleAddContact = async () => {
@@ -314,6 +319,21 @@ export default function RegisterStepThreeScreen() {
         onClose={handleAddContact}
         closeOnBackdropPress={!isLoading}
         isLoading={isLoading}
+      />
+      <SweetAlert
+        visible={isSkippedAlertVisible}
+        type="success"
+        title="Emergency contact skipped"
+        description="You can add an emergency contact later from your account settings."
+        primaryButtonText="Continue"
+        onPrimaryPress={() => {
+          setIsSkippedAlertVisible(false);
+          router.replace("/permission");
+        }}
+        onClose={() => {
+          setIsSkippedAlertVisible(false);
+          router.replace("/permission");
+        }}
       />
     </>
   );
