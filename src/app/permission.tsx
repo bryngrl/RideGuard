@@ -135,10 +135,10 @@ export default function PermissionsScreen() {
                   To include your location in SOS texts.
                 </Text>
               </View>
-              {/* palitan ng check icon */}
+
               {locationGranted && (
                 <Image
-                  source={require("@/assets/icons/notification-icon.png")}
+                  source={require("@/assets/icons/green-check.png")}
                   style={styles.checkIcon}
                   resizeMode="contain"
                 />
@@ -177,7 +177,7 @@ export default function PermissionsScreen() {
               {/* Palitan ng icon */}
               {notificationsGranted && (
                 <Image
-                  source={require("@/assets/icons/notification-icon.png")}
+                  source={require("@/assets/icons/green-check.png")}
                   style={styles.checkIcon}
                   resizeMode="contain"
                 />
