@@ -48,7 +48,7 @@ export default function ProvisionCameraScreen() {
 
       setTimeout(() => {
         setAlertState((prev) => ({ ...prev, visible: false }));
-        router.replace("/camera-setup"); // redirect
+        router.replace("/camera-preview"); // redirect
       }, 1500);
     } catch (error) {
       setAlertState({
