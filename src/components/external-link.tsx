@@ -23,3 +23,4 @@ export function ExternalLink({ href, ...rest }: Props) {
     />
   );
 }
+// for terms and privacy nalang tu
