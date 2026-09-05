@@ -40,7 +40,6 @@ export default function PermissionsScreen() {
     return () => subscription.remove();
   }, []);
 
-  const handleGoToSettings = () => {
     const handleGoToSettings = async () => {
       if (isLoading) return;
 
@@ -78,7 +77,6 @@ export default function PermissionsScreen() {
         setIsLoading(false);
       }
     };
-  };
 
   return (
     <KeyboardAvoidingWrapper>
