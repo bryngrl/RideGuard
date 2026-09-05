@@ -16,7 +16,6 @@ interface LoadingModalProps {
 export function LoadingModal({ visible, status, message }: LoadingModalProps) {
   const [dotCount, setDotCount] = useState(0);
 
-  // Animated typing dots effect for loading state
   useEffect(() => {
     let interval: ReturnType<typeof setInterval>;
     if (visible && status === "loading") {
