@@ -111,7 +111,7 @@ export default function LoginScreen() {
     const isOldUser = await checkIsOldUser(firebaseToken);
 
     if (isOldUser) {
-      router.replace("/(tabs)/index");
+      router.replace("/(tabs)");
     } else {
       router.replace("/auth/register-1");
     }
