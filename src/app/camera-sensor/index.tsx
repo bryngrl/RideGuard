@@ -4,6 +4,9 @@ import { LoadingModal } from "@/components/ui/modal";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { auth } from "@/lib/firebase";
+import { claimDevice } from "@/services/api";
+import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -11,6 +14,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 export default function ProvisionCameraScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { setCameraDeviceId } = useDeviceStore();
 
   const [deviceId, setDeviceId] = useState("");
   const [deviceIdError, setDeviceIdError] = useState("");
@@ -27,39 +31,89 @@ export default function ProvisionCameraScreen() {
   });
 
   const handleConnect = async () => {
+    if (isLoading) return;
+
     setDeviceIdError("");
 
-    if (!deviceId.trim()) {
+    const cleanedId = deviceId.trim().toUpperCase();
+
+    if (!cleanedId) {
       setDeviceIdError("This field is required.");
       return;
     }
 
-    setIsLoading(true);
-    setAlertState({ visible: true, status: "loading", message: "Verifying" });
+    // validate cam ID
+    if (!cleanedId.startsWith("CAM-")) {
+      setDeviceIdError("Please enter a valid Camera Device ID.");
+      return;
+    }
 
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+    // auth
+    const user = auth.currentUser;
 
-      setAlertState({
-        visible: true,
-        status: "success",
-        message: "Successfully connected",
-      });
-
-      setTimeout(() => {
-        setAlertState((prev) => ({ ...prev, visible: false }));
-        router.replace("/camera-preview"); // redirect
-      }, 1500);
-    } catch (error) {
+    if (!user) {
       setAlertState({
         visible: true,
         status: "error",
-        message: "Device ID not recognized",
+        message: "You must be signed in to connect a device.",
       });
 
       setTimeout(() => {
-        setAlertState((prev) => ({ ...prev, visible: false }));
-      }, 2000);
+        setAlertState((prev) => ({
+          ...prev,
+          visible: false,
+        }));
+      }, 2500);
+
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      setAlertState({
+        visible: true,
+        status: "loading",
+        message: "Verifying camera...",
+      });
+
+      // firebase auth
+      const firebaseToken = await user.getIdToken(true);
+
+      // claim camera device
+      await claimDevice(cleanedId, firebaseToken);
+
+      // Save cam dev
+      setCameraDeviceId(cleanedId);
+      
+      setAlertState({
+        visible: true,
+        status: "success",
+        message: "Camera successfully connected",
+      });
+
+      // Navigate after success
+      setTimeout(() => {
+        router.replace("/camera-sensor/camera-preview");
+      }, 1500);
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Camera Device ID not recognized.";
+
+      setAlertState({
+        visible: true,
+        status: "error",
+        message,
+      });
+
+      setTimeout(() => {
+        setAlertState((prev) => ({
+          ...prev,
+          visible: false,
+        }));
+      }, 2500);
     } finally {
       setIsLoading(false);
     }
@@ -96,11 +150,12 @@ export default function ProvisionCameraScreen() {
               label="Device ID"
               required
               labelStyle={{ color: BrandColors.primary }}
-              placeholder="e.g., CAM-12345-X"
+              placeholder="e.g., CAM-482-QLZ"
+              autoCapitalize="characters"
               value={deviceId}
               error={deviceIdError}
               onChangeText={(text) => {
-                setDeviceId(text);
+                setDeviceId(text.toUpperCase());
                 if (deviceIdError) setDeviceIdError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
