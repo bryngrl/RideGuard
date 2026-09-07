@@ -72,7 +72,7 @@ export default function PermissionsScreen() {
         }
 
         // redirection to provision token
-        router.replace("/(tabs)");
+        router.replace("/provision");
       } finally {
         setIsLoading(false);
       }
@@ -251,9 +251,5 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     marginLeft: Spacing.three,
-  },
-  permissionItem: {
-    flexDirection: "row",
-    alignItems: "center",
   },
 });
