@@ -1,6 +1,5 @@
 // TODO: A motion in the start
 
-import { makeRedirectUri } from "expo-auth-session";
 import * as Google from "expo-auth-session/providers/google";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -60,18 +59,10 @@ export default function LoginScreen() {
 
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
-  const redirectUri = makeRedirectUri({
-    scheme: "rideguard",
-    path: "redirect",
-  });
-
-  console.log("Redirect URI:", redirectUri);
-
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     androidClientId: googleAndroidClientId,
     iosClientId: googleIosClientId,
     webClientId: googleWebClientId,
-    redirectUri,
   });
 
   // Logo pop & typing animation
