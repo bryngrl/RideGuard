@@ -4,6 +4,9 @@ import { LoadingModal } from "@/components/ui/modal";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { auth } from "@/lib/firebase";
+import { claimDevice } from "@/services/api";
+import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
@@ -11,6 +14,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 export default function ProvisionTokenScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { setMetalDeviceId } = useDeviceStore();
 
   const [deviceId, setDeviceId] = useState("");
   const [deviceIdError, setDeviceIdError] = useState("");
@@ -27,39 +31,81 @@ export default function ProvisionTokenScreen() {
   });
 
   const handleConnect = async () => {
+    if (isLoading) return;
+
     setDeviceIdError("");
 
-    if (!deviceId.trim()) {
+    const cleanedId = deviceId.trim().toUpperCase();
+
+    // validation
+    if (!cleanedId) {
       setDeviceIdError("This field is required.");
       return;
     }
 
-    setIsLoading(true);
-    setAlertState({ visible: true, status: "loading", message: "Verifying" });
+    // check for auth user
+    const user = auth.currentUser;
+
+    if (!user) {
+      setAlertState({
+        visible: true,
+        status: "error",
+        message: "You must be signed in to connect a device.",
+      });
+
+      setTimeout(() => {
+        setAlertState((prev) => ({
+          ...prev,
+          visible: false,
+        }));
+      }, 2500);
+
+      return;
+    }
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      setIsLoading(true);
 
+      // modal
+      setAlertState({
+        visible: true,
+        status: "loading",
+        message: "Verifying device...",
+      });
+      const firebaseToken = await user.getIdToken(true);
+
+      await claimDevice(cleanedId, firebaseToken);
+
+      // Save claimed device
+      setMetalDeviceId(cleanedId);
+
+      // Show success modal
       setAlertState({
         visible: true,
         status: "success",
         message: "Successfully connected",
       });
 
+      // Redirect after success
       setTimeout(() => {
-        setAlertState((prev) => ({ ...prev, visible: false }));
-        router.replace("/metal-sensor");
+        router.replace("/metal-sensor/index");
       }, 1500);
-    } catch (error) {
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "Device ID not recognized.";
+
       setAlertState({
         visible: true,
         status: "error",
-        message: "Device ID not recognized",
+        message,
       });
 
       setTimeout(() => {
-        setAlertState((prev) => ({ ...prev, visible: false }));
-      }, 2000);
+        setAlertState((prev) => ({
+          ...prev,
+          visible: false,
+        }));
+      }, 2500);
     } finally {
       setIsLoading(false);
     }
@@ -96,11 +142,12 @@ export default function ProvisionTokenScreen() {
               label="Device ID"
               required
               labelStyle={{ color: BrandColors.primary }}
-              placeholder="e.g., MET-12345-X"
+              placeholder="e.g., MET-071-XKD"
+              autoCapitalize="characters"
               value={deviceId}
               error={deviceIdError}
               onChangeText={(text) => {
-                setDeviceId(text);
+                setDeviceId(text.toUpperCase());
                 if (deviceIdError) setDeviceIdError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}

@@ -96,25 +96,35 @@ export const claimDevice = async (
       },
     );
 
-    const data: DeviceApiResponse = await response.json();
+    const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      let errorMessage = data.message || "Failed to claim device.";
+      let errorMessage =
+        data?.message || "Failed to claim device.";
       if (response.status === 404) {
-        errorMessage = "Device not found. Please check your Device ID.";
+        errorMessage =
+          "Device not found. Please check your Device ID.";
       } else if (response.status === 401) {
-        errorMessage = "Authentication failed. Please sign in again.";
+        errorMessage =
+          "Authentication failed. Please sign in again.";
       } else if (response.status === 422) {
-        errorMessage = "Invalid user session. Please re-authenticate.";
+        errorMessage =
+          "Invalid user session. Please re-authenticate.";
       } else if (response.status === 429) {
-        errorMessage = "Too many attempts. Please try again later.";
+        errorMessage =
+          "Too many attempts. Please try again later.";
       }
       throw new Error(errorMessage);
     }
 
-    return data;
+    return data as DeviceApiResponse;
   } catch (error) {
     console.error("claimDevice Error:", error);
-    throw error;
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(
+      "Unable to connect to the server. Please try again.",
+    );
   }
 };
