@@ -1,9 +1,7 @@
 // TODO: A motion in the start
 
-import * as Google from "expo-auth-session/providers/google";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import Animated, {
@@ -17,8 +15,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  GoogleSignin,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
+
 import { ThemedText } from "@/components/themed-text";
 import { GoogleButton } from "@/components/ui/google-button";
+
 import {
   BrandColors,
   FontFamily,
@@ -26,9 +30,11 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
+
 import { useTheme } from "@/hooks/use-theme";
 import { auth } from "@/lib/firebase";
 import { checkIsOldUser } from "@/services/api";
+
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -36,10 +42,13 @@ import {
   User,
 } from "firebase/auth";
 
-WebBrowser.maybeCompleteAuthSession();
-
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 const FULL_BRAND_NAME = "ideguard";
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -47,59 +56,16 @@ export default function LoginScreen() {
 
   const logoScale = useSharedValue(2.2);
   const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.28);
+
   const [typedText, setTypedText] = useState("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  const googleAndroidClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+  // ------------------------------------------
+  // HANDLE AUTHENTICATED FIREBASE USER
+  // ------------------------------------------
 
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    androidClientId: googleAndroidClientId,
-    iosClientId: googleIosClientId,
-    webClientId: googleWebClientId,
-  });
-
-  // Logo pop & typing animation
-  useEffect(() => {
-    logoScale.value = withDelay(
-      700,
-      withSpring(1.0, { damping: 15, stiffness: 75 }),
-    );
-
-    heroTranslateY.value = withDelay(
-      700,
-      withSpring(0, { damping: 15, stiffness: 75 }),
-    );
-
-    let currentIndex = 0;
-    const typingTimeout = setTimeout(() => {
-      const interval = setInterval(() => {
-        if (currentIndex < FULL_BRAND_NAME.length) {
-          setTypedText(FULL_BRAND_NAME.slice(0, currentIndex + 1));
-          currentIndex++;
-        } else {
-          clearInterval(interval);
-          setShowCursor(false);
-        }
-      }, 70);
-
-      return () => clearInterval(interval);
-    }, 1300);
-
-    return () => clearTimeout(typingTimeout);
-  }, []);
-  const animatedHeroStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { translateY: heroTranslateY.value },
-    ],
-  }));
   const handleAuthenticatedUser = async (user: User) => {
     const firebaseToken = await user.getIdToken();
 
@@ -112,73 +78,157 @@ export default function LoginScreen() {
     }
   };
 
-  // check existing firebase session
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setIsCheckingAuth(false);
+  // ------------------------------------------
+  // GOOGLE SIGN-IN
+  // ------------------------------------------
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+
+      // Check if Google Play Services are available.
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
+      // Open native Google account selector.
+      const response = await GoogleSignin.signIn();
+
+      // User cancelled the Google sign-in flow.
+      if (!isSuccessResponse(response)) {
         return;
       }
 
-      try {
-        setIsCheckingAuth(true);
-        await handleAuthenticatedUser(user);
-      } catch (error) {
-        console.error("Failed to check authenticated user:", error);
-        setIsCheckingAuth(false);
+      const googleIdToken = response.data.idToken;
+
+      if (!googleIdToken) {
+        throw new Error(
+          "Google Sign-In succeeded, but no ID token was returned.",
+        );
       }
-    });
 
-    return unsubscribe;
-  }, []);
+      // Create Firebase credential from Google ID token.
+      const credential =
+        GoogleAuthProvider.credential(googleIdToken);
 
-  // Google login resp
-  useEffect(() => {
-    if (response?.type !== "success") {
-      return;
-    }
+      // Sign in to Firebase.
+      const userCredential =
+        await signInWithCredential(auth, credential);
 
-    const loginWithFirebase = async () => {
-      try {
-        setIsGoogleLoading(true);
-        const googleIdToken =
-          response.params.id_token ?? response.authentication?.idToken;
+      // Continue with your existing RideGuard logic.
+      await handleAuthenticatedUser(userCredential.user);
+    } catch (error) {
+      console.error("Google Sign-In failed:", error);
 
-        if (!googleIdToken) {
-          alert(
-            "Google authentication succeeded, but no ID token was returned.",
-          );
-          return;
-        }
-
-        const credential = GoogleAuthProvider.credential(googleIdToken);
-        const userCredential = await signInWithCredential(auth, credential);
-        await handleAuthenticatedUser(userCredential.user);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : "Unknown sign-in error");
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    };
-
-    void loginWithFirebase();
-  }, [response]);
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    const result = await promptAsync();
-    if (result.type === "dismiss" || result.type === "cancel") {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Google Sign-In failed.",
+      );
+    } finally {
       setIsGoogleLoading(false);
     }
   };
 
+  // ------------------------------------------
+  // LOGO POP + TYPING ANIMATION
+  // ------------------------------------------
+
+  useEffect(() => {
+    logoScale.value = withDelay(
+      700,
+      withSpring(1.0, {
+        damping: 15,
+        stiffness: 75,
+      }),
+    );
+
+    heroTranslateY.value = withDelay(
+      700,
+      withSpring(0, {
+        damping: 15,
+        stiffness: 75,
+      }),
+    );
+
+    let currentIndex = 0;
+    const typingTimeout = setTimeout(() => {
+      const interval = setInterval(() => {
+        if (currentIndex < FULL_BRAND_NAME.length) {
+          setTypedText(
+            FULL_BRAND_NAME.slice(0, currentIndex + 1),
+          );
+
+          currentIndex++;
+        } else {
+          clearInterval(interval);
+          setShowCursor(false);
+        }
+      }, 70);
+
+      return () => clearInterval(interval);
+    }, 1300);
+
+    return () => {
+      clearTimeout(typingTimeout);
+    };
+  }, []);
+
+  const animatedHeroStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: logoScale.value,
+      },
+      {
+        translateY: heroTranslateY.value,
+      },
+    ],
+  }));
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      async (user) => {
+        if (!user) {
+          setIsCheckingAuth(false);
+          return;
+        }
+
+        try {
+          setIsCheckingAuth(true);
+
+          await handleAuthenticatedUser(user);
+        } catch (error) {
+          console.error(
+            "Failed to check authenticated user:",
+            error,
+          );
+
+          setIsCheckingAuth(false);
+        }
+      },
+    );
+
+    return unsubscribe;
+  }, []);
+
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.background,
+        },
+      ]}
     >
       <View style={styles.content}>
         <View style={styles.heroWrapper}>
-          <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
+          <Animated.View
+            style={[
+              styles.heroRow,
+              animatedHeroStyle,
+            ]}
+          >
             <Image
               source={require("@/assets/images/logo.png")}
               style={styles.logo}
@@ -190,10 +240,16 @@ export default function LoginScreen() {
                 entering={FadeIn.duration(150)}
                 style={styles.brandNameContainer}
               >
-                <ThemedText style={styles.brandNameText}>
+                <ThemedText
+                  style={styles.brandNameText}
+                >
                   {typedText}
                   {showCursor && (
-                    <ThemedText style={styles.cursor}>|</ThemedText>
+                    <ThemedText
+                      style={styles.cursor}
+                    >
+                      |
+                    </ThemedText>
                   )}
                 </ThemedText>
               </Animated.View>
@@ -212,7 +268,9 @@ export default function LoginScreen() {
               style={[
                 styles.subtitle,
                 Typography.h2,
-                { color: BrandColors.primary },
+                {
+                  color: BrandColors.primary,
+                },
               ]}
             >
               Log in to your account
@@ -221,7 +279,9 @@ export default function LoginScreen() {
               style={[
                 styles.subtitle,
                 Typography.caption,
-                { color: theme.textMuted },
+                {
+                  color: theme.textMuted,
+                },
               ]}
             >
               Real-time threat detection for every ride.
@@ -233,23 +293,44 @@ export default function LoginScreen() {
               title="Continue with Google"
               isLoading={isGoogleLoading}
               onPress={handleGoogleSignIn}
-              disabled={!request || isGoogleLoading}
+              disabled={isGoogleLoading}
             />
           </View>
 
           <View style={styles.legalContainer}>
-            <ThemedText style={[styles.legalText, { color: theme.textMuted }]}>
+            <ThemedText
+              style={[
+                styles.legalText,
+                {
+                  color: theme.textMuted,
+                },
+              ]}
+            >
               By continuing, you agree to our{" "}
               <ThemedText
-                onPress={() => router.push("/settings/terms")}
-                style={[styles.legalLink, { color: BrandColors.accent }]}
+                onPress={() =>
+                  router.push("/settings/terms")
+                }
+                style={[
+                  styles.legalLink,
+                  {
+                    color: BrandColors.accent,
+                  },
+                ]}
               >
                 Terms of service
               </ThemedText>
               {" and "}
               <ThemedText
-                onPress={() => router.push("/settings/privacy")}
-                style={[styles.legalLink, { color: BrandColors.accent }]}
+                onPress={() =>
+                  router.push("/settings/privacy")
+                }
+                style={[
+                  styles.legalLink,
+                  {
+                    color: BrandColors.accent,
+                  },
+                ]}
               >
                 Privacy Policy
               </ThemedText>

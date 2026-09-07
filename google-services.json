@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "859271664647",
+    "project_id": "rideguard-5fc69",
+    "storage_bucket": "rideguard-5fc69.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:859271664647:android:b9fcd4a0cf4884b57106a2",
+        "android_client_info": {
+          "package_name": "com.rideguard.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "859271664647-cu5tou32dse33f2h6varq2pnenedjogt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.rideguard.app",
+            "certificate_hash": "08ead23c114d3db0a039b2a99d1c93dba80ee7ba"
+          }
+        },
+        {
+          "client_id": "859271664647-ruj3p5nm5ledevjn2ut1udjqf56v43hm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCpsQWaBdaQ809Ih4aBBl_6OofSg-BXFVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "859271664647-ruj3p5nm5ledevjn2ut1udjqf56v43hm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
