@@ -55,19 +55,23 @@ export default function LoginScreen() {
 
   const googleAndroidClientId =
     process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+
   const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
+
   const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
 
+  const redirectUri = makeRedirectUri({
+    scheme: "rideguard",
+    path: "redirect",
+  });
+
+  console.log("Redirect URI:", redirectUri);
+
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: googleClientId,
     androidClientId: googleAndroidClientId,
     iosClientId: googleIosClientId,
     webClientId: googleWebClientId,
-    redirectUri: makeRedirectUri({
-      scheme: "rideguard",
-      path: "redirect",
-    }),
+    redirectUri,
   });
 
   // Logo pop & typing animation
@@ -99,7 +103,7 @@ export default function LoginScreen() {
 
     return () => clearTimeout(typingTimeout);
   }, []);
-   const animatedHeroStyle = useAnimatedStyle(() => ({
+  const animatedHeroStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: logoScale.value },
       { translateY: heroTranslateY.value },
@@ -129,10 +133,7 @@ export default function LoginScreen() {
         setIsCheckingAuth(true);
         await handleAuthenticatedUser(user);
       } catch (error) {
-        console.error(
-          "Failed to check authenticated user:",
-          error,
-        );
+        console.error("Failed to check authenticated user:", error);
         setIsCheckingAuth(false);
       }
     });
@@ -150,8 +151,7 @@ export default function LoginScreen() {
       try {
         setIsGoogleLoading(true);
         const googleIdToken =
-          response.params.id_token ??
-          response.authentication?.idToken;
+          response.params.id_token ?? response.authentication?.idToken;
 
         if (!googleIdToken) {
           alert(
@@ -164,10 +164,7 @@ export default function LoginScreen() {
         const userCredential = await signInWithCredential(auth, credential);
         await handleAuthenticatedUser(userCredential.user);
       } catch (error) {
-        alert( error instanceof Error
-            ? error.message
-            : "Unknown sign-in error",
-        );
+        alert(error instanceof Error ? error.message : "Unknown sign-in error");
       } finally {
         setIsGoogleLoading(false);
       }
@@ -175,7 +172,6 @@ export default function LoginScreen() {
 
     void loginWithFirebase();
   }, [response]);
-
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
