@@ -2,6 +2,7 @@ import { PageLayout } from "@/components/ui/page-layout";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function TestScanActiveScreen() {
@@ -9,8 +10,16 @@ export default function TestScanActiveScreen() {
   const theme = useTheme();
 
   const handleBack = () => {
-    router.replace("/metal-sensor"); // Update this path to match your file structure if needed
+    router.replace("/metal-sensor/index");
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      router.replace("/metal-sensor/sensor-success");
+    }, 2500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <PageLayout title="Test scan" scrollable={false} onBack={handleBack}>

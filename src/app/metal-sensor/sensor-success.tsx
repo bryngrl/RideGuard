@@ -15,14 +15,14 @@ export default function SensorSuccessScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
-    router.replace("/metal-sensor");
+    router.replace("/metal-sensor/index");
   };
 
   const handleNext = async () => {
     setIsLoading(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.replace("/(tabs)"); // redirect
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      router.replace("/camera-sensor/index");
     } finally {
       setIsLoading(false);
     }
