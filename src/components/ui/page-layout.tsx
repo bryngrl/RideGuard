@@ -60,7 +60,7 @@ export function PageLayout({
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, contentStyle]}
         >
-          {children}{" "}
+          {children}
         </ScrollView>
       );
     }
@@ -82,17 +82,17 @@ export function PageLayout({
       ]}
       edges={["top"]}
     >
-      {/* HEADER */}{" "}
+      {/* HEADER */}
       <View style={styles.header}>
-        {/* BACK BUTTON */}{" "}
+        {/* BACK BUTTON */}
         <Pressable
           onPress={handleBack}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          {" "}
-          <Ionicons name="chevron-back" size={24} color={theme.text} />{" "}
+         
+          <Ionicons name="chevron-back" size={16} color={theme.text} />
         </Pressable>
         {/* PAGE TITLE */}
         <Text
