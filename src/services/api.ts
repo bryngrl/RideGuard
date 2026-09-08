@@ -4,6 +4,7 @@ export interface ProfilePayload {
   phone_number: string;
   vehicle: string;
   plate_number: string;
+  color: string;
   contact_name?: string;
   emergency_phone_number?: string;
   relationship?: string;
@@ -31,6 +32,11 @@ export const submitProfile = async (
   firebaseToken: string,
 ) => {
   try {
+    console.log(
+      "PROFILE REQUEST PAYLOAD:",
+      JSON.stringify(payload, null, 2),
+    );
+
     const response = await fetch(`${API_BASE_URL}/profile/personal-info`, {
       method: "POST",
       headers: {
@@ -39,7 +45,24 @@ export const submitProfile = async (
       },
       body: JSON.stringify(payload),
     });
-    const data = await response.json();
+
+    const rawResponse = await response.text();
+
+    console.log("PROFILE RESPONSE STATUS:", response.status);
+    console.log("PROFILE RAW RESPONSE:", rawResponse);
+
+    let data;
+
+    try {
+      data = JSON.parse(rawResponse);
+    } catch {
+      data = { message: rawResponse };
+    }
+
+    console.log(
+      "PROFILE PARSED RESPONSE:",
+      JSON.stringify(data, null, 2),
+    );
 
     if (!response.ok) {
       throw new Error(

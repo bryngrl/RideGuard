@@ -5,7 +5,7 @@ import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { submitProfile } from "@/services/api";
+import { ProfilePayload, submitProfile } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -20,7 +20,6 @@ export default function RegisterStepThreeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
-  const [isSkippedAlertVisible, setIsSkippedAlertVisible] = useState(false);
 
   const [contactNameError, setContactNameError] = useState("");
   const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
@@ -39,12 +38,13 @@ export default function RegisterStepThreeScreen() {
     setEmergencyPhoneError("");
     setRelationshipError("");
 
-    const payload: any = {
+    const payload: ProfilePayload = {
       first_name: store.firstName.trim(),
       last_name: store.lastName.trim(),
       phone_number: `+63${store.phone.trim().replace(/^0/, "")}`,
       vehicle: store.vehicleName.trim(),
       plate_number: store.plateNumber.trim(),
+      color: store.color.trim(),
     };
 
     if (includeEmergencyContact) {
@@ -98,7 +98,8 @@ export default function RegisterStepThreeScreen() {
       }
 
       const firebaseToken = await user.getIdToken();
-      const response = await submitProfile(payload, firebaseToken);
+
+      await submitProfile(payload, firebaseToken);
 
       store.resetForm();
 
@@ -112,6 +113,13 @@ export default function RegisterStepThreeScreen() {
     }
   };
 
+  const handleSubmit = async () => {
+    const success = await executeSubmission(true);
+
+    if (success) {
+      router.replace("/permission");
+    }
+  };
   const handleSkipPress = () => {
     if (!isLoading) {
       setIsSkipAlertVisible(true);
@@ -124,7 +132,7 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(false);
 
     if (success) {
-      setIsSkippedAlertVisible(true);
+      router.replace("/permission");
     }
   };
 
@@ -296,9 +304,7 @@ export default function RegisterStepThreeScreen() {
                 fullWidth={false}
                 isLoading={isLoading}
                 style={{ width: "48%" }}
-                onPress={
-                  hasAnyInput ? () => executeSubmission(true) : handleSkipPress
-                }
+                onPress={hasAnyInput ? handleSubmit : handleSkipPress}
               />
             </View>
           </View>
@@ -319,21 +325,6 @@ export default function RegisterStepThreeScreen() {
         onClose={handleAddContact}
         closeOnBackdropPress={!isLoading}
         isLoading={isLoading}
-      />
-      <SweetAlert
-        visible={isSkippedAlertVisible}
-        type="success"
-        title="Emergency contact skipped"
-        description="You can add an emergency contact later from your account settings."
-        primaryButtonText="Continue"
-        onPrimaryPress={() => {
-          setIsSkippedAlertVisible(false);
-          router.replace("/permission");
-        }}
-        onClose={() => {
-          setIsSkippedAlertVisible(false);
-          router.replace("/permission");
-        }}
       />
     </>
   );
