@@ -1,20 +1,20 @@
 import React from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    StyleProp,
-    StyleSheet,
-    Text,
-    TextStyle,
-    View,
-    ViewStyle,
+  ActivityIndicator,
+  Pressable,
+  StyleProp,
+  StyleSheet,
+  Text,
+  TextStyle,
+  View,
+  ViewStyle,
 } from "react-native";
 
 import {
-    BorderRadius,
-    BrandColors,
-    Spacing,
-    Typography
+  BorderRadius,
+  BrandColors,
+  Spacing,
+  Typography,
 } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -36,6 +36,9 @@ export interface ButtonProps {
   fullWidth?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+
+  centerTextWithLeftIcon?: boolean;
+
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
 }
@@ -50,6 +53,7 @@ export function Button({
   fullWidth = true,
   leftIcon,
   rightIcon,
+  centerTextWithLeftIcon = false,
   style,
   textStyle,
 }: ButtonProps) {
@@ -132,7 +136,7 @@ export function Button({
             paddingVertical: Spacing.two,
             paddingHorizontal: Spacing.three,
             borderRadius: BorderRadius.sm,
-            minHeight: 36,
+            minHeight: 32,
           },
           text: {
             ...Typography.bodySmall,
@@ -159,14 +163,14 @@ export function Button({
       default:
         return {
           container: {
-            paddingVertical: 14,
+            paddingVertical: 10,
             paddingHorizontal: Spacing.four,
             borderRadius: BorderRadius.sm,
-            minHeight: 48,
+            minHeight: 40,
           },
           text: {
             ...Typography.button,
-            fontSize: 15,
+            fontSize: 14,
           },
           iconSize: 18,
         };
@@ -195,8 +199,24 @@ export function Button({
       {isLoading ? (
         <ActivityIndicator color={variantStyles.spinnerColor} size="small" />
       ) : (
-        <View style={styles.contentRow}>
-          {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
+        <View
+          style={[
+            styles.contentRow,
+            centerTextWithLeftIcon && styles.fullWidthContentRow,
+          ]}
+        >
+          {leftIcon && (
+            <View
+              style={
+                centerTextWithLeftIcon
+                  ? styles.absoluteLeftIcon
+                  : styles.leftIcon
+              }
+            >
+              {leftIcon}
+            </View>
+          )}
+
           <Text
             style={[
               styles.baseText,
@@ -209,6 +229,7 @@ export function Button({
           >
             {title}
           </Text>
+
           {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
         </View>
       )}
@@ -248,5 +269,17 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     opacity: 0.8,
+  },
+  fullWidthContentRow: {
+    width: "100%",
+    position: "relative",
+  },
+
+  absoluteLeftIcon: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: "center",
   },
 });

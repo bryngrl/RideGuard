@@ -2,12 +2,7 @@ import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
 import { CustomTextInput } from "@/components/ui/text-input";
-import {
-  BrandColors,
-  FontFamily,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
+import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
@@ -115,6 +110,7 @@ export default function RegisterScreen() {
           <CustomTextInput
             label="Phone Number"
             required
+            prefix="+63"
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
             value={phone}
@@ -122,23 +118,13 @@ export default function RegisterScreen() {
             maxLength={10}
             onChangeText={(text) => {
               const digitsOnly = text.replace(/\D/g, "");
-              updateProfile({ phone: digitsOnly });
+              const formattedPhone = digitsOnly.replace(/^0+/, "");
+
+              updateProfile({ phone: formattedPhone });
+
               if (phoneError) setPhoneError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
-            leftIcon={
-              <Text
-                style={[
-                  Typography.input,
-                  {
-                    color: theme.textMuted,
-                    fontFamily: FontFamily.geistSemiBold,
-                  },
-                ]}
-              >
-                +63
-              </Text>
-            }
           />
           <View style={styles.buttonContainer}>
             <Button
@@ -146,7 +132,7 @@ export default function RegisterScreen() {
               variant="primary"
               size="md"
               fullWidth={false}
-              style={{ width: "48%", alignSelf: "flex-start" }}
+              style={{ width: "48%" }}
               onPress={handleNextStep}
             />
           </View>
@@ -167,6 +153,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
+    marginHorizontal: Spacing.two,
   },
   logo: {
     width: 60,
@@ -175,13 +162,16 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
+    marginHorizontal: Spacing.two,
   },
   formContainer: {
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
+    marginHorizontal: Spacing.two,
   },
   buttonContainer: {
     marginTop: "auto",
     paddingTop: Spacing.three,
+    alignItems: "flex-end",
   },
 });

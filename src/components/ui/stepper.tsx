@@ -7,6 +7,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 interface StepperProps {
   steps?: number;
@@ -76,8 +77,6 @@ const StepItem = ({
       height: size * 0.5,
       borderBottomWidth: size * 0.07,
       borderRightWidth: size * 0.07,
-      marginTop: -(size * 0.1),
-      marginLeft: size * 0.05,
     },
     stepText: {
       fontSize: size * 0.65,
@@ -115,7 +114,11 @@ const StepItem = ({
               checkmarkAnimatedStyle,
             ]}
           >
-            <View style={[styles.straightCheck, dynamicStyles.straightCheck]} />
+            <Ionicons
+              name="checkmark-sharp"
+              size={size * 0.7}
+              color={Colors.light.textInverse}
+            />
           </Animated.View>
         </Animated.View>
       </View>
@@ -159,7 +162,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.one,
+    paddingBottom: Spacing.five,
   },
   stepContainer: {
     flexDirection: "row",
@@ -196,7 +200,7 @@ const styles = StyleSheet.create({
   },
   lineFill: {
     height: "100%",
-    backgroundColor: Colors.light.primary,
+    backgroundColor: "rgba(26, 43, 76, 0.8)",
   },
 });
 
