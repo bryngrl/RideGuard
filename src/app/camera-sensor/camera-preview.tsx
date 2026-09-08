@@ -1,3 +1,4 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import { Spacing, Typography } from "@/constants/theme";
@@ -5,7 +6,6 @@ import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
-
 const screenWidth = Dimensions.get("window").width;
 
 export default function CameraPreviewScreen() {
@@ -28,11 +28,7 @@ export default function CameraPreviewScreen() {
       <View style={styles.container}>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -42,7 +38,10 @@ export default function CameraPreviewScreen() {
             <Text
               style={[
                 Typography.body,
-                { color: theme.textMuted, marginTop: Spacing.two },
+                {
+                  color: theme.textMuted,
+                  marginTop: Spacing.two,
+                },
               ]}
             >
               Passenger seat is fully within frame — no adjustment needed.
@@ -83,11 +82,7 @@ const styles = StyleSheet.create({
   },
   logoContainer: {
     alignItems: "flex-start",
-    marginBottom: Spacing.five,
-  },
-  logo: {
-    width: 60,
-    height: 60,
+    marginBottom: Spacing.three,
   },
   headerContainer: {
     alignItems: "flex-start",
@@ -97,6 +92,7 @@ const styles = StyleSheet.create({
     width: screenWidth,
     height: 240,
     alignSelf: "center",
+    justifyContent: "center",
     marginVertical: Spacing.three,
   },
   previewImage: {

@@ -1,9 +1,10 @@
+import SearchingIcon from "@/assets/icons/metal-sensor/searching-icon.svg";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function TestScanActiveScreen() {
   const router = useRouter();
@@ -25,11 +26,8 @@ export default function TestScanActiveScreen() {
     <PageLayout title="Test scan" scrollable={false} onBack={handleBack}>
       <View style={styles.container}>
         <View style={styles.contentCenter}>
-          <Image
-            source={require("@/assets/icons/searching-icon.png")}
-            style={styles.scanIcon}
-            resizeMode="contain"
-          />
+          <SearchingIcon width={180} height={180} />
+
           <Text
             style={[
               Typography.body,
@@ -53,9 +51,5 @@ const styles = StyleSheet.create({
   contentCenter: {
     alignItems: "center",
     justifyContent: "center",
-  },
-  scanIcon: {
-    width: 180,
-    height: 180,
   },
 });

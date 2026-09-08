@@ -9,8 +9,8 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -38,11 +38,7 @@ export function KeyboardAvoidingWrapper({
 
   return (
     <SafeAreaView
-      style={[
-        styles.safeArea,
-        { backgroundColor: theme.background },
-        style,
-      ]}
+      style={[styles.safeArea, { backgroundColor: theme.background }, style]}
     >
       <KeyboardAvoidingView
         style={styles.flex}
@@ -96,10 +92,11 @@ const styles = StyleSheet.create({
   },
 
   innerContainer: {
+    flexGrow: 1,
     width: "100%",
     maxWidth: MaxContentWidth,
     paddingTop: Spacing.four,
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.five,
     paddingBottom: Spacing.five,
   },
 });

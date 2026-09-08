@@ -1,6 +1,6 @@
 // TODO: A motion in the start
 
-import { Image } from "expo-image";
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
@@ -192,12 +192,8 @@ export default function LoginScreen() {
       <View style={styles.content}>
         <View style={styles.heroWrapper}>
           <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.logo}
-              contentFit="contain"
-              priority="high"
-            />
+            <MainLogo width={64} height={64} />
+
             {typedText.length > 0 && (
               <Animated.View
                 entering={FadeIn.duration(150)}
@@ -330,7 +326,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: -25,
+    marginLeft: -15,
     marginTop: 25,
     marginRight: 15,
     zIndex: 1,

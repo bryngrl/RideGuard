@@ -1,4 +1,6 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
+
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
 import { SweetAlert } from "@/components/ui/sweet-alert";
@@ -11,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function RegisterStepThreeScreen() {
   const router = useRouter();
@@ -105,8 +107,6 @@ export default function RegisterStepThreeScreen() {
 
       await submitProfile(payload, firebaseToken);
 
-      store.resetForm();
-
       return true;
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
@@ -161,11 +161,7 @@ export default function RegisterStepThreeScreen() {
           </View>
 
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -343,7 +339,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
-    marginHorizontal: Spacing.two,
   },
   logo: {
     width: 60,
@@ -352,12 +347,10 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
-    marginHorizontal: Spacing.two,
   },
   formContainer: {
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
-    marginHorizontal: Spacing.two,
   },
   buttonContainer: {
     flexDirection: "row",

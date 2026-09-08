@@ -1,3 +1,6 @@
+import ErrorIcon from "@/assets/icons/modal-icon/error-icon.svg";
+import LoadingIcon from "@/assets/icons/modal-icon/loading-icon.svg";
+import SuccessIcon from "@/assets/icons/modal-icon/success-icon.svg";
 import {
   BorderRadius,
   BrandColors,
@@ -5,7 +8,7 @@ import {
   Typography,
 } from "@/constants/theme";
 import { useEffect, useState } from "react";
-import { Image, Modal, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 
 interface LoadingModalProps {
   visible: boolean;
@@ -47,27 +50,9 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
       <View style={styles.modalOverlay}>
         <View style={styles.alertBox}>
           <View style={styles.contentContainer}>
-            {status === "loading" && (
-              <Image
-                source={require("@/assets/icons/verifying-icon.png")}
-                style={styles.statusIcon}
-                resizeMode="contain"
-              />
-            )}
-            {status === "success" && (
-              <Image
-                source={require("@/assets/icons/circled-check.png")}
-                style={styles.statusIcon}
-                resizeMode="contain"
-              />
-            )}
-            {status === "error" && (
-              <Image
-                source={require("@/assets/icons/error-icon.png")}
-                style={styles.statusIcon}
-                resizeMode="contain"
-              />
-            )}
+            {status === "loading" && <LoadingIcon width={56} height={56} />}
+            {status === "success" && <SuccessIcon width={56} height={56} />}
+            {status === "error" && <ErrorIcon width={56} height={56} />}
 
             <Text
               style={[

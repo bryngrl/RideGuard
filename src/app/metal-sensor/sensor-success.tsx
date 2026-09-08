@@ -1,10 +1,11 @@
+import SuccessIcon from "@/assets/icons/modal-icon/success-icon.svg";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function SensorSuccessScreen() {
   const router = useRouter();
@@ -15,14 +16,14 @@ export default function SensorSuccessScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
-    router.replace("/metal-sensor/index");
+    router.replace("/metal-sensor");
   };
 
   const handleNext = async () => {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
-      router.replace("/camera-sensor/index");
+      router.replace("/camera-sensor");
     } finally {
       setIsLoading(false);
     }
@@ -32,16 +33,12 @@ export default function SensorSuccessScreen() {
     <PageLayout title="Test scan" scrollable={false} onBack={handleBack}>
       <View style={styles.container}>
         <View style={styles.topSection}>
-          <Image
-            source={require("@/assets/icons/circled-check.png")}
-            style={styles.statusIcon}
-            resizeMode="contain"
-          />
+          <SuccessIcon width={64} height={64} />
           <Text
             style={[
               Typography.largeTitle,
               styles.heading,
-              { color: theme.text },
+              { color: theme.text, paddingTop: Spacing.three },
             ]}
           >
             Sensor is working

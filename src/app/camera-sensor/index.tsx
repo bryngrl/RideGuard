@@ -1,3 +1,5 @@
+import LightBulb from "@/assets/icons/lightbulb-icon.svg";
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import { LoadingModal } from "@/components/ui/modal";
@@ -9,7 +11,7 @@ import { claimDevice } from "@/services/api";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function ProvisionCameraScreen() {
   const router = useRouter();
@@ -85,7 +87,7 @@ export default function ProvisionCameraScreen() {
 
       // Save cam dev
       setCameraDeviceId(cleanedId);
-      
+
       setAlertState({
         visible: true,
         status: "success",
@@ -124,11 +126,7 @@ export default function ProvisionCameraScreen() {
       <View style={styles.container}>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -166,11 +164,7 @@ export default function ProvisionCameraScreen() {
         <View style={styles.footerSection}>
           <View style={styles.helpContainer}>
             <View style={[styles.iconContainer, {}]}>
-              <Image
-                source={require("@/assets/icons/lightbulb-icon.png")}
-                style={{ width: 24, height: 24 }}
-                resizeMode="contain"
-              />
+              <LightBulb width={24} height={24} />
             </View>
             <View style={styles.helpTextContainer}>
               <Text

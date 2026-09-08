@@ -1,3 +1,5 @@
+import LighBulb from "@/assets/icons/lightbulb-icon.svg";
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import { LoadingModal } from "@/components/ui/modal";
@@ -9,7 +11,7 @@ import { claimDevice } from "@/services/api";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function ProvisionTokenScreen() {
   const router = useRouter();
@@ -88,7 +90,7 @@ export default function ProvisionTokenScreen() {
 
       // Redirect after success
       setTimeout(() => {
-        router.replace("/metal-sensor/index");
+        router.replace("/metal-sensor");
       }, 1500);
     } catch (error: unknown) {
       const message =
@@ -116,21 +118,21 @@ export default function ProvisionTokenScreen() {
       <View style={styles.container}>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
             <Text style={[Typography.largeTitle, { color: theme.text }]}>
               Connect your{"\n"}metal sensor
             </Text>
+
             <Text
               style={[
                 Typography.body,
-                { color: theme.textMuted, marginTop: Spacing.two },
+                {
+                  color: theme.textMuted,
+                  marginTop: Spacing.two,
+                },
               ]}
             >
               Enter your unique device identifier to continue.
@@ -148,32 +150,44 @@ export default function ProvisionTokenScreen() {
               error={deviceIdError}
               onChangeText={(text) => {
                 setDeviceId(text.toUpperCase());
-                if (deviceIdError) setDeviceIdError("");
+
+                if (deviceIdError) {
+                  setDeviceIdError("");
+                }
               }}
-              containerStyle={{ paddingBottom: Spacing.two }}
+              containerStyle={{
+                paddingBottom: Spacing.two,
+              }}
             />
           </View>
         </View>
 
         <View style={styles.footerSection}>
           <View style={styles.helpContainer}>
-            <View style={[styles.iconContainer, {}]}>
-              <Image
-                source={require("@/assets/icons/lightbulb-icon.png")}
-                style={{ width: 24, height: 24 }}
-                resizeMode="contain"
-              />
+            <View style={styles.iconContainer}>
+              <LighBulb width={24} height={24} />
             </View>
+
             <View style={styles.helpTextContainer}>
               <Text
-                style={[Typography.h4, { color: theme.text, fontSize: 14 }]}
+                style={[
+                  Typography.h4,
+                  {
+                    color: theme.text,
+                    fontSize: 14,
+                  },
+                ]}
               >
                 Where to find your Device ID
               </Text>
+
               <Text
                 style={[
                   Typography.bodySmall,
-                  { color: theme.textMuted, marginTop: Spacing.one },
+                  {
+                    color: theme.textMuted,
+                    marginTop: Spacing.one,
+                  },
                 ]}
               >
                 Look for the printed label on the back of the device.
@@ -186,7 +200,7 @@ export default function ProvisionTokenScreen() {
               title="Connect"
               variant="primary"
               size="md"
-              fullWidth={true}
+              fullWidth
               onPress={handleConnect}
               isLoading={isLoading}
             />
@@ -206,19 +220,14 @@ export default function ProvisionTokenScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "space-between",
+    width: "100%",
   },
   topSection: {
-    flex: 1,
     paddingTop: 72,
   },
   logoContainer: {
     alignItems: "flex-start",
-    marginBottom: Spacing.five,
-  },
-  logo: {
-    width: 60,
-    height: 60,
+    marginBottom: Spacing.three,
   },
   headerContainer: {
     alignItems: "flex-start",
@@ -229,7 +238,7 @@ const styles = StyleSheet.create({
   },
   footerSection: {
     marginTop: "auto",
-    paddingBottom: Spacing.two,
+    paddingTop: Spacing.four,
   },
   helpContainer: {
     flexDirection: "row",

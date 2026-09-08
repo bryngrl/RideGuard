@@ -1,3 +1,4 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
@@ -8,7 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function RegisterStepTwoScreen() {
   const router = useRouter();
@@ -53,11 +54,7 @@ export default function RegisterStepTwoScreen() {
         </View>
 
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/Primary-Icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <MainLogo width={64} height={64} />
         </View>
 
         <View style={styles.headerContainer}>
@@ -148,21 +145,14 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
-    marginHorizontal: Spacing.two,
-  },
-  logo: {
-    width: 60,
-    height: 60,
   },
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
-    marginHorizontal: Spacing.two,
   },
   formContainer: {
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
-    marginHorizontal: Spacing.two,
   },
   buttonContainer: {
     flexDirection: "row",

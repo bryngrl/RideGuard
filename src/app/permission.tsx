@@ -1,12 +1,16 @@
+import GreenCheckIcon from "@/assets/icons/green-check-icon.svg";
+import LocationIcon from "@/assets/icons/location.svg";
+import MainLogo from "@/assets/icons/main-logo.svg";
+import NotificationIcon from "@/assets/icons/notification.svg";
 import { Button } from "@/components/ui/button";
-import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { AppState, Image, Linking, StyleSheet, Text, View } from "react-native";
+import { AppState, Linking, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PermissionsScreen() {
   const router = useRouter();
@@ -16,7 +20,6 @@ export default function PermissionsScreen() {
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check if we alr have a permission
   const checkPermissions = async () => {
     const location = await Location.getForegroundPermissionsAsync();
     const notifications = await Notifications.getPermissionsAsync();
@@ -29,7 +32,6 @@ export default function PermissionsScreen() {
     checkPermissions();
   }, []);
 
-  // check if the user returns from setting
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
@@ -40,64 +42,88 @@ export default function PermissionsScreen() {
     return () => subscription.remove();
   }, []);
 
-    const handleGoToSettings = async () => {
-      if (isLoading) return;
+  const handleGoToSettings = async () => {
+    if (isLoading) return;
 
-      setIsLoading(true);
+    setIsLoading(true);
 
-      try {
-        // Location
-        if (!locationGranted) {
-          const result = await Location.requestForegroundPermissionsAsync();
+    try {
+      // Request location first
+      if (!locationGranted) {
+        const result = await Location.requestForegroundPermissionsAsync();
 
-          if (result.granted) {
-            setLocationGranted(true);
-          } else if (result.canAskAgain === false) {
-            await Linking.openSettings();
-          }
-
-          return;
-        }
-        // Notifications
-        if (!notificationsGranted) {
-          const result = await Notifications.requestPermissionsAsync();
-
-          if (result.granted) {
-            setNotificationsGranted(true);
-          } else if (result.canAskAgain === false) {
-            await Linking.openSettings();
-          }
-
-          return;
+        if (result.granted) {
+          setLocationGranted(true);
+        } else if (result.canAskAgain === false) {
+          await Linking.openSettings();
         }
 
-        // redirection to provision token
-        router.replace("/provision");
-      } finally {
-        setIsLoading(false);
+        return;
       }
-    };
+
+      // Request notifications second
+      if (!notificationsGranted) {
+        const result = await Notifications.requestPermissionsAsync();
+
+        if (result.granted) {
+          setNotificationsGranted(true);
+        } else if (result.canAskAgain === false) {
+          await Linking.openSettings();
+        }
+
+        return;
+      }
+
+      // Both permissions granted
+      router.replace("/provision");
+    } catch (error) {
+      console.error("Permission error:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const buttonTitle = !locationGranted
+    ? "Enable location"
+    : !notificationsGranted
+      ? "Enable notifications"
+      : "Continue";
 
   return (
-    <KeyboardAvoidingWrapper>
+    <SafeAreaView
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor: theme.background,
+        },
+      ]}
+    >
       <View style={styles.container}>
+        {/* MAIN CONTENT */}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
-            <Text style={[Typography.largeTitle, { color: theme.text }]}>
+            <Text
+              style={[
+                Typography.largeTitle,
+                {
+                  color: theme.text,
+                },
+              ]}
+            >
               Permissions
             </Text>
+
             <Text
               style={[
                 Typography.body,
-                { color: theme.textMuted, marginTop: Spacing.one },
+                {
+                  color: theme.textMuted,
+                  marginTop: Spacing.one,
+                },
               ]}
             >
               We'll ask for a few things.
@@ -105,151 +131,175 @@ export default function PermissionsScreen() {
           </View>
 
           <View style={styles.permissionsList}>
-            {/* location*/}
+            {/* LOCATION */}
             <View style={styles.permissionItem}>
               <View
                 style={[
                   styles.iconContainer,
-                  { backgroundColor: theme.backgroundSelected },
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                  },
                 ]}
               >
-                <Image
-                  source={require("@/assets/icons/location-icon.png")}
-                  style={{ width: 24, height: 24 }}
-                  resizeMode="contain"
-                />
+                <LocationIcon width={16} height={16} />
               </View>
+
               <View style={styles.textContainer}>
-                <Text style={[Typography.h4, { color: theme.text }]}>
+                <Text
+                  style={[
+                    Typography.h4,
+                    {
+                      color: theme.text,
+                    },
+                  ]}
+                >
                   Location
                 </Text>
 
                 <Text
                   style={[
                     Typography.bodySmall,
-                    { color: theme.textMuted, marginTop: Spacing.two },
+                    {
+                      color: theme.textMuted,
+                      marginTop: Spacing.two,
+                    },
                   ]}
                 >
                   To include your location in SOS texts.
                 </Text>
               </View>
 
-              {locationGranted && (
-                <Image
-                  source={require("@/assets/icons/green-check.png")}
-                  style={styles.checkIcon}
-                  resizeMode="contain"
-                />
-              )}
+              {locationGranted && <GreenCheckIcon width={16} height={16} />}
             </View>
 
-            {/* notifs */}
+            {/* NOTIFICATIONS */}
             <View style={styles.permissionItem}>
               <View
                 style={[
                   styles.iconContainer,
-                  { backgroundColor: theme.backgroundSelected },
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                  },
                 ]}
               >
-                <Image
-                  source={require("@/assets/icons/notification-icon.png")}
-                  style={{ width: 24, height: 24 }}
-                  resizeMode="contain"
-                />
+                <NotificationIcon width={16} height={16} />
               </View>
+
               <View style={styles.textContainer}>
-                <Text style={[Typography.h4, { color: theme.text }]}>
+                <Text
+                  style={[
+                    Typography.h4,
+                    {
+                      color: theme.text,
+                    },
+                  ]}
+                >
                   Notifications
                 </Text>
 
                 <Text
                   style={[
                     Typography.bodySmall,
-                    { color: theme.textMuted, marginTop: Spacing.two },
+                    {
+                      color: theme.textMuted,
+                      marginTop: Spacing.two,
+                    },
                   ]}
                 >
                   So alerts reach you the moment something's flagged.
                 </Text>
               </View>
 
-              {/* Palitan ng icon */}
               {notificationsGranted && (
-                <Image
-                  source={require("@/assets/icons/green-check.png")}
-                  style={styles.checkIcon}
-                  resizeMode="contain"
-                />
+                <GreenCheckIcon width={16} height={16} />
               )}
             </View>
           </View>
         </View>
+
+        {/* FIXED BOTTOM BUTTON */}
         <View style={styles.buttonContainer}>
           <Button
-            title={
-              !locationGranted
-                ? "Enable location"
-                : !notificationsGranted
-                  ? "Enable notifications"
-                  : "Continue"
-            }
+            title={buttonTitle}
             variant="primary"
             size="md"
-            fullWidth={true}
+            fullWidth
             onPress={handleGoToSettings}
             isLoading={isLoading}
           />
         </View>
       </View>
-    </KeyboardAvoidingWrapper>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
+
   container: {
     flex: 1,
-    justifyContent: "space-between",
+    paddingHorizontal: Spacing.five,
+    paddingBottom: Spacing.five,
+    paddingTop: Spacing.four,
   },
+
   topSection: {
     flex: 1,
-    paddingTop: 72,
+    paddingTop: Spacing.four,
   },
+
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.five,
   },
+
   logo: {
     width: 60,
     height: 60,
   },
+
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.five,
   },
+
   permissionsList: {
     gap: Spacing.four,
   },
+
   permissionItem: {
     flexDirection: "row",
     alignItems: "center",
   },
+
   iconContainer: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: BorderRadius.full,
     justifyContent: "center",
     alignItems: "center",
     marginRight: Spacing.three,
   },
+
+  permissionIcon: {
+    width: 16,
+    height: 16,
+  },
+
   textContainer: {
     flex: 1,
   },
-  buttonContainer: {
-    marginTop: "auto",
-    paddingTop: Spacing.two,
-  },
+
   checkIcon: {
-    width: 24,
-    height: 24,
+    width: 16,
+    height: 16,
     marginLeft: Spacing.three,
+  },
+
+  buttonContainer: {
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.three,
   },
 });
