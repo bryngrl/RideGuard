@@ -18,12 +18,10 @@ export default function RegisterStepTwoScreen() {
 
   const [vehicleNameError, setVehicleNameError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
-  const [colorError, setColorError] = useState("");
 
   const handleNextStep = () => {
     setVehicleNameError("");
     setPlateNumberError("");
-    setColorError("");
 
     let isValid = true;
 
@@ -37,10 +35,6 @@ export default function RegisterStepTwoScreen() {
       isValid = false;
     }
 
-    if (!color.trim()) {
-      setColorError("Please enter your vehicle color.");
-      isValid = false;
-    }
     if (!isValid) return;
 
     router.push("/auth/register-3");
@@ -83,6 +77,7 @@ export default function RegisterStepTwoScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Vehicle Name"
+            required
             value={vehicleName}
             error={vehicleNameError}
             onChangeText={(text) => {
@@ -94,6 +89,7 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             label="Plate Number"
+            required
             value={plateNumber}
             error={plateNumberError}
             onChangeText={(text) => {
@@ -106,10 +102,8 @@ export default function RegisterStepTwoScreen() {
           <CustomTextInput
             label="Color"
             value={color}
-            error={colorError}
             onChangeText={(text) => {
               updateProfile({ color: text });
-              if (colorError) setColorError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
@@ -119,8 +113,9 @@ export default function RegisterStepTwoScreen() {
               title="Back"
               variant="ghost"
               fullWidth={false}
+              centerTextWithLeftIcon
               leftIcon={
-                <Ionicons name="chevron-back" size={24} color={theme.text} />
+                <Ionicons name="chevron-back" size={16} color={theme.text} />
               }
               textStyle={{ color: theme.text }}
               onPress={() => router.back()}
@@ -132,7 +127,7 @@ export default function RegisterStepTwoScreen() {
               variant="primary"
               size="md"
               fullWidth={false}
-              style={{ width: "48%", alignSelf: "flex-start" }}
+              style={{ width: "48%" }}
               onPress={handleNextStep}
             />
           </View>
@@ -153,6 +148,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
+    marginHorizontal: Spacing.two,
   },
   logo: {
     width: 60,
@@ -161,10 +157,12 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
+    marginHorizontal: Spacing.two,
   },
   formContainer: {
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
+    marginHorizontal: Spacing.two,
   },
   buttonContainer: {
     flexDirection: "row",

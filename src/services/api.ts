@@ -4,7 +4,7 @@ export interface ProfilePayload {
   phone_number: string;
   vehicle: string;
   plate_number: string;
-  color: string;
+  color?: string;
   contact_name?: string;
   emergency_phone_number?: string;
   relationship?: string;
@@ -25,18 +25,12 @@ export interface DeviceApiResponse<T = Record<string, unknown>> {
 
 export type DeviceType = "Camera" | "Metal-Detector";
 
-
 // Profile Creation
 export const submitProfile = async (
   payload: ProfilePayload,
   firebaseToken: string,
 ) => {
   try {
-    console.log(
-      "PROFILE REQUEST PAYLOAD:",
-      JSON.stringify(payload, null, 2),
-    );
-
     const response = await fetch(`${API_BASE_URL}/profile/personal-info`, {
       method: "POST",
       headers: {
@@ -48,9 +42,6 @@ export const submitProfile = async (
 
     const rawResponse = await response.text();
 
-    console.log("PROFILE RESPONSE STATUS:", response.status);
-    console.log("PROFILE RAW RESPONSE:", rawResponse);
-
     let data;
 
     try {
@@ -58,12 +49,6 @@ export const submitProfile = async (
     } catch {
       data = { message: rawResponse };
     }
-
-    console.log(
-      "PROFILE PARSED RESPONSE:",
-      JSON.stringify(data, null, 2),
-    );
-
     if (!response.ok) {
       throw new Error(
         Array.isArray(data.message)
@@ -122,20 +107,15 @@ export const claimDevice = async (
     const data = await response.json().catch(() => null);
 
     if (!response.ok) {
-      let errorMessage =
-        data?.message || "Failed to claim device.";
+      let errorMessage = data?.message || "Failed to claim device.";
       if (response.status === 404) {
-        errorMessage =
-          "Device not found. Please check your Device ID.";
+        errorMessage = "Device not found. Please check your Device ID.";
       } else if (response.status === 401) {
-        errorMessage =
-          "Authentication failed. Please sign in again.";
+        errorMessage = "Authentication failed. Please sign in again.";
       } else if (response.status === 422) {
-        errorMessage =
-          "Invalid user session. Please re-authenticate.";
+        errorMessage = "Invalid user session. Please re-authenticate.";
       } else if (response.status === 429) {
-        errorMessage =
-          "Too many attempts. Please try again later.";
+        errorMessage = "Too many attempts. Please try again later.";
       }
       throw new Error(errorMessage);
     }
@@ -146,8 +126,6 @@ export const claimDevice = async (
     if (error instanceof Error) {
       throw error;
     }
-    throw new Error(
-      "Unable to connect to the server. Please try again.",
-    );
+    throw new Error("Unable to connect to the server. Please try again.");
   }
 };
