@@ -32,7 +32,7 @@ export default function RegisterStepThreeScreen() {
   );
 
   const executeSubmission = async (
-    includeEmergencyContact: boolean,
+    validateEmergencyContact: boolean,
   ): Promise<boolean> => {
     setContactNameError("");
     setEmergencyPhoneError("");
@@ -47,7 +47,9 @@ export default function RegisterStepThreeScreen() {
       color: store.color.trim(),
     };
 
-    if (includeEmergencyContact) {
+    // Only validate emergency contact when the user has chosen
+    // to submit emergency contact information.
+    if (validateEmergencyContact) {
       let isValid = true;
 
       if (!store.contactName.trim()) {
@@ -58,7 +60,7 @@ export default function RegisterStepThreeScreen() {
       if (!store.emergencyPhone.trim()) {
         setEmergencyPhoneError("Please enter a phone number.");
         isValid = false;
-      } else if (!/^9\d{9}$/.test(store.emergencyPhone)) {
+      } else if (!/^9\d{9}$/.test(store.emergencyPhone.trim())) {
         setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
         isValid = false;
       }
@@ -68,12 +70,17 @@ export default function RegisterStepThreeScreen() {
         isValid = false;
       }
 
-      if (!isValid) return false;
+      if (!isValid) {
+        return false;
+      }
 
+      // Only add emergency contact fields after validation succeeds.
       payload.contact_name = store.contactName.trim();
+
       payload.emergency_phone_number = `+63${store.emergencyPhone
         .trim()
         .replace(/^0/, "")}`;
+
       payload.relationship = store.relationship.trim();
     }
 
@@ -81,19 +88,16 @@ export default function RegisterStepThreeScreen() {
 
     try {
       setIsLoading(true);
-      console.log("Getting Firebase Auth...");
 
       const auth = getAuth();
       const user = auth.currentUser;
 
-      console.log("Current Firebase User:", user?.uid);
-
       if (!user) {
-        console.log("ERROR: No authenticated user found");
         Alert.alert(
           "Auth Error",
           "You must be signed in to complete registration.",
         );
+
         return false;
       }
 
@@ -106,7 +110,9 @@ export default function RegisterStepThreeScreen() {
       return true;
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
+
       Alert.alert("Error", error.message || "Failed to submit profile.");
+
       return false;
     } finally {
       setIsLoading(false);
@@ -180,6 +186,7 @@ export default function RegisterStepThreeScreen() {
           <View style={styles.formContainer}>
             <CustomTextInput
               label="Contact Name"
+              required
               value={store.contactName}
               error={contactNameError}
               onChangeText={(text) => {
@@ -191,26 +198,20 @@ export default function RegisterStepThreeScreen() {
 
             <CustomTextInput
               label="Phone Number"
+              required
+              prefix="+63"
               keyboardType="phone-pad"
               value={store.emergencyPhone}
               error={emergencyPhoneError}
               maxLength={10}
               onChangeText={(text) => {
                 const digitsOnly = text.replace(/\D/g, "");
-                store.updateProfile({ emergencyPhone: digitsOnly });
+                const formattedPhone = digitsOnly.replace(/^0+/, "");
+
+                store.updateProfile({ emergencyPhone: formattedPhone });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
-              leftIcon={
-                <Text
-                  style={[
-                    Typography.input,
-                    { color: theme.textMuted, fontWeight: "600" },
-                  ]}
-                >
-                  +63
-                </Text>
-              }
             />
 
             <View style={styles.relationshipDropdown}>
@@ -218,6 +219,7 @@ export default function RegisterStepThreeScreen() {
                 <View pointerEvents="none">
                   <CustomTextInput
                     label="Relationship"
+                    required
                     value={store.relationship}
                     error={relationshipError}
                     placeholder="Select relationship"
@@ -290,7 +292,7 @@ export default function RegisterStepThreeScreen() {
                 variant="ghost"
                 fullWidth={false}
                 leftIcon={
-                  <Ionicons name="chevron-back" size={24} color={theme.text} />
+                  <Ionicons name="chevron-back" size={16} color={theme.text} />
                 }
                 textStyle={{ color: theme.text }}
                 onPress={() => router.back()}
@@ -315,9 +317,9 @@ export default function RegisterStepThreeScreen() {
         visible={isSkipAlertVisible}
         type="warning"
         title="Skip emergency contact?"
-        description="They'll get an SOS text with your location if you trigger an alert or if an attack is detected."
+        description="You can add one anytime in Settings, but SOS alerts won't reach anyone personal until you do."
         primaryButtonText="Add now"
-        secondaryButtonText="Skip now"
+        secondaryButtonText="Skip anyway"
         primaryButtonVariant="primary"
         secondaryButtonVariant="ghost"
         onPrimaryPress={handleAddContact}
@@ -341,6 +343,7 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
+    marginHorizontal: Spacing.two,
   },
   logo: {
     width: 60,
@@ -349,16 +352,18 @@ const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
+    marginHorizontal: Spacing.two,
   },
   formContainer: {
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
+    marginHorizontal: Spacing.two,
   },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: "auto",
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.two,
   },
   relationshipDropdown: {
     position: "relative",
