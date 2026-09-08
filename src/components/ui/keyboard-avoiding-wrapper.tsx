@@ -3,7 +3,6 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleProp,
   StyleSheet,
   TouchableWithoutFeedback,
@@ -11,6 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -38,27 +38,44 @@ export function KeyboardAvoidingWrapper({
 
   return (
     <SafeAreaView
-      style={[styles.safeArea, { backgroundColor: theme.background }, style]}
+      style={[
+        styles.safeArea,
+        { backgroundColor: theme.background },
+        style,
+      ]}
     >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-          {enableScrollView ? (
-            <ScrollView
-              style={styles.flex}
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+        {enableScrollView ? (
+          <KeyboardAwareScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            showsVerticalScrollIndicator={false}
+            enableOnAndroid
+            enableAutomaticScroll
+            extraScrollHeight={20}
+            extraHeight={100}
+          >
+            <TouchableWithoutFeedback
+              onPress={Keyboard.dismiss}
+              accessible={false}
             >
               {content}
-            </ScrollView>
-          ) : (
-            content
-          )}
-        </TouchableWithoutFeedback>
+            </TouchableWithoutFeedback>
+          </KeyboardAwareScrollView>
+        ) : (
+          <TouchableWithoutFeedback
+            onPress={Keyboard.dismiss}
+            accessible={false}
+          >
+            {content}
+          </TouchableWithoutFeedback>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -68,18 +85,19 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
+
   flex: {
     flex: 1,
   },
+
   scrollContent: {
     flexGrow: 1,
     alignItems: "center",
   },
+
   innerContainer: {
     width: "100%",
     maxWidth: MaxContentWidth,
-    flex: 1,
-
     paddingTop: Spacing.four,
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.five,

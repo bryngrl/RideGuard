@@ -10,6 +10,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -35,19 +36,19 @@ export function PageLayout({
   const router = useRouter();
 
   const handleBack = () => {
-    // custom
+    // Use custom back behavior if provided
     if (onBack) {
       onBack();
       return;
     }
 
-    // if theres a screen earlier
+    // Go back if navigation history exists
     if (router.canGoBack()) {
       router.back();
       return;
     }
 
-    // fall back to home
+    // Fallback route
     router.replace("/");
   };
 
@@ -55,10 +56,11 @@ export function PageLayout({
     if (scrollable) {
       return (
         <ScrollView
+          style={styles.flex}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[styles.content, contentStyle]}
         >
-          {children}
+          {children}{" "}
         </ScrollView>
       );
     }
@@ -71,26 +73,27 @@ export function PageLayout({
   };
 
   return (
-    <View
+    <SafeAreaView
       style={[
         styles.container,
         {
           backgroundColor: theme.background,
         },
       ]}
+      edges={["top"]}
     >
-      {/* HEADER */}
+      {/* HEADER */}{" "}
       <View style={styles.header}>
-        {/* BACK BUTTON */}
+        {/* BACK BUTTON */}{" "}
         <Pressable
           onPress={handleBack}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Ionicons name="chevron-back" size={24} color={theme.text} />
+          {" "}
+          <Ionicons name="chevron-back" size={24} color={theme.text} />{" "}
         </Pressable>
-
         {/* PAGE TITLE */}
         <Text
           style={[
@@ -104,11 +107,9 @@ export function PageLayout({
         >
           {title}
         </Text>
-
-        {/* SPACER */}
+        {/* RIGHT SPACER FOR CENTERED TITLE */}
         <View style={styles.rightSpacer} />
       </View>
-
       {/* DIVIDER */}
       <View
         style={[
@@ -118,15 +119,18 @@ export function PageLayout({
           },
         ]}
       />
-
       {/* MAIN CONTENT */}
       {renderContent()}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+
+  flex: {
     flex: 1,
   },
 

@@ -62,10 +62,7 @@ export default function LoginScreen() {
   const [showCursor, setShowCursor] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // ------------------------------------------
-  // HANDLE AUTHENTICATED FIREBASE USER
-  // ------------------------------------------
-
+  // authed user
   const handleAuthenticatedUser = async (user: User) => {
     const firebaseToken = await user.getIdToken();
 
@@ -78,23 +75,17 @@ export default function LoginScreen() {
     }
   };
 
-  // ------------------------------------------
-  // GOOGLE SIGN-IN
-  // ------------------------------------------
-
+  // google sign in
   const handleGoogleSignIn = async () => {
     try {
       setIsGoogleLoading(true);
 
-      // Check if Google Play Services are available.
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
       });
 
-      // Open native Google account selector.
       const response = await GoogleSignin.signIn();
 
-      // User cancelled the Google sign-in flow.
       if (!isSuccessResponse(response)) {
         return;
       }
@@ -106,34 +97,19 @@ export default function LoginScreen() {
           "Google Sign-In succeeded, but no ID token was returned.",
         );
       }
+      const credential = GoogleAuthProvider.credential(googleIdToken);
+      const userCredential = await signInWithCredential(auth, credential);
 
-      // Create Firebase credential from Google ID token.
-      const credential =
-        GoogleAuthProvider.credential(googleIdToken);
-
-      // Sign in to Firebase.
-      const userCredential =
-        await signInWithCredential(auth, credential);
-
-      // Continue with your existing RideGuard logic.
       await handleAuthenticatedUser(userCredential.user);
     } catch (error) {
       console.error("Google Sign-In failed:", error);
 
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Google Sign-In failed.",
-      );
+      alert(error instanceof Error ? error.message : "Google Sign-In failed.");
     } finally {
       setIsGoogleLoading(false);
     }
   };
-
-  // ------------------------------------------
-  // LOGO POP + TYPING ANIMATION
-  // ------------------------------------------
-
+  // animation
   useEffect(() => {
     logoScale.value = withDelay(
       700,
@@ -155,9 +131,7 @@ export default function LoginScreen() {
     const typingTimeout = setTimeout(() => {
       const interval = setInterval(() => {
         if (currentIndex < FULL_BRAND_NAME.length) {
-          setTypedText(
-            FULL_BRAND_NAME.slice(0, currentIndex + 1),
-          );
+          setTypedText(FULL_BRAND_NAME.slice(0, currentIndex + 1));
 
           currentIndex++;
         } else {
@@ -186,28 +160,22 @@ export default function LoginScreen() {
   }));
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (user) => {
-        if (!user) {
-          setIsCheckingAuth(false);
-          return;
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setIsCheckingAuth(false);
+        return;
+      }
 
-        try {
-          setIsCheckingAuth(true);
+      try {
+        setIsCheckingAuth(true);
 
-          await handleAuthenticatedUser(user);
-        } catch (error) {
-          console.error(
-            "Failed to check authenticated user:",
-            error,
-          );
+        await handleAuthenticatedUser(user);
+      } catch (error) {
+        console.error("Failed to check authenticated user:", error);
 
-          setIsCheckingAuth(false);
-        }
-      },
-    );
+        setIsCheckingAuth(false);
+      }
+    });
 
     return unsubscribe;
   }, []);
@@ -223,12 +191,7 @@ export default function LoginScreen() {
     >
       <View style={styles.content}>
         <View style={styles.heroWrapper}>
-          <Animated.View
-            style={[
-              styles.heroRow,
-              animatedHeroStyle,
-            ]}
-          >
+          <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
             <Image
               source={require("@/assets/images/logo.png")}
               style={styles.logo}
@@ -240,16 +203,10 @@ export default function LoginScreen() {
                 entering={FadeIn.duration(150)}
                 style={styles.brandNameContainer}
               >
-                <ThemedText
-                  style={styles.brandNameText}
-                >
+                <ThemedText style={styles.brandNameText}>
                   {typedText}
                   {showCursor && (
-                    <ThemedText
-                      style={styles.cursor}
-                    >
-                      |
-                    </ThemedText>
+                    <ThemedText style={styles.cursor}>|</ThemedText>
                   )}
                 </ThemedText>
               </Animated.View>
@@ -308,9 +265,7 @@ export default function LoginScreen() {
             >
               By continuing, you agree to our{" "}
               <ThemedText
-                onPress={() =>
-                  router.push("/settings/terms")
-                }
+                onPress={() => router.push("/settings/terms")}
                 style={[
                   styles.legalLink,
                   {
@@ -320,11 +275,9 @@ export default function LoginScreen() {
               >
                 Terms of service
               </ThemedText>
-              {" and "}
+              {"\n and "}
               <ThemedText
-                onPress={() =>
-                  router.push("/settings/privacy")
-                }
+                onPress={() => router.push("/settings/privacy")}
                 style={[
                   styles.legalLink,
                   {
@@ -377,7 +330,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: -15,
+    marginLeft: -25,
+    marginTop: 25,
     marginRight: 15,
     zIndex: 1,
   },
@@ -398,7 +352,7 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   textGroup: {
-    gap: Spacing.two,
+    gap: Spacing.one,
     alignItems: "center",
   },
   mainTitle: {
@@ -416,7 +370,7 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     width: "100%",
-    paddingTop: Spacing.one,
+    paddingTop: Spacing.half,
   },
   legalContainer: {
     alignItems: "center",
