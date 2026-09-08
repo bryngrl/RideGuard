@@ -59,7 +59,7 @@ export default function RegisterScreen() {
             currentStep={1}
             steps={3}
             size={28}
-            containerStyle={{ width: "50%" }}
+            containerStyle={{ width: "70%" }}
           />
         </View>
 
