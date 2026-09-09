@@ -40,6 +40,7 @@ export const Colors = {
     accent: "#60A5FA",
     text: "#FFFFFF",
     textSecondary: "#94A3B8",
+    textInactive: "#C4C4C4",
     textMuted: "#64748B",
     textInverse: "#1A2B4C",
     background: "#0D1525",
