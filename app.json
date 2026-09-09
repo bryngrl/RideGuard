@@ -4,7 +4,7 @@
     "slug": "RideGuard",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/logo.png",
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
@@ -13,7 +13,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/Primary-icon.png",
           "imageWidth": 76
         }
       ],
@@ -36,7 +36,7 @@
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/logo.png"
     },
     "experiments": {
       "typedRoutes": true,
