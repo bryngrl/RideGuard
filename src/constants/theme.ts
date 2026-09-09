@@ -19,6 +19,7 @@ export const Colors = {
     text: "#1A2B4C",
     textSecondary: BrandColors.secondary,
     textMuted: "#9C9C9C",
+    textInactive: "#C4C4C4",
     textInverse: "#FFFFFF",
     background: "#FFFFFF",
     backgroundElement: "#F8FAFC",
