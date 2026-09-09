@@ -1,10 +1,7 @@
 // TODO: A motion in the start
 
-import { makeRedirectUri } from "expo-auth-session";
-import * as Google from "expo-auth-session/providers/google";
-import { Image } from "expo-image";
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { useRouter } from "expo-router";
-import * as WebBrowser from "expo-web-browser";
 import { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
 import Animated, {
@@ -18,8 +15,14 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  GoogleSignin,
+  isSuccessResponse,
+} from "@react-native-google-signin/google-signin";
+
 import { ThemedText } from "@/components/themed-text";
 import { GoogleButton } from "@/components/ui/google-button";
+
 import {
   BrandColors,
   FontFamily,
@@ -27,9 +30,11 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
+
 import { useTheme } from "@/hooks/use-theme";
 import { auth } from "@/lib/firebase";
 import { checkIsOldUser } from "@/services/api";
+
 import {
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -37,10 +42,13 @@ import {
   User,
 } from "firebase/auth";
 
-WebBrowser.maybeCompleteAuthSession();
-
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+
 const FULL_BRAND_NAME = "ideguard";
+
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -48,38 +56,75 @@ export default function LoginScreen() {
 
   const logoScale = useSharedValue(2.2);
   const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.28);
+
   const [typedText, setTypedText] = useState("");
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  const googleAndroidClientId =
-    process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
-  const googleIosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID;
-  const googleWebClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  // authed user
+  const handleAuthenticatedUser = async (user: User) => {
+    const firebaseToken = await user.getIdToken();
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: googleClientId,
-    androidClientId: googleAndroidClientId,
-    iosClientId: googleIosClientId,
-    webClientId: googleWebClientId,
-    redirectUri: makeRedirectUri({
-      scheme: "rideguard",
-      path: "redirect",
-    }),
-  });
+    const isOldUser = await checkIsOldUser(firebaseToken);
 
-  // Logo pop & typing animation
+    if (isOldUser) {
+      router.replace("/(tabs)");
+    } else {
+      router.replace("/auth/register-1");
+    }
+  };
+
+  // google sign in
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsGoogleLoading(true);
+
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
+
+      const response = await GoogleSignin.signIn();
+
+      if (!isSuccessResponse(response)) {
+        return;
+      }
+
+      const googleIdToken = response.data.idToken;
+
+      if (!googleIdToken) {
+        throw new Error(
+          "Google Sign-In succeeded, but no ID token was returned.",
+        );
+      }
+      const credential = GoogleAuthProvider.credential(googleIdToken);
+      const userCredential = await signInWithCredential(auth, credential);
+
+      await handleAuthenticatedUser(userCredential.user);
+    } catch (error) {
+      console.error("Google Sign-In failed:", error);
+
+      alert(error instanceof Error ? error.message : "Google Sign-In failed.");
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
+  // animation
   useEffect(() => {
     logoScale.value = withDelay(
       700,
-      withSpring(1.0, { damping: 15, stiffness: 75 }),
+      withSpring(1.0, {
+        damping: 15,
+        stiffness: 75,
+      }),
     );
 
     heroTranslateY.value = withDelay(
       700,
-      withSpring(0, { damping: 15, stiffness: 75 }),
+      withSpring(0, {
+        damping: 15,
+        stiffness: 75,
+      }),
     );
 
     let currentIndex = 0;
@@ -87,6 +132,7 @@ export default function LoginScreen() {
       const interval = setInterval(() => {
         if (currentIndex < FULL_BRAND_NAME.length) {
           setTypedText(FULL_BRAND_NAME.slice(0, currentIndex + 1));
+
           currentIndex++;
         } else {
           clearInterval(interval);
@@ -97,27 +143,22 @@ export default function LoginScreen() {
       return () => clearInterval(interval);
     }, 1300);
 
-    return () => clearTimeout(typingTimeout);
+    return () => {
+      clearTimeout(typingTimeout);
+    };
   }, []);
-   const animatedHeroStyle = useAnimatedStyle(() => ({
+
+  const animatedHeroStyle = useAnimatedStyle(() => ({
     transform: [
-      { scale: logoScale.value },
-      { translateY: heroTranslateY.value },
+      {
+        scale: logoScale.value,
+      },
+      {
+        translateY: heroTranslateY.value,
+      },
     ],
   }));
-  const handleAuthenticatedUser = async (user: User) => {
-    const firebaseToken = await user.getIdToken();
 
-    const isOldUser = await checkIsOldUser(firebaseToken);
-
-    if (isOldUser) {
-      router.replace("/(tabs)/index");
-    } else {
-      router.replace("/auth/register-1");
-    }
-  };
-
-  // check existing firebase session
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -127,12 +168,11 @@ export default function LoginScreen() {
 
       try {
         setIsCheckingAuth(true);
+
         await handleAuthenticatedUser(user);
       } catch (error) {
-        console.error(
-          "Failed to check authenticated user:",
-          error,
-        );
+        console.error("Failed to check authenticated user:", error);
+
         setIsCheckingAuth(false);
       }
     });
@@ -140,64 +180,20 @@ export default function LoginScreen() {
     return unsubscribe;
   }, []);
 
-  // Google login resp
-  useEffect(() => {
-    if (response?.type !== "success") {
-      return;
-    }
-
-    const loginWithFirebase = async () => {
-      try {
-        setIsGoogleLoading(true);
-        const googleIdToken =
-          response.params.id_token ??
-          response.authentication?.idToken;
-
-        if (!googleIdToken) {
-          alert(
-            "Google authentication succeeded, but no ID token was returned.",
-          );
-          return;
-        }
-
-        const credential = GoogleAuthProvider.credential(googleIdToken);
-        const userCredential = await signInWithCredential(auth, credential);
-        await handleAuthenticatedUser(userCredential.user);
-      } catch (error) {
-        alert( error instanceof Error
-            ? error.message
-            : "Unknown sign-in error",
-        );
-      } finally {
-        setIsGoogleLoading(false);
-      }
-    };
-
-    void loginWithFirebase();
-  }, [response]);
-
-
-  const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
-    const result = await promptAsync();
-    if (result.type === "dismiss" || result.type === "cancel") {
-      setIsGoogleLoading(false);
-    }
-  };
-
   return (
     <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.background,
+        },
+      ]}
     >
       <View style={styles.content}>
         <View style={styles.heroWrapper}>
           <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
-            <Image
-              source={require("@/assets/images/logo.png")}
-              style={styles.logo}
-              contentFit="contain"
-              priority="high"
-            />
+            <MainLogo width={64} height={64} />
+
             {typedText.length > 0 && (
               <Animated.View
                 entering={FadeIn.duration(150)}
@@ -225,7 +221,9 @@ export default function LoginScreen() {
               style={[
                 styles.subtitle,
                 Typography.h2,
-                { color: BrandColors.primary },
+                {
+                  color: BrandColors.primary,
+                },
               ]}
             >
               Log in to your account
@@ -234,7 +232,9 @@ export default function LoginScreen() {
               style={[
                 styles.subtitle,
                 Typography.caption,
-                { color: theme.textMuted },
+                {
+                  color: theme.textMuted,
+                },
               ]}
             >
               Real-time threat detection for every ride.
@@ -246,23 +246,40 @@ export default function LoginScreen() {
               title="Continue with Google"
               isLoading={isGoogleLoading}
               onPress={handleGoogleSignIn}
-              disabled={!request || isGoogleLoading}
+              disabled={isGoogleLoading}
             />
           </View>
 
           <View style={styles.legalContainer}>
-            <ThemedText style={[styles.legalText, { color: theme.textMuted }]}>
+            <ThemedText
+              style={[
+                styles.legalText,
+                {
+                  color: theme.textMuted,
+                },
+              ]}
+            >
               By continuing, you agree to our{" "}
               <ThemedText
                 onPress={() => router.push("/settings/terms")}
-                style={[styles.legalLink, { color: BrandColors.accent }]}
+                style={[
+                  styles.legalLink,
+                  {
+                    color: BrandColors.accent,
+                  },
+                ]}
               >
                 Terms of service
               </ThemedText>
-              {" and "}
+              {"\n and "}
               <ThemedText
                 onPress={() => router.push("/settings/privacy")}
-                style={[styles.legalLink, { color: BrandColors.accent }]}
+                style={[
+                  styles.legalLink,
+                  {
+                    color: BrandColors.accent,
+                  },
+                ]}
               >
                 Privacy Policy
               </ThemedText>
@@ -310,6 +327,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginLeft: -15,
+    marginTop: 25,
     marginRight: 15,
     zIndex: 1,
   },
@@ -330,7 +348,7 @@ const styles = StyleSheet.create({
     gap: Spacing.four,
   },
   textGroup: {
-    gap: Spacing.two,
+    gap: Spacing.one,
     alignItems: "center",
   },
   mainTitle: {
@@ -348,7 +366,7 @@ const styles = StyleSheet.create({
   },
   buttonGroup: {
     width: "100%",
-    paddingTop: Spacing.one,
+    paddingTop: Spacing.half,
   },
   legalContainer: {
     alignItems: "center",

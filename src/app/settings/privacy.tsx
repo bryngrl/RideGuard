@@ -88,7 +88,10 @@ function Subsection({ title, children }: SubsectionProps) {
 
 export default function PrivacyScreen() {
   return (
-    <PageLayout title="Privacy Policy">
+    <PageLayout
+      title="Privacy Policy"
+      contentStyle={{ paddingTop: Spacing.four }}
+    >
       <Section title="I. Overview">
         <Paragraph>
           This Privacy Policy explains what information RideGuard collects, why,

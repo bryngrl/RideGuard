@@ -1,17 +1,19 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
+
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
 import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { submitProfile } from "@/services/api";
+import { ProfilePayload, submitProfile } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function RegisterStepThreeScreen() {
   const router = useRouter();
@@ -20,7 +22,6 @@ export default function RegisterStepThreeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
-  const [isSkippedAlertVisible, setIsSkippedAlertVisible] = useState(false);
 
   const [contactNameError, setContactNameError] = useState("");
   const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
@@ -33,21 +34,24 @@ export default function RegisterStepThreeScreen() {
   );
 
   const executeSubmission = async (
-    includeEmergencyContact: boolean,
+    validateEmergencyContact: boolean,
   ): Promise<boolean> => {
     setContactNameError("");
     setEmergencyPhoneError("");
     setRelationshipError("");
 
-    const payload: any = {
+    const payload: ProfilePayload = {
       first_name: store.firstName.trim(),
       last_name: store.lastName.trim(),
       phone_number: `+63${store.phone.trim().replace(/^0/, "")}`,
       vehicle: store.vehicleName.trim(),
       plate_number: store.plateNumber.trim(),
+      color: store.color.trim(),
     };
 
-    if (includeEmergencyContact) {
+    // Only validate emergency contact when the user has chosen
+    // to submit emergency contact information.
+    if (validateEmergencyContact) {
       let isValid = true;
 
       if (!store.contactName.trim()) {
@@ -58,7 +62,7 @@ export default function RegisterStepThreeScreen() {
       if (!store.emergencyPhone.trim()) {
         setEmergencyPhoneError("Please enter a phone number.");
         isValid = false;
-      } else if (!/^9\d{9}$/.test(store.emergencyPhone)) {
+      } else if (!/^9\d{9}$/.test(store.emergencyPhone.trim())) {
         setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
         isValid = false;
       }
@@ -68,12 +72,17 @@ export default function RegisterStepThreeScreen() {
         isValid = false;
       }
 
-      if (!isValid) return false;
+      if (!isValid) {
+        return false;
+      }
 
+      // Only add emergency contact fields after validation succeeds.
       payload.contact_name = store.contactName.trim();
+
       payload.emergency_phone_number = `+63${store.emergencyPhone
         .trim()
         .replace(/^0/, "")}`;
+
       payload.relationship = store.relationship.trim();
     }
 
@@ -81,37 +90,42 @@ export default function RegisterStepThreeScreen() {
 
     try {
       setIsLoading(true);
-      console.log("Getting Firebase Auth...");
 
       const auth = getAuth();
       const user = auth.currentUser;
 
-      console.log("Current Firebase User:", user?.uid);
-
       if (!user) {
-        console.log("ERROR: No authenticated user found");
         Alert.alert(
           "Auth Error",
           "You must be signed in to complete registration.",
         );
+
         return false;
       }
 
       const firebaseToken = await user.getIdToken();
-      const response = await submitProfile(payload, firebaseToken);
 
-      store.resetForm();
+      await submitProfile(payload, firebaseToken);
 
       return true;
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
+
       Alert.alert("Error", error.message || "Failed to submit profile.");
+
       return false;
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handleSubmit = async () => {
+    const success = await executeSubmission(true);
+
+    if (success) {
+      router.replace("/permission");
+    }
+  };
   const handleSkipPress = () => {
     if (!isLoading) {
       setIsSkipAlertVisible(true);
@@ -124,7 +138,7 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(false);
 
     if (success) {
-      setIsSkippedAlertVisible(true);
+      router.replace("/permission");
     }
   };
 
@@ -147,11 +161,7 @@ export default function RegisterStepThreeScreen() {
           </View>
 
           <View style={styles.logoContainer}>
-            <Image
-              source={require("@/assets/images/Primary-Icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-            />
+            <MainLogo width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -172,6 +182,7 @@ export default function RegisterStepThreeScreen() {
           <View style={styles.formContainer}>
             <CustomTextInput
               label="Contact Name"
+              required
               value={store.contactName}
               error={contactNameError}
               onChangeText={(text) => {
@@ -183,26 +194,20 @@ export default function RegisterStepThreeScreen() {
 
             <CustomTextInput
               label="Phone Number"
+              required
+              prefix="+63"
               keyboardType="phone-pad"
               value={store.emergencyPhone}
               error={emergencyPhoneError}
               maxLength={10}
               onChangeText={(text) => {
                 const digitsOnly = text.replace(/\D/g, "");
-                store.updateProfile({ emergencyPhone: digitsOnly });
+                const formattedPhone = digitsOnly.replace(/^0+/, "");
+
+                store.updateProfile({ emergencyPhone: formattedPhone });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
-              leftIcon={
-                <Text
-                  style={[
-                    Typography.input,
-                    { color: theme.textMuted, fontWeight: "600" },
-                  ]}
-                >
-                  +63
-                </Text>
-              }
             />
 
             <View style={styles.relationshipDropdown}>
@@ -210,6 +215,7 @@ export default function RegisterStepThreeScreen() {
                 <View pointerEvents="none">
                   <CustomTextInput
                     label="Relationship"
+                    required
                     value={store.relationship}
                     error={relationshipError}
                     placeholder="Select relationship"
@@ -282,7 +288,7 @@ export default function RegisterStepThreeScreen() {
                 variant="ghost"
                 fullWidth={false}
                 leftIcon={
-                  <Ionicons name="chevron-back" size={24} color={theme.text} />
+                  <Ionicons name="chevron-back" size={16} color={theme.text} />
                 }
                 textStyle={{ color: theme.text }}
                 onPress={() => router.back()}
@@ -296,9 +302,7 @@ export default function RegisterStepThreeScreen() {
                 fullWidth={false}
                 isLoading={isLoading}
                 style={{ width: "48%" }}
-                onPress={
-                  hasAnyInput ? () => executeSubmission(true) : handleSkipPress
-                }
+                onPress={hasAnyInput ? handleSubmit : handleSkipPress}
               />
             </View>
           </View>
@@ -309,9 +313,9 @@ export default function RegisterStepThreeScreen() {
         visible={isSkipAlertVisible}
         type="warning"
         title="Skip emergency contact?"
-        description="They'll get an SOS text with your location if you trigger an alert or if an attack is detected."
+        description="You can add one anytime in Settings, but SOS alerts won't reach anyone personal until you do."
         primaryButtonText="Add now"
-        secondaryButtonText="Skip now"
+        secondaryButtonText="Skip anyway"
         primaryButtonVariant="primary"
         secondaryButtonVariant="ghost"
         onPrimaryPress={handleAddContact}
@@ -319,21 +323,6 @@ export default function RegisterStepThreeScreen() {
         onClose={handleAddContact}
         closeOnBackdropPress={!isLoading}
         isLoading={isLoading}
-      />
-      <SweetAlert
-        visible={isSkippedAlertVisible}
-        type="success"
-        title="Emergency contact skipped"
-        description="You can add an emergency contact later from your account settings."
-        primaryButtonText="Continue"
-        onPrimaryPress={() => {
-          setIsSkippedAlertVisible(false);
-          router.replace("/permission");
-        }}
-        onClose={() => {
-          setIsSkippedAlertVisible(false);
-          router.replace("/permission");
-        }}
       />
     </>
   );
@@ -367,7 +356,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: "auto",
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.two,
   },
   relationshipDropdown: {
     position: "relative",

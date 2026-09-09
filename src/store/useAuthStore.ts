@@ -1,17 +1,16 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 interface RegistrationState {
-  // Step 1
   lastName: string;
   firstName: string;
   phone: string;
 
-  // reg 2
   vehicleName: string;
   plateNumber: string;
   color: string;
 
-  // reg 3 (Emergency Contact)
   contactName: string;
   emergencyPhone: string;
   relationship: string;
@@ -20,7 +19,7 @@ interface RegistrationState {
   resetForm: () => void;
 }
 
-export const useAuthStore = create<RegistrationState>((set) => ({
+const initialState = {
   lastName: "",
   firstName: "",
   phone: "",
@@ -30,19 +29,25 @@ export const useAuthStore = create<RegistrationState>((set) => ({
   contactName: "",
   emergencyPhone: "",
   relationship: "",
+};
 
-  updateProfile: (data) => set((state) => ({ ...state, ...data })),
+export const useAuthStore = create<RegistrationState>()(
+  persist(
+    (set) => ({
+      ...initialState,
 
-  resetForm: () =>
-    set({
-      lastName: "",
-      firstName: "",
-      phone: "",
-      vehicleName: "",
-      plateNumber: "",
-      color: "",
-      contactName: "",
-      emergencyPhone: "",
-      relationship: "",
+      updateProfile: (data) =>
+        set((state) => ({
+          ...state,
+          ...data,
+        })),
+
+      resetForm: () => set(initialState),
     }),
-}));
+    {
+      name: "rideguard-registration-storage",
+
+      storage: createJSONStorage(() => AsyncStorage),
+    },
+  ),
+);

@@ -69,7 +69,10 @@ function Bullet({ children }: { children: ReactNode }) {
 
 export default function TermsScreen() {
   return (
-    <PageLayout title="Terms of Service">
+    <PageLayout
+      title="Terms of Service"
+      contentStyle={{ paddingTop: Spacing.four }}
+    >
       <Section title="I. Acceptance of Terms">
         <Paragraph>
           By creating an account or using Rideguard, you agree to be bound by

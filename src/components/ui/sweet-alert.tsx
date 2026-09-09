@@ -1,12 +1,13 @@
+import WarningIcon from "@/assets/icons/sweetalerts-icons/primary-warning-icon.svg";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Button, ButtonVariant } from "@/components/ui/button";
 import {
-    BorderRadius,
-    BrandColors,
-    Spacing,
-    Typography,
+  BorderRadius,
+  BrandColors,
+  Spacing,
+  Typography,
 } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -126,25 +127,9 @@ export function SweetAlert({
           {/* CONTENT */}
           <View style={styles.content}>
             {/* ICON */}
-            <View
-              style={[
-                styles.iconContainer,
-                {
-                  borderColor: iconColor,
-                },
-              ]}
-            >
+            <View style={styles.iconContainer}>
               {type === "warning" ? (
-                <Text
-                  style={[
-                    styles.warningIcon,
-                    {
-                      color: BrandColors.primary,
-                    },
-                  ]}
-                >
-                  !
-                </Text>
+                <WarningIcon width={48} height={48} />
               ) : (
                 <Ionicons name={getIconName()} size={30} color={iconColor} />
               )}
@@ -182,16 +167,6 @@ export function SweetAlert({
 
           {/* BUTTONS */}
           <View style={styles.buttonContainer}>
-            <Button
-              title={primaryButtonText}
-              variant={primaryButtonVariant}
-              size="md"
-              fullWidth={false}
-              isLoading={isLoading}
-              onPress={onPrimaryPress}
-              style={styles.primaryButton}
-            />
-
             {secondaryButtonText && (
               <Button
                 title={secondaryButtonText}
@@ -205,10 +180,25 @@ export function SweetAlert({
                   {
                     borderWidth: 0,
                     borderColor: "transparent",
+                    paddingHorizontal: Spacing.two,
                   },
                 ]}
               />
             )}
+            <Button
+              title={primaryButtonText}
+              variant={primaryButtonVariant}
+              size="md"
+              fullWidth={false}
+              isLoading={isLoading}
+              onPress={onPrimaryPress}
+              style={[
+                styles.primaryButton,
+                {
+                  paddingHorizontal: Spacing.two,
+                },
+              ]}
+            />
           </View>
         </Pressable>
       </Pressable>
@@ -236,18 +226,9 @@ const styles = StyleSheet.create({
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 32,
-    borderWidth: 5,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: Spacing.three,
-  },
-
-  warningIcon: {
-    fontSize: 32,
-    fontWeight: "700",
-    lineHeight: 52,
-    textAlign: "center",
   },
 
   textContainer: {

@@ -10,11 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 
-import {
-  BorderRadius,
-  Spacing,
-  Typography
-} from "@/constants/theme";
+import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 export interface GoogleButtonProps {
@@ -74,7 +70,7 @@ export function GoogleButton({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    height: 50,
+    height: 40,
     borderRadius: BorderRadius.full,
     borderWidth: 1,
     alignItems: "center",

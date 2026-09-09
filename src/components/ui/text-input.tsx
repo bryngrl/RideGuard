@@ -21,6 +21,9 @@ export interface CustomTextInputProps extends RNTextInputProps {
   required?: boolean;
   error?: string;
   hint?: string;
+
+  prefix?: string;
+
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
   isPassword?: boolean;
@@ -36,6 +39,9 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       error,
       required = false,
       hint,
+
+      prefix,
+
       leftIcon,
       rightIcon,
       isPassword = false,
@@ -62,10 +68,15 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               styles.label,
               { color: hasError ? theme.error : theme.text },
               labelStyle,
-              hasError && { color: theme.error },
             ]}
           >
             {label}
+
+            {required && (
+              <Text style={[styles.requiredIndicator, { color: theme.error }]}>
+                {" *"}
+              </Text>
+            )}
           </Text>
         )}
 
@@ -82,6 +93,32 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             },
           ]}
         >
+          {prefix && (
+            <View
+              style={[
+                styles.prefixContainer,
+                {
+                  borderRightColor: hasError
+                    ? theme.error
+                    : isFocused
+                      ? theme.borderFocus
+                      : theme.border,
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.prefixText,
+                  {
+                    color: theme.text,
+                  },
+                ]}
+              >
+                {prefix}
+              </Text>
+            </View>
+          )}
+
           {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
           <RNTextInput
@@ -111,10 +148,6 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               onPress={() => setIsPasswordVisible((prev) => !prev)}
               style={styles.eyeButton}
               hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel={
-                isPasswordVisible ? "Hide password" : "Show password"
-              }
             >
               <Ionicons
                 name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
@@ -202,5 +235,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: Spacing.half,
     marginLeft: Spacing.half,
+  },
+  requiredIndicator: {
+    fontWeight: "700",
+  },
+  prefixContainer: {
+    alignSelf: "stretch",
+    justifyContent: "center",
+    paddingHorizontal: Spacing.three,
+    marginLeft: -Spacing.three,
+    marginRight: Spacing.three,
+    borderRightWidth: 1,
+  },
+
+  prefixText: {
+    ...Typography.input,
+    fontWeight: "600",
   },
 });

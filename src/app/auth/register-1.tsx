@@ -1,18 +1,14 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
 import { CustomTextInput } from "@/components/ui/text-input";
-import {
-  BrandColors,
-  FontFamily,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
+import { BrandColors, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -59,16 +55,12 @@ export default function RegisterScreen() {
             currentStep={1}
             steps={3}
             size={28}
-            containerStyle={{ width: "50%" }}
+            containerStyle={{ width: "70%" }}
           />
         </View>
 
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/Primary-Icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <MainLogo width={64} height={64} />
         </View>
 
         <View style={styles.headerContainer}>
@@ -115,6 +107,7 @@ export default function RegisterScreen() {
           <CustomTextInput
             label="Phone Number"
             required
+            prefix="+63"
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
             value={phone}
@@ -122,23 +115,13 @@ export default function RegisterScreen() {
             maxLength={10}
             onChangeText={(text) => {
               const digitsOnly = text.replace(/\D/g, "");
-              updateProfile({ phone: digitsOnly });
+              const formattedPhone = digitsOnly.replace(/^0+/, "");
+
+              updateProfile({ phone: formattedPhone });
+
               if (phoneError) setPhoneError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
-            leftIcon={
-              <Text
-                style={[
-                  Typography.input,
-                  {
-                    color: theme.textMuted,
-                    fontFamily: FontFamily.geistSemiBold,
-                  },
-                ]}
-              >
-                +63
-              </Text>
-            }
           />
           <View style={styles.buttonContainer}>
             <Button
@@ -146,7 +129,7 @@ export default function RegisterScreen() {
               variant="primary"
               size="md"
               fullWidth={false}
-              style={{ width: "48%", alignSelf: "flex-start" }}
+              style={{ width: "48%" }}
               onPress={handleNextStep}
             />
           </View>
@@ -168,10 +151,6 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: Spacing.three,
   },
-  logo: {
-    width: 60,
-    height: 60,
-  },
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.four,
@@ -183,5 +162,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: "auto",
     paddingTop: Spacing.three,
+    alignItems: "flex-end",
   },
 });

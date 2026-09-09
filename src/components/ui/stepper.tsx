@@ -1,23 +1,26 @@
+// Change the check logo
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import Animated, {
-    useAnimatedStyle,
-    withSpring,
-    withTiming,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 
 import { Colors, Spacing, Typography } from "@/constants/theme";
+import { Ionicons } from "@expo/vector-icons";
 
 interface StepperProps {
   steps?: number;
   currentStep: number;
   size?: number;
-  containerStyle?: StyleProp<ViewStyle>; 
+  containerStyle?: StyleProp<ViewStyle>;
 }
 
 interface StepItemProps {
   stepNumber: number;
   isCompleted: boolean;
   isActive: boolean;
+  isFirstStep: boolean;
   isLastStep: boolean;
   size: number;
 }
@@ -26,21 +29,24 @@ const StepItem = ({
   stepNumber,
   isCompleted,
   isActive,
+  isFirstStep,
   isLastStep,
   size,
 }: StepItemProps) => {
   const circleAnimatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: withTiming(
-        isCompleted || isActive ? Colors.light.primary : Colors.light.border,
+        isCompleted || isActive ? "rgba(26, 43, 76, 0.8)" : Colors.light.border,
         { duration: 300 },
       ),
     };
   });
 
   const lineAnimatedStyle = useAnimatedStyle(() => {
+    const shouldFillLine = isCompleted || (isFirstStep && isActive);
+
     return {
-      width: withTiming(isCompleted ? "100%" : "0%", { duration: 400 }),
+      width: withTiming(shouldFillLine ? "100%" : "0%", { duration: 400 }),
     };
   });
 
@@ -71,11 +77,9 @@ const StepItem = ({
       height: size * 0.5,
       borderBottomWidth: size * 0.07,
       borderRightWidth: size * 0.07,
-      marginTop: -(size * 0.1),
-      marginLeft: size * 0.05,
     },
     stepText: {
-      fontSize: size * 0.45,
+      fontSize: size * 0.65,
     },
   };
 
@@ -110,7 +114,11 @@ const StepItem = ({
               checkmarkAnimatedStyle,
             ]}
           >
-            <View style={[styles.straightCheck, dynamicStyles.straightCheck]} />
+            <Ionicons
+              name="checkmark-sharp"
+              size={size * 0.7}
+              color={Colors.light.textInverse}
+            />
           </Animated.View>
         </Animated.View>
       </View>
@@ -127,7 +135,7 @@ const StepItem = ({
 const Stepper = ({
   steps = 3,
   currentStep,
-  size = 36,
+  size = 28,
   containerStyle,
 }: StepperProps) => {
   const stepArray = Array.from({ length: steps }, (_, i) => i + 1);
@@ -140,6 +148,7 @@ const Stepper = ({
           stepNumber={stepNumber}
           isCompleted={currentStep > stepNumber}
           isActive={currentStep === stepNumber}
+          isFirstStep={index === 0}
           isLastStep={index === stepArray.length - 1}
           size={size}
         />
@@ -153,7 +162,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: Spacing.four,
+    paddingVertical: Spacing.one,
+    paddingBottom: Spacing.five,
   },
   stepContainer: {
     flexDirection: "row",
@@ -176,21 +186,21 @@ const styles = StyleSheet.create({
   },
   stepNumberText: {
     fontFamily: Typography.bodyLarge.fontFamily,
-    color: Colors.light.textMuted,
+    fontWeight: "700",
+    color: Colors.light.textInverse,
   },
   activeStepNumberText: {
     color: Colors.light.textInverse,
   },
   lineBackground: {
     flex: 1,
-    height: 3,
+    height: 2,
     backgroundColor: Colors.light.border,
-    marginHorizontal: -Spacing.one,
     zIndex: 1,
   },
   lineFill: {
     height: "100%",
-    backgroundColor: Colors.light.primary,
+    backgroundColor: "rgba(26, 43, 76, 0.8)",
   },
 });
 

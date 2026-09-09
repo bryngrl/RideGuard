@@ -1,3 +1,4 @@
+import MainLogo from "@/assets/icons/main-logo.svg";
 import { Button } from "@/components/ui/button";
 import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/components/ui/stepper";
@@ -8,7 +9,7 @@ import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export default function RegisterStepTwoScreen() {
   const router = useRouter();
@@ -18,12 +19,10 @@ export default function RegisterStepTwoScreen() {
 
   const [vehicleNameError, setVehicleNameError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
-  const [colorError, setColorError] = useState("");
 
   const handleNextStep = () => {
     setVehicleNameError("");
     setPlateNumberError("");
-    setColorError("");
 
     let isValid = true;
 
@@ -37,10 +36,6 @@ export default function RegisterStepTwoScreen() {
       isValid = false;
     }
 
-    if (!color.trim()) {
-      setColorError("Please enter your vehicle color.");
-      isValid = false;
-    }
     if (!isValid) return;
 
     router.push("/auth/register-3");
@@ -59,11 +54,7 @@ export default function RegisterStepTwoScreen() {
         </View>
 
         <View style={styles.logoContainer}>
-          <Image
-            source={require("@/assets/images/Primary-Icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <MainLogo width={64} height={64} />
         </View>
 
         <View style={styles.headerContainer}>
@@ -83,6 +74,7 @@ export default function RegisterStepTwoScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Vehicle Name"
+            required
             value={vehicleName}
             error={vehicleNameError}
             onChangeText={(text) => {
@@ -94,6 +86,7 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             label="Plate Number"
+            required
             value={plateNumber}
             error={plateNumberError}
             onChangeText={(text) => {
@@ -106,10 +99,8 @@ export default function RegisterStepTwoScreen() {
           <CustomTextInput
             label="Color"
             value={color}
-            error={colorError}
             onChangeText={(text) => {
               updateProfile({ color: text });
-              if (colorError) setColorError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
@@ -119,8 +110,9 @@ export default function RegisterStepTwoScreen() {
               title="Back"
               variant="ghost"
               fullWidth={false}
+              centerTextWithLeftIcon
               leftIcon={
-                <Ionicons name="chevron-back" size={24} color={theme.text} />
+                <Ionicons name="chevron-back" size={16} color={theme.text} />
               }
               textStyle={{ color: theme.text }}
               onPress={() => router.back()}
@@ -132,7 +124,7 @@ export default function RegisterStepTwoScreen() {
               variant="primary"
               size="md"
               fullWidth={false}
-              style={{ width: "48%", alignSelf: "flex-start" }}
+              style={{ width: "48%" }}
               onPress={handleNextStep}
             />
           </View>
@@ -153,10 +145,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
-  },
-  logo: {
-    width: 60,
-    height: 60,
   },
   headerContainer: {
     alignItems: "flex-start",
