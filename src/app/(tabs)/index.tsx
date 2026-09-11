@@ -1,11 +1,13 @@
 import SosIcon from "@/assets/icons/home-icons/echo-sos-icon.svg";
 import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
+import SilentNotificationIcon from "@/assets/icons/home-icons/icon-for-sheet.svg";
 import InactiveRideIcon from "@/assets/icons/home-icons/inactive-ride-icon.svg";
 import SecurityIcon from "@/assets/icons/home-icons/security-icon.svg";
 import MainLogo from "@/assets/icons/main-logo.svg";
-
 import InactiveSensorIcon from "@/assets/icons/metal-sensor/inactive-metal-sensor.svg";
 import ActiveSensorIcon from "@/assets/icons/metal-sensor/metal-icon.svg";
+import { RideDetailsSheet } from "@/components/ui/ride-details-sheet";
+import { SweetAlert } from "@/components/ui/sweet-alert";
 
 import SystemReadyIcon from "@/assets/icons/modal-icon/success-icon.svg";
 
@@ -47,6 +49,9 @@ export default function HomeScreen() {
 
   const [isRideActive, setIsRideActive] = useState(false);
 
+  const [showEndRideAlert, setShowEndRideAlert] = useState(false);
+  const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
+
   // Temporary frontend states
   const isCameraConnected = true;
   const isMetalSensorConnected = true;
@@ -71,8 +76,27 @@ export default function HomeScreen() {
     ? colors.textMuted
     : colors.textInactive;
 
-  const handleRidePress = () => {
-    setIsRideActive((currentState) => !currentState);
+  const handleStartRide = () => {
+    setIsRideActive(true);
+  };
+
+  const handleEndRide = () => {
+    setShowEndRideAlert(true);
+  };
+
+  const handleConfirmEndRide = () => {
+    setIsRideActive(false);
+    setShowEndRideAlert(false);
+    setTimeout(() => {
+      setShowRideDetailsSheet(true);
+    }, 250);
+  };
+  const handleCloseRideDetails = () => {
+    setShowRideDetailsSheet(false);
+  };
+
+  const handleKeepMonitoring = () => {
+    setShowEndRideAlert(false);
   };
 
   return (
@@ -88,7 +112,7 @@ export default function HomeScreen() {
         enableScrollView={true}
         contentContainerStyle={styles.content}
       >
-        {/* ================= HEADER ================= */}
+        {/*   HEADER   */}
         <View style={styles.header}>
           <View style={styles.brand}>
             <MainLogo width={30} height={40} />
@@ -133,7 +157,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ================= RIDE STATUS ================= */}
+        {/*   RIDE STATUS   */}
         <View style={styles.statusSectionWrapper}>
           {/* BACKGROUND GRADIENT */}
           <LinearGradient
@@ -166,7 +190,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* ================= DEVICE CARDS ================= */}
+        {/*DEVICE CARDS  */}
         <View style={styles.deviceCards}>
           {/* CAMERA */}
           <Card
@@ -203,43 +227,87 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* ================= START / END RIDE ================= */}
-        <Button
-          title={isRideActive ? "End Ride" : "Start Ride"}
-          variant={isRideActive ? "danger" : "primary"}
-          size="md"
-          fullWidth
-          onPress={handleRidePress}
-          style={styles.rideButton}
-        />
+        {/*  START RIDE  */}
+        {!isRideActive && (
+          <Button
+            title="Start Ride"
+            variant="primary"
+            size="md"
+            fullWidth
+            onPress={handleStartRide}
+            style={styles.rideButton}
+          />
+        )}
 
-        {/* ================= SYSTEM STATUS ================= */}
-        <View style={styles.systemStatus}>
+        {/*  SYSTEM STATUS  */}
+        {isRideActive ? (
           <View
             style={[
-              styles.systemStatusIcon,
+              styles.silentNotificationCard,
               {
-                backgroundColor: systemStatusIconBackground,
+                backgroundColor: colors.backgroundElement,
+                borderColor: "#C9D6EA",
               },
             ]}
           >
-            <SecurityIcon width={16} height={16} />
+            <View style={styles.silentNotificationIcon}>
+              <SilentNotificationIcon width={20} height={20} />
+            </View>
+
+            <View style={styles.silentNotificationTextContainer}>
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.silentNotificationTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                Silent notifications active
+              </Text>
+
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.silentNotificationDescription,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Alerts will be displayed without sound.
+              </Text>
+            </View>
           </View>
+        ) : (
+          <View style={styles.systemStatus}>
+            <View
+              style={[
+                styles.systemStatusIcon,
+                {
+                  backgroundColor: systemStatusIconBackground,
+                },
+              ]}
+            >
+              <SecurityIcon width={16} height={16} />
+            </View>
 
-          <Text
-            style={[
-              Typography.bodySmall,
-              styles.systemStatusText,
-              {
-                color: systemStatusTextColor,
-              },
-            ]}
-          >
-            {systemStatusText}
-          </Text>
-        </View>
+            <Text
+              style={[
+                Typography.bodySmall,
+                styles.systemStatusText,
+                {
+                  color: systemStatusTextColor,
+                },
+              ]}
+            >
+              {systemStatusText}
+            </Text>
+          </View>
+        )}
 
-        {/* ================= HISTORY ================= */}
+        {/*   RIDE INFORMATION   */}
         <View style={styles.todaySection}>
           <Text
             style={[
@@ -250,27 +318,123 @@ export default function HomeScreen() {
               },
             ]}
           >
-            Today’s rides
+            {isRideActive ? "Current ride" : "Today's rides"}
           </Text>
 
-          <View style={styles.emptyRides}>
-            <InactiveRideIcon width={72} height={72} />
+          {isRideActive ? (
+            <View style={styles.currentRideContainer}>
+              {/* PASSENGER */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Passenger boarded
+                </Text>
 
-            <Text
-              style={[
-                Typography.bodySmall,
-                {
-                  color: colors.textInactive,
-                },
-              ]}
-            >
-              No rides taken today
-            </Text>
-          </View>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Waiting for passenger
+                </Text>
+              </View>
+
+              {/* METAL DETECTION */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Metal detection
+                </Text>
+
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Standby
+                </Text>
+              </View>
+
+              {/* CAMERA */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Camera monitoring
+                </Text>
+
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Active
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyRides}>
+              <InactiveRideIcon width={72} height={72} />
+
+              <Text
+                style={[
+                  Typography.bodySmall,
+                  {
+                    color: colors.textInactive,
+                  },
+                ]}
+              >
+                No rides taken today
+              </Text>
+            </View>
+          )}
         </View>
+        {/*   END RIDE   */}
+        {isRideActive && (
+          <Button
+            title="End Ride"
+            variant="danger"
+            size="md"
+            fullWidth
+            onPress={handleEndRide}
+            style={styles.endRideButton}
+          />
+        )}
       </KeyboardAvoidingWrapper>
 
-      {/* ================= QUICK ACTIONS ================= */}
+      {/*   QUICK ACTIONS   */}
       <View
         style={[
           styles.quickActionsContainer,
@@ -323,8 +487,28 @@ export default function HomeScreen() {
           </Pressable>
         </View>
       </View>
+      <SweetAlert
+        visible={showEndRideAlert}
+        type="warning"
+        showIcon={false}
+        title="End this ride?"
+        description="Safety monitoring will stop, and ride details will be saved to your history."
+        primaryButtonText="End Ride"
+        primaryButtonVariant="primary"
+        secondaryButtonText="Keep Monitoring"
+        secondaryButtonVariant="secondary"
+        buttonBorderRadius={9999}
+        onPrimaryPress={handleConfirmEndRide}
+        onSecondaryPress={handleKeepMonitoring}
+        onClose={handleKeepMonitoring}
+      />
 
-      {/* ================= BOTTOM NAVIGATION ================= */}
+      <RideDetailsSheet
+        visible={showRideDetailsSheet}
+        onClose={handleCloseRideDetails}
+      />
+
+      {/*   BOTTOM NAVIGATION   */}
       <BottomNavigation />
     </View>
   );
@@ -413,11 +597,16 @@ const styles = StyleSheet.create({
 
     flexDirection: "row",
     gap: Spacing.three,
-    marginTop: Spacing.three,
+    marginTop: Spacing.two,
   },
 
   rideButton: {
     marginTop: Spacing.three,
+    borderRadius: BorderRadius.full,
+  },
+  endRideButton: {
+    marginTop: Spacing.three,
+    marginBottom: Spacing.two,
     borderRadius: BorderRadius.full,
   },
 
@@ -513,5 +702,61 @@ const styles = StyleSheet.create({
 
   actionPressed: {
     opacity: 0.75,
+  },
+  silentNotificationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    gap: Spacing.two,
+    marginVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+
+    minHeight: 50,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+  },
+
+  silentNotificationIcon: {
+    width: 32,
+    height: 32,
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  silentNotificationTextContainer: {
+    flex: 1,
+  },
+
+  silentNotificationTitle: {
+    fontWeight: "500",
+  },
+
+  silentNotificationDescription: {
+    marginTop: 1,
+    fontSize: 11,
+  },
+
+  currentRideContainer: {
+    marginTop: Spacing.three,
+  },
+
+  currentRideRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+
+    paddingVertical: Spacing.one,
+  },
+
+  currentRideLabel: {
+    flex: 1,
+  },
+
+  currentRideValue: {
+    flex: 1,
+    textAlign: "right",
+    fontWeight: "500",
   },
 });
