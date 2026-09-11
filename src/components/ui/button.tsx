@@ -103,12 +103,14 @@ export function Button({
       case "danger":
         return {
           container: {
-            backgroundColor: theme.error,
+            backgroundColor: "transparent",
+            borderWidth: 1.5,
+            borderColor: BrandColors.error,
           },
           text: {
-            color: "#FFFFFF",
+            color: BrandColors.error,
           },
-          spinnerColor: "#FFFFFF",
+          spinnerColor: BrandColors.error,
         };
       case "primary":
       default:

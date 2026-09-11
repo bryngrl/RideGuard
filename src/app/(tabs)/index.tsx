@@ -206,7 +206,7 @@ export default function HomeScreen() {
         {/* ================= START / END RIDE ================= */}
         <Button
           title={isRideActive ? "End Ride" : "Start Ride"}
-          variant="primary"
+          variant={isRideActive ? "danger" : "primary"}
           size="md"
           fullWidth
           onPress={handleRidePress}
@@ -475,6 +475,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.one,
+    backgroundColor: "transparent",
   },
 
   sosButton: {
