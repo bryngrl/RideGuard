@@ -340,8 +340,6 @@ const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
   },
 
-  /* ================= HEADER ================= */
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -349,8 +347,6 @@ const styles = StyleSheet.create({
 
     paddingHorizontal: Spacing.two,
     marginBottom: Spacing.half,
-
-    // Keep header above the gradient
     position: "relative",
     zIndex: 10,
     elevation: 10,
@@ -383,37 +379,19 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 20,
   },
-
-  /* ================= STATUS / GRADIENT ================= */
-
   statusSectionWrapper: {
     position: "relative",
-
     marginHorizontal: -Spacing.five,
-
-    // Base stacking context
     zIndex: 1,
   },
 
   statusGradient: {
     position: "absolute",
 
-    /*
-     * Adjust this value to move the
-     * gradient UP or DOWN.
-     *
-     * More negative = moves upward.
-     * Less negative = moves downward.
-     */
     top: -40,
 
     left: 0,
     right: 0,
-
-    /*
-     * Gradient needs extra height because
-     * part of it is moved upward.
-     */
     height: 100,
 
     zIndex: 0,
@@ -422,15 +400,12 @@ const styles = StyleSheet.create({
   statusSection: {
     position: "relative",
 
-    // Card above gradient
     zIndex: 2,
     elevation: 2,
 
     paddingHorizontal: Spacing.five,
     paddingVertical: Spacing.three,
   },
-
-  /* ================= DEVICE CARDS ================= */
 
   deviceCards: {
     position: "relative",
@@ -441,14 +416,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
 
-  /* ================= RIDE BUTTON ================= */
-
   rideButton: {
     marginTop: Spacing.three,
     borderRadius: BorderRadius.full,
   },
-
-  /* ================= SYSTEM STATUS ================= */
 
   systemStatus: {
     flexDirection: "row",
@@ -476,8 +447,6 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
 
-  /* ================= HISTORY ================= */
-
   todaySection: {
     flex: 1,
     minHeight: 86,
@@ -496,8 +465,6 @@ const styles = StyleSheet.create({
 
     paddingBottom: Spacing.two,
   },
-
-  /* ================= QUICK ACTIONS ================= */
 
   quickActionsContainer: {
     paddingHorizontal: Spacing.four,
