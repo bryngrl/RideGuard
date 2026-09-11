@@ -63,7 +63,7 @@ export default function SosScreen() {
   return (
     <PageLayout title="SOS" scrollable={false}>
       <View style={styles.container}>
-        {/* ================= SOS SECTION ================= */}
+        {/*   SOS SECTION   */}
         <View style={styles.sosSection}>
           <View style={styles.sosWrapper}>
             {/* BREATHING PULSE */}
@@ -88,7 +88,7 @@ export default function SosScreen() {
             </Pressable>
           </View>
 
-          {/* ================= EMERGENCY CONTACTS ================= */}
+          {/*   EMERGENCY CONTACTS   */}
           <View style={styles.contactsSection}>
             <View style={styles.avatars}>
               {/* PROFILE IMAGE */}
@@ -104,7 +104,6 @@ export default function SosScreen() {
                 <Text style={styles.initialText}>N</Text>
               </View>
 
-              {/* INITIAL CONTACT */}
               <View style={[styles.avatar, styles.initialAvatar]}>
                 <Text style={styles.initialText}>N</Text>
               </View>
@@ -140,7 +139,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  /* ================= PULSE ================= */
+  /*   PULSE   */
 
   pulseCircle: {
     position: "absolute",
@@ -153,7 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#DCE8F8",
   },
 
-  /* ================= SOS BUTTON ================= */
+  /*   SOS BUTTON   */
 
   sosButton: {
     width: 190,
@@ -191,7 +190,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /* ================= CONTACTS ================= */
+  /*   CONTACTS   */
 
   contactsSection: {
     alignItems: "center",
