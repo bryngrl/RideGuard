@@ -97,7 +97,7 @@ export function BottomNavigation() {
               ]}
               onPress={() => handleNavigation(tab.route)}
             >
-              <Icon width={24} height={24} />
+              <Icon width={16} height={16} />
 
               <Text
                 style={[
@@ -154,5 +154,6 @@ const styles = StyleSheet.create({
   label: {
     ...Typography.bodySmall,
     textAlign: "center",
+    fontWeight: 700,
   },
 });

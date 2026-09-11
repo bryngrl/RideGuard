@@ -25,7 +25,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          Home
+          Settings
         </Text>
 
         {/* Your homepage components will go here */}

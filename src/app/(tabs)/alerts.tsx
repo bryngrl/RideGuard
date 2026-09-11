@@ -25,7 +25,7 @@ export default function HomeScreen() {
             },
           ]}
         >
-          Home
+          Alerts
         </Text>
 
         {/* Your homepage components will go here */}
