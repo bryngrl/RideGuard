@@ -5,9 +5,9 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-
+import { useRouter } from "expo-router";
 import { useEffect } from "react";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import Animated, {
   useAnimatedStyle,
@@ -18,6 +18,8 @@ import Animated, {
 } from "react-native-reanimated";
 
 export default function SosScreen() {
+  const router = useRouter();
+
   const pulseScale = useSharedValue(1);
   const pulseOpacity = useSharedValue(0.35);
 
@@ -60,10 +62,14 @@ export default function SosScreen() {
     };
   });
 
+  const handleSendSOS = () => {
+    router.replace("/sos/countdown");
+  };
+
   return (
     <PageLayout title="SOS" scrollable={false}>
       <View style={styles.container}>
-        {/*   SOS SECTION   */}
+        {/* SOS SECTION */}
         <View style={styles.sosSection}>
           <View style={styles.sosWrapper}>
             {/* BREATHING PULSE */}
@@ -71,6 +77,7 @@ export default function SosScreen() {
 
             {/* SOS BUTTON */}
             <Pressable
+              onPress={handleSendSOS}
               style={({ pressed }) => [
                 styles.sosButton,
                 pressed && styles.sosButtonPressed,
@@ -88,10 +95,9 @@ export default function SosScreen() {
             </Pressable>
           </View>
 
-          {/*   EMERGENCY CONTACTS   */}
+          {/* EMERGENCY CONTACTS */}
           <View style={styles.contactsSection}>
             <View style={styles.avatars}>
-              {/* PROFILE IMAGE */}
               <Image
                 source={{
                   uri: "https://i.pravatar.cc/150?img=47",
@@ -99,7 +105,6 @@ export default function SosScreen() {
                 style={styles.avatar}
               />
 
-              {/* INITIAL CONTACT */}
               <View style={[styles.avatar, styles.initialAvatar]}>
                 <Text style={styles.initialText}>N</Text>
               </View>
@@ -126,7 +131,6 @@ const styles = StyleSheet.create({
 
   sosSection: {
     flex: 1,
-
     alignItems: "center",
     justifyContent: "center",
   },
@@ -134,45 +138,31 @@ const styles = StyleSheet.create({
   sosWrapper: {
     width: 230,
     height: 230,
-
     alignItems: "center",
     justifyContent: "center",
   },
 
-  /*   PULSE   */
-
   pulseCircle: {
     position: "absolute",
-
     width: 210,
     height: 210,
-
     borderRadius: BorderRadius.full,
-
     backgroundColor: "#DCE8F8",
   },
-
-  /*   SOS BUTTON   */
 
   sosButton: {
     width: 190,
     height: 190,
-
     alignItems: "center",
     justifyContent: "center",
-
     gap: Spacing.two,
-
     borderRadius: BorderRadius.full,
-
     backgroundColor: BrandColors.primary,
-
     zIndex: 2,
   },
 
   sosButtonPressed: {
     opacity: 0.9,
-
     transform: [
       {
         scale: 0.97,
@@ -190,31 +180,23 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  /*   CONTACTS   */
-
   contactsSection: {
     alignItems: "center",
-
     marginTop: Spacing.seven,
   },
 
   avatars: {
     flexDirection: "row",
     alignItems: "center",
-
     justifyContent: "center",
-
     marginBottom: Spacing.three,
   },
 
   avatar: {
     width: 38,
     height: 38,
-
     borderRadius: BorderRadius.full,
-
     marginHorizontal: -4,
-
     borderWidth: 2,
     borderColor: BrandColors.secondary,
   },
@@ -222,22 +204,18 @@ const styles = StyleSheet.create({
   initialAvatar: {
     alignItems: "center",
     justifyContent: "center",
-
     backgroundColor: BrandColors.primary,
   },
 
   initialText: {
     color: BrandColors.secondary,
-
     fontSize: 14,
     fontWeight: "600",
   },
 
   contactsDescription: {
     textAlign: "center",
-
     lineHeight: 20,
-
     color: BrandColors.primary,
   },
 });
