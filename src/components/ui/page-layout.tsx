@@ -32,6 +32,8 @@ interface PageLayoutProps {
 
   dividerColor?: string;
   headerTextColor?: string;
+
+  rightAction?: ReactNode;
 }
 
 export function PageLayout({
@@ -46,6 +48,7 @@ export function PageLayout({
   backgroundColor,
   dividerColor,
   headerTextColor,
+  rightAction,
 }: PageLayoutProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -156,8 +159,8 @@ export function PageLayout({
           {title}
         </Text>
 
-        {/* RIGHT SPACER */}
-        <View style={styles.rightSpacer} />
+        {/* RIGHT ACTION */}
+        <View style={styles.rightAction}>{rightAction}</View>
       </View>
 
       {/* DIVIDER */}
@@ -248,5 +251,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     paddingTop: Spacing.three,
     paddingBottom: Spacing.four,
+  },
+
+  rightAction: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });
