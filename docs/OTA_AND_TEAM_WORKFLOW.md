@@ -138,6 +138,46 @@ The app normally downloads an update when it starts. The update is applied on th
 
 Never send an untested update directly to `production`.
 
+## Creating a development build
+
+Use a development build when working on the app locally, especially when Expo Go does not include a native package used by the project.
+
+You can create your own development build without overwriting an existing team build in EAS. Each build is stored as a separate build record. You do not need to change `app.json`, `eas.json`, or the app version for a personal development build.
+
+For Android:
+
+```powershell
+npx.cmd eas-cli@latest build --profile development --platform android --message "Your name development build"
+```
+
+For iOS:
+
+```powershell
+npx.cmd eas-cli@latest build --profile development --platform ios --message "Your name development build"
+```
+
+An iOS device build requires access to the team's Apple signing credentials and a registered device.
+
+When the build finishes:
+
+1. Open the build link shown by EAS.
+2. Install the build on your device or emulator.
+3. Start the development server:
+
+```powershell
+npx.cmd expo start --dev-client
+```
+
+Open RideGuard on the device and connect it to the development server. Keep the computer and device on the same network. If the device cannot connect, try:
+
+```powershell
+npx.cmd expo start --dev-client --tunnel
+```
+
+The Android package name and iOS bundle identifier are shared by the team. Installing another RideGuard development build on the same device may replace the copy already installed there, but it does not delete or overwrite builds stored in EAS.
+
+Create another development build after changing native packages or native configuration. For JavaScript and TypeScript changes, keep using the installed development build and restart the development server.
+
 ## OTA update or new build?
 
 Use this quick rule:
