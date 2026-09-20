@@ -11,7 +11,7 @@ export default function TestScanActiveScreen() {
   const theme = useTheme();
 
   const handleBack = () => {
-    router.replace("/metal-sensor/index");
+    router.replace("/metal-sensor");
   };
 
   useEffect(() => {
