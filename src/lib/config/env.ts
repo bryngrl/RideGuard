@@ -1,6 +1,8 @@
 // for more information, see: https://zod.dev/packages/zod
 import * as z from "zod";
 
+const hostnameSchema = z.string().trim().regex(z.regexes.hostname);
+
 const envSchema = z.object({
   FIREBASE_PROJECT_ID: z
     .string()
@@ -12,9 +14,9 @@ const envSchema = z.object({
 
   FIREBASE_API_KEY: z.string().trim().min(1).startsWith("AIza"),
 
-  FIREBASE_AUTH_DOMAIN: z.hostname(),
+  FIREBASE_AUTH_DOMAIN: hostnameSchema,
 
-  FIREBASE_STORAGE_BUCKET: z.hostname(),
+  FIREBASE_STORAGE_BUCKET: hostnameSchema,
 
   FIREBASE_MESSAGING_SENDER_ID: z.string().trim().regex(/^\d+$/),
 
