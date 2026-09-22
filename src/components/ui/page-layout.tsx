@@ -23,6 +23,7 @@ interface PageLayoutProps {
 
   scrollable?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  contentFlush?: boolean;
 
   footer?: ReactNode;
   footerStyle?: StyleProp<ViewStyle>;
@@ -42,6 +43,7 @@ export function PageLayout({
   onBack,
   scrollable = true,
   contentStyle,
+  contentFlush = false,
   footer,
   footerStyle,
   showBackButton = true,
@@ -53,9 +55,14 @@ export function PageLayout({
   const theme = useTheme();
   const router = useRouter();
 
-  const pageBackgroundColor = backgroundColor ?? theme.background;
-  const pageDividerColor = dividerColor ?? theme.border;
-  const pageHeaderTextColor = headerTextColor ?? theme.text;
+  const pageBackgroundColor =
+    backgroundColor ?? theme.background;
+
+  const pageDividerColor =
+    dividerColor ?? theme.border;
+
+  const pageHeaderTextColor =
+    headerTextColor ?? theme.text;
 
   const handleBack = () => {
     // Use custom back behavior if provided
@@ -75,6 +82,12 @@ export function PageLayout({
   };
 
   const renderContent = () => {
+    const contentStyles = [
+      styles.content,
+      contentFlush && styles.flushContent,
+      contentStyle,
+    ];
+
     if (scrollable) {
       return (
         <ScrollView
@@ -85,7 +98,7 @@ export function PageLayout({
             },
           ]}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.content, contentStyle]}
+          contentContainerStyle={contentStyles}
         >
           {children}
         </ScrollView>
@@ -95,12 +108,11 @@ export function PageLayout({
     return (
       <View
         style={[
-          styles.content,
+          contentStyles,
           styles.nonScrollableContent,
           {
             backgroundColor: pageBackgroundColor,
           },
-          contentStyle,
         ]}
       >
         {children}
@@ -160,7 +172,9 @@ export function PageLayout({
         </Text>
 
         {/* RIGHT ACTION */}
-        <View style={styles.rightAction}>{rightAction}</View>
+        <View style={styles.rightAction}>
+          {rightAction}
+        </View>
       </View>
 
       {/* DIVIDER */}
@@ -241,6 +255,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.five,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.five,
+  },
+  flushContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
   },
 
   nonScrollableContent: {

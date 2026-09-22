@@ -30,6 +30,8 @@ export interface CustomTextInputProps extends RNTextInputProps {
   containerStyle?: StyleProp<ViewStyle>;
   inputStyle?: StyleProp<TextStyle>;
   labelStyle?: StyleProp<TextStyle>;
+  inputWrapperStyle?: StyleProp<ViewStyle>;
+  prefixStyle?: StyleProp<TextStyle>;
 }
 
 export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
@@ -48,6 +50,8 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       containerStyle,
       inputStyle,
       labelStyle,
+      inputWrapperStyle,
+      prefixStyle,
       onFocus,
       onBlur,
       ...rest
@@ -66,14 +70,23 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           <Text
             style={[
               styles.label,
-              { color: hasError ? theme.error : theme.text },
+              {
+                color: hasError ? theme.error : theme.text,
+              },
               labelStyle,
             ]}
           >
             {label}
 
             {required && (
-              <Text style={[styles.requiredIndicator, { color: theme.error }]}>
+              <Text
+                style={[
+                  styles.requiredIndicator,
+                  {
+                    color: theme.error,
+                  },
+                ]}
+              >
                 {" *"}
               </Text>
             )}
@@ -91,6 +104,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
                   ? theme.borderFocus
                   : theme.border,
             },
+            inputWrapperStyle,
           ]}
         >
           {prefix && (
@@ -110,8 +124,9 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
                 style={[
                   styles.prefixText,
                   {
-                    color: theme.text,
+                    color: theme.textMuted,
                   },
+                  prefixStyle,
                 ]}
               >
                 {prefix}
@@ -168,12 +183,27 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               color={theme.error}
               style={styles.errorIcon}
             />
-            <Text style={[styles.errorText, { color: theme.error }]}>
+
+            <Text
+              style={[
+                styles.errorText,
+                {
+                  color: theme.error,
+                },
+              ]}
+            >
               {error}
             </Text>
           </View>
         ) : hint ? (
-          <Text style={[styles.hintText, { color: theme.textSecondary }]}>
+          <Text
+            style={[
+              styles.hintText,
+              {
+                color: theme.textSecondary,
+              },
+            ]}
+          >
             {hint}
           </Text>
         ) : null}
@@ -250,6 +280,6 @@ const styles = StyleSheet.create({
 
   prefixText: {
     ...Typography.input,
-    fontWeight: "600",
+    fontWeight: "400",
   },
 });

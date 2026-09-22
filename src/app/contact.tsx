@@ -1,13 +1,14 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
 import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
 import { EmergencyContactList } from "@/components/contacts/emergency-contact-list";
+import { NotificationSheet } from "@/components/ui/notification-sheet";
 import { PageLayout } from "@/components/ui/page-layout";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import type { EmergencyContact } from "@/types/emergency-contact";
+import { Ionicons } from "@expo/vector-icons";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 export default function ContactScreen() {
   const colors = useTheme();
@@ -40,11 +41,30 @@ export default function ContactScreen() {
   const handleAddContact = () => {
     router.push("/contact-pages/add-contact");
   };
+  const { notification, message } = useLocalSearchParams<{
+    notification?: "success" | "error";
+    message?: string;
+  }>();
+
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    if (notification && message) {
+      setShowNotification(true);
+    }
+  }, [notification, message]);
+
+  const handleNotificationHide = () => {
+    setShowNotification(false);
+
+    router.replace("/contact");
+  };
 
   return (
     <PageLayout
       title="Emergency contacts"
       scrollable={false}
+      contentFlush
       rightAction={
         <Pressable
           onPress={handleAddContact}
@@ -56,11 +76,20 @@ export default function ContactScreen() {
         </Pressable>
       }
     >
-      {contacts.length === 0 ? (
-        <EmptyContacts colors={colors} />
-      ) : (
-        <EmergencyContactList contacts={contacts} />
-      )}
+      <NotificationSheet
+        visible={showNotification}
+        message={message ?? ""}
+        type={notification === "error" ? "error" : "success"}
+        onHide={handleNotificationHide}
+      />
+
+      <View style={styles.contactContent}>
+        {contacts.length === 0 ? (
+          <EmptyContacts colors={colors} />
+        ) : (
+          <EmergencyContactList contacts={contacts} />
+        )}
+      </View>
     </PageLayout>
   );
 }
@@ -129,5 +158,9 @@ const styles = StyleSheet.create({
     maxWidth: 280,
     marginTop: Spacing.two,
     textAlign: "center",
+  },
+  contactContent: {
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.five,
   },
 });
