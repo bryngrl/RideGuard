@@ -21,9 +21,14 @@ const firebaseConfig = {
 const isFirebaseInitialized = getApps().length > 0;
 
 const app: FirebaseApp = isFirebaseInitialized ? getApp() : initializeApp(firebaseConfig);
-
+/**
+ * This line of code:
+ * Use initializeAuth() once to configure React Native persistence.
+ * Use getAuth() afterward to retrieve that configured instance.
+ * Both return a Firebase Auth instance
+ */
 export const firebaseAuth: Auth = isFirebaseInitialized
   ? getAuth(app)
   : initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage),
+      persistence: getReactNativePersistence(AsyncStorage), // Configures AsyncStorage as the place where login sessions are saved.
     });

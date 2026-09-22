@@ -25,6 +25,10 @@ export function LoginScreen({ onTermsPress, onPrivacyPress }: LoginScreenProps) 
   const [typedText] = useState('');
   const [showCursor] = useState(true);
   const { signIn: handleGoogleSignIn, isLoading: isGoogleLoading } = useGoogleSignIn();
+  //  signIn,
+  // isLoading,
+  // error,
+  // clearError,
   const onGoogleSignIn = () => void handleGoogleSignIn();
 
   return (

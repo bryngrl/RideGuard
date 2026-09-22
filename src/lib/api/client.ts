@@ -1,14 +1,14 @@
-import axios from "axios";
+import axios from 'axios';
 
-import { env } from "@/lib/config/env";
-import { firebaseAuth } from "@/lib/firebase";
-import { TEN_SECONDS_IN_MILLISECONDS } from "@/shared/constants/time.contants";
+import { env } from '@/lib/config/env';
+import { firebaseAuth } from '@/lib/firebase';
+import { TEN_SECONDS_IN_MILLISECONDS } from '@/shared/constants/time.constants';
 
 export const apiClient = axios.create({
   baseURL: env.API_BASE_URL,
   timeout: TEN_SECONDS_IN_MILLISECONDS,
   headers: {
-    Accept: "application/json",
+    Accept: 'application/json',
   },
 });
 
@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(async (config) => {
     // Firebase automatically refreshes the token when necessary.
     const firebaseToken = await user.getIdToken();
 
-    config.headers.set("Authorization", `Bearer ${firebaseToken}`);
+    config.headers.set('Authorization', `Bearer ${firebaseToken}`);
   }
 
   return config;

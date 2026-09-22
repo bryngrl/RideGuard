@@ -1,31 +1,3 @@
-src/
-│
-├── app/
-│ ├── \_layout.tsx
-│ ├── index.tsx
-│ │
-│ ├── (auth)/
-│ │ ├── \_layout.tsx
-│ │ ├── login.tsx
-│ │ └── register.tsx
-│ │
-│ ├── (tabs)/
-│ │ ├── \_layout.tsx
-│ │ ├── home.tsx
-│ │ ├── store.tsx
-│ │ ├── wallet.tsx
-│ │ └── profile.tsx
-│ │
-│ └── store/
-│ └── [itemId].tsx
-│
-├── features/
-│ ├── auth/
-│ ├── store/
-│ ├── wallet/
-│ └── profile/
-│
-├── shared/
-├── lib/
-├── store/
-└── types/
+## Sample
+
+https://medium.com/@dhidroid/best-practices-for-structuring-your-react-native-projects-1f9552a6c781
