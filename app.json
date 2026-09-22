@@ -8,7 +8,12 @@
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -21,7 +26,10 @@
       "@react-native-google-signin/google-signin"
     ],
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "android": {
       "package": "com.rideguard.app",
@@ -32,7 +40,8 @@
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      }
+      },
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "output": "static",
@@ -41,6 +50,9 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f9a4ebad-effb-4360-b2a0-556cc956ff63"
     },
     "extra": {
       "router": {},

@@ -27,6 +27,7 @@
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.2",
     "expo-system-ui": "~57.0.2",
+    "expo-updates": "~57.0.23",
     "expo-web-browser": "~57.0.2",
     "firebase": "^12.17.1",
     "react": "19.2.3",
