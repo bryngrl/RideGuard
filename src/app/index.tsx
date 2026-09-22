@@ -15,10 +15,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import {
-  GoogleSignin,
-  isSuccessResponse,
-} from "@react-native-google-signin/google-signin";
+import { useGoogleSignIn } from "@/features/auth/hooks/use-google-sign-in";
 
 import { ThemedText } from "@/components/themed-text";
 import { GoogleButton } from "@/components/ui/google-button";
@@ -32,23 +29,10 @@ import {
 } from "@/constants/theme";
 
 import { useTheme } from "@/hooks/use-theme";
-import { auth } from "@/lib/firebase";
-import { checkIsOldUser } from "@/services/api";
-
-import {
-  GoogleAuthProvider,
-  onAuthStateChanged,
-  signInWithCredential,
-  User,
-} from "firebase/auth";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 const FULL_BRAND_NAME = "ideguard";
-
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-});
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -58,57 +42,11 @@ export default function LoginScreen() {
   const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.28);
 
   const [typedText, setTypedText] = useState("");
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
-  // authed user
-  const handleAuthenticatedUser = async (user: User) => {
-    const firebaseToken = await user.getIdToken();
+  const { signIn: handleGoogleSignIn, isLoading: isGoogleLoading } =
+    useGoogleSignIn();
 
-    const isOldUser = await checkIsOldUser(firebaseToken);
-
-    if (isOldUser) {
-      router.replace("/(tabs)");
-    } else {
-      router.replace("/auth/register-1");
-    }
-  };
-
-  // google sign in
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsGoogleLoading(true);
-
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-
-      const response = await GoogleSignin.signIn();
-
-      if (!isSuccessResponse(response)) {
-        return;
-      }
-
-      const googleIdToken = response.data.idToken;
-
-      if (!googleIdToken) {
-        throw new Error(
-          "Google Sign-In succeeded, but no ID token was returned.",
-        );
-      }
-      const credential = GoogleAuthProvider.credential(googleIdToken);
-      const userCredential = await signInWithCredential(auth, credential);
-
-      await handleAuthenticatedUser(userCredential.user);
-    } catch (error) {
-      console.error("Google Sign-In failed:", error);
-
-      alert(error instanceof Error ? error.message : "Google Sign-In failed.");
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
   // animation
   useEffect(() => {
     logoScale.value = withDelay(
@@ -158,27 +96,6 @@ export default function LoginScreen() {
       },
     ],
   }));
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        setIsCheckingAuth(false);
-        return;
-      }
-
-      try {
-        setIsCheckingAuth(true);
-
-        await handleAuthenticatedUser(user);
-      } catch (error) {
-        console.error("Failed to check authenticated user:", error);
-
-        setIsCheckingAuth(false);
-      }
-    });
-
-    return unsubscribe;
-  }, []);
 
   return (
     <SafeAreaView
