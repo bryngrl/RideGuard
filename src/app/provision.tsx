@@ -5,9 +5,9 @@ import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapp
 import { LoadingModal } from "@/components/ui/modal";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import { claimDevice } from "@/features/devices/devices.api";
 import { useTheme } from "@/hooks/use-theme";
-import { auth } from "@/lib/firebase";
-import { claimDevice } from "@/services/api";
+import { firebaseAuth } from "@/lib/firebase";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -46,7 +46,7 @@ export default function ProvisionTokenScreen() {
     }
 
     // check for auth user
-    const user = auth.currentUser;
+    const user = firebaseAuth.currentUser;
 
     if (!user) {
       setAlertState({
@@ -74,9 +74,8 @@ export default function ProvisionTokenScreen() {
         status: "loading",
         message: "Verifying device...",
       });
-      const firebaseToken = await user.getIdToken(true);
 
-      await claimDevice(cleanedId, firebaseToken);
+      await claimDevice(cleanedId);
 
       // Save claimed device
       setMetalDeviceId(cleanedId);

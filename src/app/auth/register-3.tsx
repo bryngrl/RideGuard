@@ -6,12 +6,12 @@ import Stepper from "@/components/ui/stepper";
 import { SweetAlert } from "@/components/ui/sweet-alert";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import { submitProfile } from "@/features/profile/profile.api";
+import type { ProfilePayload } from "@/features/profile/profile.types";
 import { useTheme } from "@/hooks/use-theme";
-import { ProfilePayload, submitProfile } from "@/services/api";
 import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { getAuth } from "firebase/auth";
 import { useState } from "react";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -91,23 +91,7 @@ export default function RegisterStepThreeScreen() {
     try {
       setIsLoading(true);
 
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!user) {
-        Alert.alert(
-          "Auth Error",
-          "You must be signed in to complete registration.",
-        );
-
-        return false;
-      }
-
-      const firebaseToken = await user.getIdToken();
-
-      await submitProfile(payload, firebaseToken);
-
-      return true;
+      return await submitProfile(payload);
     } catch (error: any) {
       console.error("PROFILE SUBMISSION ERROR:", error);
 

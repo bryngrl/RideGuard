@@ -25,63 +25,6 @@ export interface DeviceApiResponse<T = Record<string, unknown>> {
 
 export type DeviceType = "Camera" | "Metal-Detector";
 
-// Profile Creation
-export const submitProfile = async (
-  payload: ProfilePayload,
-  firebaseToken: string,
-) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/profile/personal-info`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${firebaseToken}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const rawResponse = await response.text();
-
-    let data;
-
-    try {
-      data = JSON.parse(rawResponse);
-    } catch {
-      data = { message: rawResponse };
-    }
-    if (!response.ok) {
-      throw new Error(
-        Array.isArray(data.message)
-          ? data.message.join(", ")
-          : data.message || "Failed to submit profile",
-      );
-    }
-
-    return data;
-  } catch (error) {
-    console.error("API Error:", error);
-    throw error;
-  }
-};
-// Is the user already have a data?
-export const checkIsOldUser = async (firebaseToken: string) => {
-  const response = await fetch(`${API_BASE_URL}/auth/is-old-user`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${firebaseToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to check user status.");
-  }
-
-  return data.data;
-};
-
 // claim dev
 export const claimDevice = async (
   deviceId: string,
