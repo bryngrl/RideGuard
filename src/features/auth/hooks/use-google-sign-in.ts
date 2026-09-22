@@ -1,4 +1,4 @@
-import { checkIsOldUser } from "@/features/auth/auth.api";
+import { checkIsOldUser, getAblyToken } from "@/features/auth/auth.api";
 import { firebaseAuth } from "@/lib/firebase";
 import { signInWithGoogle } from "@/lib/google-signin";
 import { useRouter } from "expo-router";
@@ -47,6 +47,9 @@ export function useGoogleSignIn() {
       await signInWithCredential(firebaseAuth, credential);
 
       const isOldUser = await checkIsOldUser();
+      const ablyToken = await getAblyToken();
+
+      console.log("Ably Token:", ablyToken);
 
       // The login screen may have closed while waiting.
       if (!isMountedRef.current) {

@@ -11,3 +11,13 @@ export async function checkIsOldUser(): Promise<boolean> {
       return false;
     });
 }
+
+export async function getAblyToken(): Promise<string> {
+  return apiClient
+    .get<ApiResponse<{ token: string }>>("/auth/ably-token")
+    .then((response) => response.data.data.token)
+    .catch((error) => {
+      console.error("Error fetching Ably token:", error);
+      throw new Error("Failed to fetch Ably token");
+    });
+}

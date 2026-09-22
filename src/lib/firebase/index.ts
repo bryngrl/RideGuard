@@ -1,13 +1,7 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { getApp, getApps, initializeApp, type FirebaseApp } from "firebase/app";
-/*
- *TypeScript does not recognize getReactNativePersistence yet,
- *but Firebase supports it in React Native.
- *We added a custom type for it in src/types/firebase-auth.d.ts.
- */
 import {
   getAuth,
-  getReactNativePersistence,
+  inMemoryPersistence,
   initializeAuth,
   type Auth,
 } from "firebase/auth";
@@ -29,12 +23,12 @@ const app: FirebaseApp = isFirebaseInitialized
   ? getApp()
   : initializeApp(firebaseConfig);
 /**
- * This line of code:
- * Use initializeAuth() once to configure React Native pers                                  hgtance.
- * Both return a Firebase Auth instance
+ * Use initializeAuth() once to configure how the login session is stored.
+ * inMemoryPersistence keeps the auth state in memory only, so closing or
+ * fully reloading the app clears the session and forces a fresh Google login.
  */
 export const firebaseAuth: Auth = isFirebaseInitialized
   ? getAuth(app)
   : initializeAuth(app, {
-      persistence: getReactNativePersistence(AsyncStorage), // Configures AsyncStorage as the place where login sessions are saved.
+      persistence: inMemoryPersistence,
     });

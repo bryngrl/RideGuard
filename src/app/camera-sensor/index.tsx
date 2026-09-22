@@ -5,9 +5,8 @@ import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapp
 import { LoadingModal } from "@/components/ui/modal";
 import { CustomTextInput } from "@/components/ui/text-input";
 import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import { claimDevice } from "@/features/devices/devices.api";
 import { useTheme } from "@/hooks/use-theme";
-import { auth } from "@/lib/firebase";
-import { claimDevice } from "@/services/api";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -50,26 +49,6 @@ export default function ProvisionCameraScreen() {
       return;
     }
 
-    // auth
-    const user = auth.currentUser;
-
-    if (!user) {
-      setAlertState({
-        visible: true,
-        status: "error",
-        message: "You must be signed in to connect a device.",
-      });
-
-      setTimeout(() => {
-        setAlertState((prev) => ({
-          ...prev,
-          visible: false,
-        }));
-      }, 2500);
-
-      return;
-    }
-
     try {
       setIsLoading(true);
 
@@ -79,11 +58,8 @@ export default function ProvisionCameraScreen() {
         message: "Verifying camera...",
       });
 
-      // firebase auth
-      const firebaseToken = await user.getIdToken(true);
-
       // claim camera device
-      await claimDevice(cleanedId, firebaseToken);
+      await claimDevice(cleanedId);
 
       // Save cam dev
       setCameraDeviceId(cleanedId);
