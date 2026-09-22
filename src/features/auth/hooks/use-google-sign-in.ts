@@ -47,9 +47,9 @@ export function useGoogleSignIn() {
       await signInWithCredential(firebaseAuth, credential);
 
       const isOldUser = await checkIsOldUser();
+      console.log("Is Old User:", isOldUser); // REMOVE THIS LINE AFTER TESTING
       const ablyToken = await getAblyToken();
-
-      console.log("Ably Token:", ablyToken);
+      console.log("Ably Token:", JSON.stringify(ablyToken)); // REMOVE THIS LINE AFTER TESTING
 
       // The login screen may have closed while waiting.
       if (!isMountedRef.current) {

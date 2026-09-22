@@ -2,13 +2,13 @@ import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/lib/api/types";
 import { IsOldUserResponse, TokenRequest } from "./auth.types";
 
-export async function checkIsOldUser(): Promise<boolean> {
+export async function checkIsOldUser(): Promise<IsOldUserResponse> {
   return apiClient
     .get<ApiResponse<IsOldUserResponse>>("/auth/is-old-user")
-    .then((response) => response.data.data.isOldUser)
+    .then((response) => response.data.data)
     .catch((error) => {
       console.error("Error checking if user is old:", error);
-      return false;
+      return { isOldUser: false };
     });
 }
 
