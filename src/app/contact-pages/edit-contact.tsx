@@ -8,6 +8,7 @@ import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
 import { Button } from "@/components/ui/button";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { NotificationSheet } from "@/components/ui/notification-sheet";
+import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
 import { PageLayout } from "@/components/ui/page-layout";
 import { CustomTextInput } from "@/components/ui/text-input";
 import {
@@ -100,25 +101,14 @@ export default function EditContactScreen() {
     "success",
   );
 
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+
   const handlePhotoPress = () => {
-    Alert.alert(
-      profileImage ? "Change photo" : "Add photo",
-      "Choose how you want to add a photo.",
-      [
-        {
-          text: "Take photo",
-          onPress: handleTakePhoto,
-        },
-        {
-          text: "Choose from library",
-          onPress: handleChoosePhoto,
-        },
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-      ],
-    );
+    if (isLoading) {
+      return;
+    }
+
+    setShowPhotoOptions(true);
   };
 
   const handleTakePhoto = async () => {
@@ -711,6 +701,12 @@ export default function EditContactScreen() {
         primaryButtonColor={
           activeConfirmation === "delete" ? BrandColors.error : undefined
         }
+      />
+      <PhotoOptionsBottomSheet
+        visible={showPhotoOptions}
+        onClose={() => setShowPhotoOptions(false)}
+        onTakePhoto={handleTakePhoto}
+        onChoosePhoto={handleChoosePhoto}
       />
     </PageLayout>
   );

@@ -13,6 +13,8 @@ import { CustomTextInput } from "@/components/ui/text-input";
 import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
+import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
+
 const RELATIONSHIPS = [
   { label: "Parent", value: "Parent" },
   { label: "Sibling", value: "Sibling" },
@@ -38,21 +40,10 @@ export default function AddContactScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
+
   const handleAddPhoto = () => {
-    Alert.alert("Add photo", "Choose how you want to add a photo.", [
-      {
-        text: "Take photo",
-        onPress: handleTakePhoto,
-      },
-      {
-        text: "Choose from library",
-        onPress: handleChoosePhoto,
-      },
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-    ]);
+    setShowPhotoOptions(true);
   };
 
   const handleTakePhoto = async () => {
@@ -77,7 +68,6 @@ export default function AddContactScreen() {
       setProfileImage(result.assets[0].uri);
     }
   };
-
   const handleChoosePhoto = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
@@ -387,6 +377,12 @@ export default function AddContactScreen() {
           </Pressable>
         </View>
       </View>
+      <PhotoOptionsBottomSheet
+        visible={showPhotoOptions}
+        onClose={() => setShowPhotoOptions(false)}
+        onTakePhoto={handleTakePhoto}
+        onChoosePhoto={handleChoosePhoto}
+      />
     </PageLayout>
   );
 }
