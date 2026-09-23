@@ -1,62 +1,69 @@
-import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, RefreshControl, StyleSheet, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import { ThemedText } from "@/components/themed-text";
+import { Spacing } from "@/constants/theme";
+import { AlertListItem } from "@/features/alerts/components/alert-list-item";
+import { alertKey, useAlerts } from "@/features/alerts/hooks/use-alerts";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function DashboardScreen() {
-  const router = useRouter();
+  const theme = useTheme();
+  const { alerts, isLoading, error, refetch } = useAlerts();
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>basta nasa home kana kuys</Text>
-      <Pressable
-        style={styles.sitemapButton}
-        onPress={() => router.push("/_sitemap")}
-      >
-        <Ionicons name="map-outline" size={22} color="#FFFFFF" />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      edges={["top"]}
+    >
+      <ThemedText type="h1" style={styles.title}>
+        Alerts
+      </ThemedText>
 
-        <Text style={styles.sitemapText}>Open Sitemap</Text>
-      </Pressable>
-    </View>
+      <FlatList
+        data={alerts}
+        keyExtractor={(item) => alertKey(item)}
+        renderItem={({ item }) => <AlertListItem alert={item} />}
+        contentContainerStyle={styles.listContent}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={refetch}
+            tintColor={theme.accent}
+          />
+        }
+        ListEmptyComponent={
+          isLoading ? null : (
+            <ThemedText type="body" themeColor="textMuted" style={styles.empty}>
+              {error ?? "No alerts yet. You're all clear."}
+            </ThemedText>
+          )
+        }
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    paddingHorizontal: Spacing.four,
   },
-
   title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 8,
+    marginTop: Spacing.four,
+    marginBottom: Spacing.three,
   },
-
-  subtitle: {
-    fontSize: 16,
+  listContent: {
+    paddingBottom: Spacing.six,
+    flexGrow: 1,
+  },
+  separator: {
+    height: Spacing.three,
+  },
+  empty: {
     textAlign: "center",
-    marginBottom: 24,
-  },
-
-  sitemapButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-
-    borderRadius: 8,
-    backgroundColor: "#000000",
-  },
-
-  sitemapText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+    marginTop: Spacing.seven,
   },
 });

@@ -14,11 +14,10 @@ export const apiClient = axios.create({
 
 apiClient.interceptors.request.use(async (config) => {
   const user = firebaseAuth.currentUser;
-
   if (user) {
     // Firebase automatically refreshes the token when necessary.
     const firebaseToken = await user.getIdToken();
-
+    console.log("Firebase Token:", firebaseToken); // REMOVE THIS LINE AFTER TESTING
     config.headers.set("Authorization", `Bearer ${firebaseToken}`);
   }
 
