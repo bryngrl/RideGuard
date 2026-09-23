@@ -515,7 +515,7 @@ export default function EditContactScreen() {
                   rightIcon={
                     <Ionicons
                       name={isRelationshipOpen ? "caret-up" : "caret-down"}
-                      size={20}
+                      size={12}
                       color={theme.textMuted}
                     />
                   }
@@ -846,7 +846,7 @@ const styles = StyleSheet.create({
 
   pillInput: {
     borderRadius: BorderRadius.full,
-    // borderColor: "#767676",
+    borderColor: "#ffffffff",
     // backgroundColor: "#d9d9d97d",
   },
 
