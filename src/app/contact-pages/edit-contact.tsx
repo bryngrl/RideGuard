@@ -4,12 +4,13 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
+import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
 import { Button } from "@/components/ui/button";
 import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 import { NotificationSheet } from "@/components/ui/notification-sheet";
-import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
 import { PageLayout } from "@/components/ui/page-layout";
+import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/components/ui/text-input";
 import {
   BorderRadius,
@@ -18,6 +19,7 @@ import {
   Typography,
 } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { LinearGradient } from "expo-linear-gradient";
 
 const RELATIONSHIPS = [
   {
@@ -398,7 +400,7 @@ export default function EditContactScreen() {
 
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.medium,
                 styles.deleteText,
                 {
                   color: BrandColors.error,
@@ -672,7 +674,24 @@ export default function EditContactScreen() {
 
       {/* PAGE CONTENT */}
       <View style={styles.pageContent}>
-        {isEditing ? renderEditForm() : renderPreview()}
+        <LinearGradient
+          colors={["#FFFFFF", "#E5EDFC"]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={styles.pageBackground}
+          pointerEvents="none"
+        />
+
+        <ContactAbstract
+          width="100%"
+          height="65%"
+          style={styles.contactBackground}
+          pointerEvents="none"
+        />
+
+        <View style={styles.pageContentForeground}>
+          {isEditing ? renderEditForm() : renderPreview()}
+        </View>
       </View>
 
       {/* DISCARD / DELETE CONFIRMATION */}
@@ -737,9 +756,26 @@ function formatPhoneNumber(phone: string) {
 const styles = StyleSheet.create({
   pageContent: {
     flex: 1,
+    position: "relative",
     paddingHorizontal: Spacing.five,
     paddingTop: Spacing.five,
     paddingBottom: Spacing.five,
+  },
+
+  pageBackground: {
+    ...StyleSheet.absoluteFill,
+  },
+
+  contactBackground: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+
+  pageContentForeground: {
+    flex: 1,
+    zIndex: 1,
   },
   previewContainer: {
     flex: 1,
@@ -793,9 +829,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
   },
 
-  deleteText: {
-    fontWeight: "600",
-  },
+  deleteText: {},
   editContainer: {
     flex: 1,
     width: "100%",
@@ -857,9 +891,7 @@ const styles = StyleSheet.create({
   cancelText: {
     fontWeight: "600",
   },
-  headerEdit: {
-    fontWeight: "600",
-  },
+  headerEdit: {},
   headerCancel: {
     fontWeight: "600",
   },
