@@ -1,0 +1,19 @@
+node_modules/
+
+# ---- Expo / build output ----
+
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check\*
+
+# ---- Local native build artifacts (regenerated on EAS) ----
+
+android/.gradle/
+android/build/
+android/app/build/
+android/.kotlin/
+ios/build/
+ios/Pods/
+ios/Podfile.lock
