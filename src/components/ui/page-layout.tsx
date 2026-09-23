@@ -23,6 +23,18 @@ interface PageLayoutProps {
 
   scrollable?: boolean;
   contentStyle?: StyleProp<ViewStyle>;
+  contentFlush?: boolean;
+
+  footer?: ReactNode;
+  footerStyle?: StyleProp<ViewStyle>;
+
+  showBackButton?: boolean;
+  backgroundColor?: string;
+
+  dividerColor?: string;
+  headerTextColor?: string;
+
+  rightAction?: ReactNode;
 }
 
 export function PageLayout({
@@ -31,9 +43,26 @@ export function PageLayout({
   onBack,
   scrollable = true,
   contentStyle,
+  contentFlush = false,
+  footer,
+  footerStyle,
+  showBackButton = true,
+  backgroundColor,
+  dividerColor,
+  headerTextColor,
+  rightAction,
 }: PageLayoutProps) {
   const theme = useTheme();
   const router = useRouter();
+
+  const pageBackgroundColor =
+    backgroundColor ?? theme.background;
+
+  const pageDividerColor =
+    dividerColor ?? theme.border;
+
+  const pageHeaderTextColor =
+    headerTextColor ?? theme.text;
 
   const handleBack = () => {
     // Use custom back behavior if provided
@@ -53,12 +82,23 @@ export function PageLayout({
   };
 
   const renderContent = () => {
+    const contentStyles = [
+      styles.content,
+      contentFlush && styles.flushContent,
+      contentStyle,
+    ];
+
     if (scrollable) {
       return (
         <ScrollView
-          style={styles.flex}
+          style={[
+            styles.flex,
+            {
+              backgroundColor: pageBackgroundColor,
+            },
+          ]}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={[styles.content, contentStyle]}
+          contentContainerStyle={contentStyles}
         >
           {children}
         </ScrollView>
@@ -66,7 +106,15 @@ export function PageLayout({
     }
 
     return (
-      <View style={[styles.content, styles.nonScrollableContent, contentStyle]}>
+      <View
+        style={[
+          contentStyles,
+          styles.nonScrollableContent,
+          {
+            backgroundColor: pageBackgroundColor,
+          },
+        ]}
+      >
         {children}
       </View>
     );
@@ -77,50 +125,85 @@ export function PageLayout({
       style={[
         styles.container,
         {
-          backgroundColor: theme.background,
+          backgroundColor: pageBackgroundColor,
         },
       ]}
       edges={["top"]}
     >
       {/* HEADER */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: pageBackgroundColor,
+          },
+        ]}
+      >
         {/* BACK BUTTON */}
-        <Pressable
-          onPress={handleBack}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
-         
-          <Ionicons name="chevron-back" size={16} color={theme.text} />
-        </Pressable>
+        {showBackButton ? (
+          <Pressable
+            onPress={handleBack}
+            style={styles.backButton}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Ionicons
+              name="chevron-back"
+              size={16}
+              color={pageHeaderTextColor}
+            />
+          </Pressable>
+        ) : (
+          <View style={styles.rightSpacer} />
+        )}
+
         {/* PAGE TITLE */}
         <Text
           style={[
             Typography.bodyLarge,
             styles.title,
             {
-              color: theme.text,
+              color: pageHeaderTextColor,
             },
           ]}
           numberOfLines={1}
         >
           {title}
         </Text>
-        {/* RIGHT SPACER FOR CENTERED TITLE */}
-        <View style={styles.rightSpacer} />
+
+        {/* RIGHT ACTION */}
+        <View style={styles.rightAction}>
+          {rightAction}
+        </View>
       </View>
+
       {/* DIVIDER */}
       <View
         style={[
           styles.divider,
           {
-            backgroundColor: theme.border,
+            backgroundColor: pageDividerColor,
           },
         ]}
       />
+
       {/* MAIN CONTENT */}
       {renderContent()}
+
+      {/* OPTIONAL FOOTER */}
+      {footer && (
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: pageBackgroundColor,
+            },
+            footerStyle,
+          ]}
+        >
+          {footer}
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -136,15 +219,18 @@ const styles = StyleSheet.create({
 
   header: {
     height: 52,
+
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+
     paddingHorizontal: Spacing.four,
   },
 
   backButton: {
     width: 40,
     height: 40,
+
     alignItems: "flex-start",
     justifyContent: "center",
   },
@@ -170,8 +256,26 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.five,
     paddingBottom: Spacing.five,
   },
+  flushContent: {
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
 
   nonScrollableContent: {
     flex: 1,
+  },
+
+  footer: {
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.four,
+  },
+
+  rightAction: {
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

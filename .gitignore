@@ -56,3 +56,4 @@ agents/**/*.md
 credentials.json
 
 /credentials
+GEMINI.md

@@ -15,6 +15,11 @@ import Animated, {
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+//!! FORCE TO SITEMAP
+// export default function Page() {
+//   return <Redirect href="/_sitemap" />;
+// }
+
 import {
   GoogleSignin,
   isSuccessResponse,

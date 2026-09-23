@@ -4,7 +4,9 @@
     "slug": "RideGuard",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+
+    "icon": "./assets/images/Logo/official-logo.png",
+
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
@@ -18,7 +20,7 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/Logo/official-logo.png",
           "imageWidth": 76
         }
       ],
@@ -26,10 +28,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "ios": {
-      "icon": "./assets/expo.icon",
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      "icon": "./assets/images/Logo/official-logo.png"
     },
     "android": {
       "package": "com.rideguard.app",
@@ -37,15 +36,16 @@
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
-      },
-      "runtimeVersion": "1.0.0"
+
+        "foregroundImage": "./assets/images/Logo/official-logo.png",
+
+        "monochromeImage": "./assets/images/Logo/official-logo.png"
+      }
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+
+      "favicon": "./assets/images/Logo/official-logo.png"
     },
     "experiments": {
       "typedRoutes": true,

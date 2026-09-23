@@ -222,12 +222,8 @@ export default function RegisterStepThreeScreen() {
                     editable={false}
                     rightIcon={
                       <Ionicons
-                        name={
-                          isRelationshipOpen
-                            ? "chevron-up-outline"
-                            : "chevron-down-outline"
-                        }
-                        size={22}
+                        name={isRelationshipOpen ? "caret-up" : "caret-down"}
+                        size={20}
                         color={theme.textMuted}
                       />
                     }
