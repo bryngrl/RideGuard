@@ -514,11 +514,7 @@ export default function EditContactScreen() {
                   inputWrapperStyle={styles.pillInput}
                   rightIcon={
                     <Ionicons
-                      name={
-                        isRelationshipOpen
-                          ? "chevron-up-outline"
-                          : "chevron-down-outline"
-                      }
+                      name={isRelationshipOpen ? "caret-up" : "caret-down"}
                       size={20}
                       color={theme.textMuted}
                     />
@@ -850,6 +846,8 @@ const styles = StyleSheet.create({
 
   pillInput: {
     borderRadius: BorderRadius.full,
+    // borderColor: "#767676",
+    // backgroundColor: "#d9d9d97d",
   },
 
   relationshipDropdown: {

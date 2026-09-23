@@ -10,7 +10,7 @@ import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
 import { Button } from "@/components/ui/button";
 import { PageLayout } from "@/components/ui/page-layout";
 import { CustomTextInput } from "@/components/ui/text-input";
-import { Spacing, Typography } from "@/constants/theme";
+import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
@@ -288,11 +288,7 @@ export default function AddContactScreen() {
                   inputWrapperStyle={styles.pillInput}
                   rightIcon={
                     <Ionicons
-                      name={
-                        isRelationshipOpen
-                          ? "chevron-up-outline"
-                          : "chevron-down-outline"
-                      }
+                      name={isRelationshipOpen ? "caret-up" : "caret-down"}
                       size={20}
                       color={theme.textMuted}
                     />
@@ -420,7 +416,8 @@ const styles = StyleSheet.create({
   },
 
   pillInput: {
-    borderRadius: 999,
+    borderRadius: BorderRadius.full,
+    // borderColor: "#767676",
   },
 
   relationshipDropdown: {
