@@ -10,7 +10,12 @@
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
@@ -51,6 +56,9 @@
       "eas": {
         "projectId": "f9a4ebad-effb-4360-b2a0-556cc956ff63"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f9a4ebad-effb-4360-b2a0-556cc956ff63"
     }
   }
 }
