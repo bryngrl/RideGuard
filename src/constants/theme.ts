@@ -19,6 +19,7 @@ export const Colors = {
     text: "#1A2B4C",
     textSecondary: BrandColors.secondary,
     textMuted: "#9C9C9C",
+    textInactive: "#C4C4C4",
     textInverse: "#FFFFFF",
     background: "#FFFFFF",
     backgroundElement: "#F8FAFC",
@@ -29,6 +30,7 @@ export const Colors = {
     inputBackground: "#FFFFFF",
     buttonMuted: "#767676",
     error: BrandColors.error,
+    errorBackground: "#FDE2E2",
     success: BrandColors.success,
     warning: BrandColors.warning,
   },
@@ -39,6 +41,7 @@ export const Colors = {
     accent: "#60A5FA",
     text: "#FFFFFF",
     textSecondary: "#94A3B8",
+    textInactive: "#C4C4C4",
     textMuted: "#64748B",
     textInverse: "#1A2B4C",
     background: "#0D1525",
@@ -49,6 +52,7 @@ export const Colors = {
     borderFocus: "#60A5FA",
     inputBackground: "#101A2F",
     error: "#F87171",
+    errorBackground: "#451A1A",
     success: "#34D399",
     warning: "#FBBF24",
   },
@@ -126,6 +130,16 @@ export const Typography = {
     fontSize: 16,
     lineHeight: 22,
     fontFamily: FontFamily.geistRegular,
+  },
+  medium: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: FontFamily.geistMedium,
+  },
+  semibold: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: FontFamily.geistSemiBold,
   },
 } as const;
 

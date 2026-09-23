@@ -1,22 +1,515 @@
-import { Ionicons } from "@expo/vector-icons";
+import SosIcon from "@/assets/icons/home-icons/echo-sos-icon.svg";
+import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
+import SilentNotificationIcon from "@/assets/icons/home-icons/icon-for-sheet.svg";
+import InactiveRideIcon from "@/assets/icons/home-icons/inactive-ride-icon.svg";
+import SecurityIcon from "@/assets/icons/home-icons/security-icon.svg";
+import MainLogo from "@/assets/icons/main-logo.svg";
+import InactiveSensorIcon from "@/assets/icons/metal-sensor/inactive-metal-sensor.svg";
+import ActiveSensorIcon from "@/assets/icons/metal-sensor/metal-icon.svg";
+import { RideDetailsSheet } from "@/components/ui/ride-details-sheet";
+import { SweetAlert } from "@/components/ui/sweet-alert";
+
+import SystemReadyIcon from "@/assets/icons/modal-icon/success-icon.svg";
+
+import ActiveCameraIcon from "@/assets/icons/navigation-icons/active-camera.svg";
+import InactiveCameraIcon from "@/assets/icons/navigation-icons/inactive-camera.svg";
+
+import { BottomNavigation } from "@/components/navigation/bottom-navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
+
+import {
+  BorderRadius,
+  BrandColors,
+  FontFamily,
+  Spacing,
+  Typography,
+} from "@/constants/theme";
+
+import { useTheme } from "@/hooks/use-theme";
+import { useAuthStore } from "@/store/useAuthStore";
+import { useDeviceStore } from "@/store/useDeviceStore";
+
+import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { useState } from "react";
+
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export default function DashboardScreen() {
+export default function HomeScreen() {
   const router = useRouter();
+  const colors = useTheme();
+
+  const firstName = useAuthStore((state) => state.firstName);
+
+  const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
+
+  const metalDeviceId = useDeviceStore((state) => state.metalDeviceId);
+
+  const [isRideActive, setIsRideActive] = useState(false);
+
+  const [showEndRideAlert, setShowEndRideAlert] = useState(false);
+  const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
+
+  // Temporary frontend states
+  const isCameraConnected = true;
+  const isMetalSensorConnected = true;
+
+  const displayName = firstName.trim() || "Jovilyn";
+
+  const areAllSafetySystemsActive = isCameraConnected && isMetalSensorConnected;
+
+  const systemStatusText = areAllSafetySystemsActive
+    ? "All safety systems active."
+    : !isCameraConnected && !isMetalSensorConnected
+      ? "Safety systems are not connected."
+      : !isCameraConnected
+        ? "Camera is not connected."
+        : "Metal sensor is not connected.";
+
+  const systemStatusIconBackground = areAllSafetySystemsActive
+    ? "#E6F8E7"
+    : colors.backgroundSelected;
+
+  const systemStatusTextColor = areAllSafetySystemsActive
+    ? colors.textMuted
+    : colors.textInactive;
+
+  const handleStartRide = () => {
+    setIsRideActive(true);
+  };
+
+  const handleEndRide = () => {
+    setShowEndRideAlert(true);
+  };
+
+  const handleConfirmEndRide = () => {
+    setIsRideActive(false);
+    setShowEndRideAlert(false);
+    setTimeout(() => {
+      setShowRideDetailsSheet(true);
+    }, 250);
+  };
+  const handleCloseRideDetails = () => {
+    setShowRideDetailsSheet(false);
+  };
+
+  const handleKeepMonitoring = () => {
+    setShowEndRideAlert(false);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Dashboard</Text>
-      <Text style={styles.subtitle}>basta nasa home kana kuys</Text>
-      <Pressable
-        style={styles.sitemapButton}
-        onPress={() => router.push("/_sitemap")}
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+        },
+      ]}
+    >
+      <KeyboardAvoidingWrapper
+        enableScrollView={true}
+        contentContainerStyle={styles.content}
       >
-        <Ionicons name="map-outline" size={22} color="#FFFFFF" />
+        {/*   HEADER   */}
+        <View style={styles.header}>
+          <View style={styles.brand}>
+            <MainLogo width={30} height={40} />
 
-        <Text style={styles.sitemapText}>Open Sitemap</Text>
-      </Pressable>
+            <Text
+              style={[
+                styles.brandName,
+                {
+                  color: colors.primary,
+                },
+              ]}
+            >
+              ideguard
+            </Text>
+          </View>
+
+          {/* GREETING */}
+          <View style={styles.greeting}>
+            <Text
+              style={[
+                Typography.body,
+                styles.greetingHello,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              Hello,
+            </Text>
+
+            <Text
+              style={[
+                Typography.h4,
+                styles.greetingName,
+                {
+                  color: colors.text,
+                },
+              ]}
+            >
+              {displayName}!
+            </Text>
+          </View>
+        </View>
+
+        {/*   RIDE STATUS   */}
+        <View style={styles.statusSectionWrapper}>
+          {/* BACKGROUND GRADIENT */}
+          <LinearGradient
+            colors={["#FFFFFF", "#F5F8FF", "#DCE8FF"]}
+            locations={[0, 0.45, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.statusGradient}
+            pointerEvents="none"
+          />
+
+          {/* LARGE CARD */}
+          <View style={styles.statusSection}>
+            <Card
+              size="large"
+              title={isRideActive ? "System Ready" : "No active ride"}
+              subtitle={
+                isRideActive
+                  ? "Waiting for passenger to board."
+                  : "Start a ride to begin system monitoring."
+              }
+              icon={
+                isRideActive ? (
+                  <SystemReadyIcon width={38} height={38} />
+                ) : (
+                  <InactiveRideIcon width={38} height={38} />
+                )
+              }
+            />
+          </View>
+        </View>
+
+        {/*DEVICE CARDS  */}
+        <View style={styles.deviceCards}>
+          {/* CAMERA */}
+          <Card
+            size="small"
+            title="Camera"
+            subtitle={cameraDeviceId || "Hardware name"}
+            status={isCameraConnected ? "Connected" : "Not connected"}
+            connectionState={isCameraConnected ? "connected" : "disconnected"}
+            icon={
+              isCameraConnected ? (
+                <ActiveCameraIcon width={18} height={18} />
+              ) : (
+                <InactiveCameraIcon width={18} height={18} />
+              )
+            }
+          />
+
+          {/* METAL SENSOR */}
+          <Card
+            size="small"
+            title="Metal sensor"
+            subtitle={metalDeviceId || "Hardware name"}
+            status={isMetalSensorConnected ? "Connected" : "Not connected"}
+            connectionState={
+              isMetalSensorConnected ? "connected" : "disconnected"
+            }
+            icon={
+              isMetalSensorConnected ? (
+                <ActiveSensorIcon width={18} height={18} />
+              ) : (
+                <InactiveSensorIcon width={18} height={18} />
+              )
+            }
+          />
+        </View>
+
+        {/*  START RIDE  */}
+        {!isRideActive && (
+          <Button
+            title="Start Ride"
+            variant="primary"
+            size="md"
+            fullWidth
+            onPress={handleStartRide}
+            style={styles.rideButton}
+          />
+        )}
+
+        {/*  SYSTEM STATUS  */}
+        {isRideActive ? (
+          <View
+            style={[
+              styles.silentNotificationCard,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: "#C9D6EA",
+              },
+            ]}
+          >
+            <View style={styles.silentNotificationIcon}>
+              <SilentNotificationIcon width={20} height={20} />
+            </View>
+
+            <View style={styles.silentNotificationTextContainer}>
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.silentNotificationTitle,
+                  {
+                    color: colors.text,
+                  },
+                ]}
+              >
+                Silent notifications active
+              </Text>
+
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.silentNotificationDescription,
+                  {
+                    color: colors.textMuted,
+                  },
+                ]}
+              >
+                Alerts will be displayed without sound.
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.systemStatus}>
+            <View
+              style={[
+                styles.systemStatusIcon,
+                {
+                  backgroundColor: systemStatusIconBackground,
+                },
+              ]}
+            >
+              <SecurityIcon width={16} height={16} />
+            </View>
+
+            <Text
+              style={[
+                Typography.bodySmall,
+                styles.systemStatusText,
+                {
+                  color: systemStatusTextColor,
+                },
+              ]}
+            >
+              {systemStatusText}
+            </Text>
+          </View>
+        )}
+
+        {/*   RIDE INFORMATION   */}
+        <View style={styles.todaySection}>
+          <Text
+            style={[
+              Typography.h4,
+              styles.sectionTitle,
+              {
+                color: colors.text,
+              },
+            ]}
+          >
+            {isRideActive ? "Current ride" : "Today's rides"}
+          </Text>
+
+          {isRideActive ? (
+            <View style={styles.currentRideContainer}>
+              {/* PASSENGER */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Passenger boarded
+                </Text>
+
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Waiting for passenger
+                </Text>
+              </View>
+
+              {/* METAL DETECTION */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Metal detection
+                </Text>
+
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Standby
+                </Text>
+              </View>
+
+              {/* CAMERA */}
+              <View style={styles.currentRideRow}>
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideLabel,
+                    {
+                      color: colors.textMuted,
+                    },
+                  ]}
+                >
+                  Camera monitoring
+                </Text>
+
+                <Text
+                  style={[
+                    Typography.caption,
+                    styles.currentRideValue,
+                    {
+                      color: colors.text,
+                    },
+                  ]}
+                >
+                  Active
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyRides}>
+              <InactiveRideIcon width={72} height={72} />
+
+              <Text
+                style={[
+                  Typography.bodySmall,
+                  {
+                    color: colors.textInactive,
+                  },
+                ]}
+              >
+                No rides taken today
+              </Text>
+            </View>
+          )}
+        </View>
+        {/*   END RIDE   */}
+        {isRideActive && (
+          <Button
+            title="End Ride"
+            variant="danger"
+            size="md"
+            fullWidth
+            onPress={handleEndRide}
+            style={styles.endRideButton}
+          />
+        )}
+      </KeyboardAvoidingWrapper>
+
+      {/*   QUICK ACTIONS   */}
+      <View
+        style={[
+          styles.quickActionsContainer,
+          {
+            backgroundColor: colors.background,
+          },
+        ]}
+      >
+        <View style={styles.quickActions}>
+          {/* SOS */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.sosButton,
+              pressed && styles.actionPressed,
+            ]}
+            onPress={() => router.push("/sos")}
+            accessibilityRole="button"
+            accessibilityLabel="Open SOS emergency screen"
+          >
+            <SosIcon width={15} height={15} />
+
+            <Text style={[Typography.caption, styles.sosButtonText]}>SOS</Text>
+          </Pressable>
+
+          {/* CONTACTS */}
+          <Pressable
+            style={({ pressed }) => [
+              styles.contactsButton,
+              {
+                borderColor: colors.primary,
+              },
+              pressed && styles.actionPressed,
+            ]}
+            onPress={() => router.push("/contact")}
+            accessibilityRole="button"
+            accessibilityLabel="Open emergency contacts"
+          >
+            <ContactIcon width={13} height={16} />
+
+            <Text
+              style={[
+                Typography.caption,
+                {
+                  color: colors.primary,
+                },
+              ]}
+            >
+              Contacts
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+      <SweetAlert
+        visible={showEndRideAlert}
+        type="warning"
+        showIcon={false}
+        title="End this ride?"
+        description="Safety monitoring will stop, and ride details will be saved to your history."
+        primaryButtonText="End Ride"
+        primaryButtonVariant="primary"
+        secondaryButtonText="Keep Monitoring"
+        secondaryButtonVariant="secondary"
+        buttonBorderRadius={9999}
+        onPrimaryPress={handleConfirmEndRide}
+        onSecondaryPress={handleKeepMonitoring}
+        onClose={handleKeepMonitoring}
+      />
+
+      <RideDetailsSheet
+        visible={showRideDetailsSheet}
+        onClose={handleCloseRideDetails}
+      />
+
+      {/*   BOTTOM NAVIGATION   */}
+      <BottomNavigation />
     </View>
   );
 }
@@ -24,39 +517,246 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  content: {
+    flexGrow: 1,
+    paddingBottom: Spacing.two,
+  },
+
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+
+    paddingHorizontal: Spacing.two,
+    marginBottom: Spacing.half,
+    position: "relative",
+    zIndex: 10,
+    elevation: 10,
+  },
+
+  brand: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.half,
+  },
+
+  brandName: {
+    fontFamily: FontFamily.eloquiaExtraBold,
+    fontSize: 20,
+    lineHeight: 24,
+    letterSpacing: -0.8,
+  },
+
+  greeting: {
+    alignItems: "flex-end",
+  },
+
+  greetingHello: {
+    textAlign: "right",
+    fontSize: 16,
+    lineHeight: 16,
+  },
+
+  greetingName: {
+    fontSize: 20,
+    lineHeight: 20,
+  },
+  statusSectionWrapper: {
+    position: "relative",
+    marginHorizontal: -Spacing.five,
+    zIndex: 1,
+  },
+
+  statusGradient: {
+    position: "absolute",
+
+    top: -40,
+
+    left: 0,
+    right: 0,
+    height: 100,
+
+    zIndex: 0,
+  },
+
+  statusSection: {
+    position: "relative",
+
+    zIndex: 2,
+    elevation: 2,
+
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.three,
+  },
+
+  deviceCards: {
+    position: "relative",
+    zIndex: 2,
+
+    flexDirection: "row",
+    gap: Spacing.three,
+    marginTop: Spacing.two,
+  },
+
+  rideButton: {
+    marginTop: Spacing.three,
+    borderRadius: BorderRadius.full,
+  },
+  endRideButton: {
+    marginTop: Spacing.three,
+    marginBottom: Spacing.two,
+    borderRadius: BorderRadius.full,
+  },
+
+  systemStatus: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    gap: Spacing.two,
+
+    marginTop: Spacing.two,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
+
+  systemStatusIcon: {
+    width: 14,
+    height: 14,
+
     alignItems: "center",
     justifyContent: "center",
-    padding: 24,
+
+    borderRadius: BorderRadius.full,
   },
 
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 8,
+  systemStatusText: {
+    flex: 1,
+    flexShrink: 1,
   },
 
-  subtitle: {
+  todaySection: {
+    flex: 1,
+    minHeight: 86,
+    marginTop: Spacing.three,
+  },
+
+  sectionTitle: {
     fontSize: 16,
-    textAlign: "center",
-    marginBottom: 24,
   },
 
-  sitemapButton: {
+  emptyRides: {
+    flex: 1,
+
+    alignItems: "center",
+    justifyContent: "center",
+
+    paddingBottom: Spacing.two,
+  },
+
+  quickActionsContainer: {
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
+  },
+
+  quickActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
+    backgroundColor: "transparent",
+  },
+
+  sosButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
 
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    gap: Spacing.one,
 
-    borderRadius: 8,
-    backgroundColor: "#000000",
+    minHeight: 32,
+    paddingHorizontal: Spacing.three,
+
+    borderRadius: BorderRadius.full,
+
+    backgroundColor: BrandColors.error,
   },
 
-  sitemapText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "600",
+  sosButtonText: {
+    color: BrandColors.secondary,
+  },
+
+  contactsButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+
+    gap: Spacing.one,
+
+    minHeight: 32,
+    paddingHorizontal: Spacing.three,
+
+    borderWidth: 1,
+    borderRadius: BorderRadius.full,
+  },
+
+  actionPressed: {
+    opacity: 0.75,
+  },
+  silentNotificationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+
+    gap: Spacing.two,
+    marginVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+
+    minHeight: 50,
+    borderWidth: 1,
+    borderRadius: BorderRadius.md,
+  },
+
+  silentNotificationIcon: {
+    width: 32,
+    height: 32,
+
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  silentNotificationTextContainer: {
+    flex: 1,
+  },
+
+  silentNotificationTitle: {
+    fontWeight: "500",
+  },
+
+  silentNotificationDescription: {
+    marginTop: 1,
+    fontSize: 11,
+  },
+
+  currentRideContainer: {
+    marginTop: Spacing.three,
+  },
+
+  currentRideRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+
+    paddingVertical: Spacing.one,
+  },
+
+  currentRideLabel: {
+    flex: 1,
+  },
+
+  currentRideValue: {
+    flex: 1,
+    textAlign: "right",
+    fontWeight: "500",
   },
 });

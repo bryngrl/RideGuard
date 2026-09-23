@@ -20,12 +20,14 @@ interface SweetAlertProps {
   description?: string;
 
   type?: SweetAlertType;
+  showIcon?: boolean;
 
   primaryButtonText?: string;
   secondaryButtonText?: string;
 
   primaryButtonVariant?: ButtonVariant;
   secondaryButtonVariant?: ButtonVariant;
+  buttonBorderRadius?: number;
 
   onPrimaryPress?: () => void;
   onSecondaryPress?: () => void;
@@ -42,12 +44,14 @@ export function SweetAlert({
   description,
 
   type = "info",
+  showIcon = true,
 
   primaryButtonText = "Confirm",
   secondaryButtonText,
 
   primaryButtonVariant = "primary",
   secondaryButtonVariant = "secondary",
+  buttonBorderRadius = BorderRadius.full,
 
   onPrimaryPress,
   onSecondaryPress,
@@ -127,13 +131,15 @@ export function SweetAlert({
           {/* CONTENT */}
           <View style={styles.content}>
             {/* ICON */}
-            <View style={styles.iconContainer}>
-              {type === "warning" ? (
-                <WarningIcon width={48} height={48} />
-              ) : (
-                <Ionicons name={getIconName()} size={30} color={iconColor} />
-              )}
-            </View>
+            {showIcon && (
+              <View style={styles.iconContainer}>
+                {type === "warning" ? (
+                  <WarningIcon width={48} height={48} />
+                ) : (
+                  <Ionicons name={getIconName()} size={30} color={iconColor} />
+                )}
+              </View>
+            )}
 
             {/* TEXT */}
             <View style={styles.textContainer}>
@@ -181,6 +187,7 @@ export function SweetAlert({
                     borderWidth: 0,
                     borderColor: "transparent",
                     paddingHorizontal: Spacing.two,
+                    borderRadius: buttonBorderRadius,
                   },
                 ]}
               />
@@ -196,6 +203,7 @@ export function SweetAlert({
                 styles.primaryButton,
                 {
                   paddingHorizontal: Spacing.two,
+                  borderRadius: buttonBorderRadius,
                 },
               ]}
             />

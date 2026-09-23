@@ -21,7 +21,7 @@ export default function CompleteSetupScreen() {
   }, [firstName]);
 
   const displayName =
-    firstName && firstName.trim() !== "" ? firstName.trim() : "there";
+    firstName && firstName.trim() !== "" ? firstName.trim() : "Jovilyn";
 
   const handleStartDriving = async () => {
     setIsLoading(true);
