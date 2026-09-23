@@ -42,7 +42,7 @@ export function EmergencyContactItem({
       <View style={styles.info}>
         <Text
           style={[
-            Typography.body,
+            Typography.medium,
             {
               color: colors.text,
             },
@@ -54,7 +54,7 @@ export function EmergencyContactItem({
 
         <Text
           style={[
-            Typography.caption,
+            Typography.medium,
             styles.phone,
             {
               color: colors.textMuted,

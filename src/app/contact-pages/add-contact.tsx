@@ -234,9 +234,9 @@ export default function AddContactScreen() {
           >
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.medium,
                 styles.addPhotoText,
-                { color: theme.primary },
+                { color: theme.accent },
               ]}
             >
               {profileImage ? "Change photo" : "Add new photo"}

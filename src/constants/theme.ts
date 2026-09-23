@@ -131,6 +131,16 @@ export const Typography = {
     lineHeight: 22,
     fontFamily: FontFamily.geistRegular,
   },
+  medium: {
+    fontSize: 14,
+    lineHeight: 20,
+    fontFamily: FontFamily.geistMedium,
+  },
+  semibold: {
+    fontSize: 24,
+    lineHeight: 30,
+    fontFamily: FontFamily.geistSemiBold,
+  },
 } as const;
 
 export const Spacing = {

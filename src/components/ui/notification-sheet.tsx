@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Animated, StyleSheet, Text } from "react-native";
+import { Animated, StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
 
 import { BrandColors, Typography } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -10,6 +10,7 @@ interface NotificationSheetProps {
   type?: "success" | "error";
   duration?: number;
   onHide?: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
 export function NotificationSheet({
@@ -18,6 +19,7 @@ export function NotificationSheet({
   type = "success",
   duration = 2500,
   onHide,
+  style,
 }: NotificationSheetProps) {
   const theme = useTheme();
 
@@ -33,6 +35,7 @@ export function NotificationSheet({
           duration: 180,
           useNativeDriver: true,
         }),
+
         Animated.timing(opacity, {
           toValue: 0,
           duration: 180,
@@ -73,7 +76,9 @@ export function NotificationSheet({
       });
     }, duration);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [visible, duration, onHide, opacity, translateY]);
 
   if (!visible) {
@@ -86,16 +91,23 @@ export function NotificationSheet({
     <Animated.View
       style={[
         styles.container,
+        style,
         {
-          backgroundColor: isError ? BrandColors.error : "#EEF4FF",
-          transform: [{ translateY }],
+          backgroundColor: isError ? BrandColors.error : "#ECF3FF",
+
+          transform: [
+            {
+              translateY,
+            },
+          ],
+
           opacity,
         },
       ]}
     >
       <Text
         style={[
-          Typography.bodySmall,
+          Typography.caption,
           styles.text,
           {
             color: isError ? "#FFFFFF" : theme.text,
@@ -110,17 +122,20 @@ export function NotificationSheet({
 
 const styles = StyleSheet.create({
   container: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
     width: "100%",
     minHeight: 32,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 16,
     overflow: "hidden",
+    zIndex: 100,
   },
 
   text: {
-    fontSize: 10,
-    lineHeight: 14,
     textAlign: "center",
   },
 });

@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.one,
   },
   label: {
-    ...Typography.label,
+    ...Typography.bodySmall,
     marginBottom: Spacing.two,
     marginLeft: Spacing.half,
   },
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
 
   prefixText: {
-    ...Typography.input,
+    ...Typography.bodySmall,
     fontWeight: "400",
   },
 });
