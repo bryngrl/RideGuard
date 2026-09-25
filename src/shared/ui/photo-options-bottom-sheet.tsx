@@ -22,7 +22,7 @@ import CameraIcon from "@/assets/icons/contact-icons/camera-icon.svg";
 import ImageIcon from "@/assets/icons/contact-icons/image-icon.svg";
 
 import { Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 

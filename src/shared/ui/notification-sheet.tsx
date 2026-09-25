@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
 
 import { BrandColors, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 interface NotificationSheetProps {
   visible: boolean;

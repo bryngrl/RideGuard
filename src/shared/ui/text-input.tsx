@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 export interface CustomTextInputProps extends RNTextInputProps {
   label?: string;

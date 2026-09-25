@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 export type CardSize = "small" | "large";
 export type ConnectionState = "connected" | "disconnected";

@@ -16,7 +16,7 @@ import {
   Spacing,
   Typography,
 } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 export type ButtonVariant =
   | "primary"

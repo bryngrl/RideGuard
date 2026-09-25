@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 export interface GoogleButtonProps {
   title?: string;

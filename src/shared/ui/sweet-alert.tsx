@@ -2,14 +2,14 @@ import WarningIcon from "@/assets/icons/sweetalerts-icons/primary-warning-icon.s
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Button, ButtonVariant } from "@/components/ui/button";
+import { Button, ButtonVariant } from "@/shared/ui";
 import {
   BorderRadius,
   BrandColors,
   Spacing,
   Typography,
 } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks";
 
 export type SweetAlertType = "info" | "success" | "warning" | "error";
 
