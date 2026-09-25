@@ -11,6 +11,6 @@ export * from "./page-layout";
 export * from "./photo-options-bottom-sheet";
 export * from "./ride-details-sheet";
 export * from "./slide-button";
-export * from "./stepper";
+export { default as Stepper } from "./stepper";
 export * from "./sweet-alert";
 export * from "./text-input";
