@@ -13,8 +13,8 @@ import {
   ViewStyle,
 } from "react-native";
 
-import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { Spacing, Typography } from "@/shared/theme";
 
 export interface CustomTextInputProps extends RNTextInputProps {
   label?: string;

@@ -1,10 +1,10 @@
 import AddIcon from "@/assets/icons/arrows-icons/cross-icon.svg";
 import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
 import { EmergencyContactList } from "@/components/contacts/emergency-contact-list";
-import { NotificationSheet } from "@/components/ui/notification-sheet";
-import { PageLayout } from "@/components/ui/page-layout";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { NotificationSheet } from "@/shared/ui/notification-sheet";
+import { PageLayout } from "@/shared/ui/page-layout";
 import type { EmergencyContact } from "@/types/emergency-contact";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";

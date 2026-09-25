@@ -1,10 +1,10 @@
 import MainLogo from "@/assets/icons/main-logo.svg";
-import { Button } from "@/components/ui/button";
-import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
-import Stepper from "@/components/ui/stepper";
-import { CustomTextInput } from "@/components/ui/text-input";
-import { BrandColors, Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import Stepper from "@/shared/ui/stepper";
+import { CustomTextInput } from "@/shared/ui/text-input";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";

@@ -1,7 +1,7 @@
 import AllSetIcon from "@/assets/icons/variant-logo/all-set-icon.svg";
-import { Button } from "@/components/ui/button";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";

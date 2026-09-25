@@ -1,11 +1,6 @@
-import React, { useCallback } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { useCallback } from "react";
+import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
   useAnimatedStyle,
@@ -13,18 +8,13 @@ import Animated, {
   withSpring,
   withTiming,
 } from "react-native-reanimated";
-import {
-  Gesture,
-  GestureDetector,
-} from "react-native-gesture-handler";
 
 import CameraIcon from "@/assets/icons/contact-icons/camera-icon.svg";
 import ImageIcon from "@/assets/icons/contact-icons/image-icon.svg";
 
-import { Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { Typography } from "@/shared/theme";
 
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 type PhotoOptionsBottomSheetProps = {
   visible: boolean;
@@ -57,8 +47,7 @@ export function PhotoOptionsBottomSheet({
     })
     .onEnd((event) => {
       const shouldDismiss =
-        translateY.value > DISMISS_THRESHOLD ||
-        event.velocityY > 800;
+        translateY.value > DISMISS_THRESHOLD || event.velocityY > 800;
 
       if (shouldDismiss) {
         translateY.value = withTiming(

@@ -1,8 +1,8 @@
 import MainLogo from "@/assets/icons/main-logo.svg";
-import { Button } from "@/components/ui/button";
-import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";

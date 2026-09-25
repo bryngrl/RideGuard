@@ -1,6 +1,6 @@
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {

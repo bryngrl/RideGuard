@@ -12,8 +12,8 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { MaxContentWidth, Spacing } from "@/shared/theme";
 
 export interface KeyboardAvoidingWrapperProps {
   children: React.ReactNode;

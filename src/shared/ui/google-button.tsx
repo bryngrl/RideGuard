@@ -10,8 +10,8 @@ import {
   ViewStyle,
 } from "react-native";
 
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 
 export interface GoogleButtonProps {
   title?: string;

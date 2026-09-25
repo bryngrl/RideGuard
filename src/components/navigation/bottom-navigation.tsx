@@ -2,8 +2,8 @@ import { usePathname, useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
 
 import HomeActiveIcon from "@/assets/icons/navigation-icons/active-home.svg";
 import HomeInactiveIcon from "@/assets/icons/navigation-icons/inactive-home.svg";

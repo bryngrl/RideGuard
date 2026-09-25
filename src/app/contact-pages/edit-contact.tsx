@@ -6,19 +6,14 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
-import { Button } from "@/components/ui/button";
-import { ConfirmationModal } from "@/components/ui/confirmation-modal";
-import { NotificationSheet } from "@/components/ui/notification-sheet";
-import { PageLayout } from "@/components/ui/page-layout";
-import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
-import { CustomTextInput } from "@/components/ui/text-input";
-import {
-  BorderRadius,
-  BrandColors,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
+import { NotificationSheet } from "@/shared/ui/notification-sheet";
+import { PageLayout } from "@/shared/ui/page-layout";
+import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
+import { CustomTextInput } from "@/shared/ui/text-input";
 import { LinearGradient } from "expo-linear-gradient";
 
 const RELATIONSHIPS = [

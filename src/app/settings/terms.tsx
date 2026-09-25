@@ -1,6 +1,6 @@
-import { PageLayout } from "@/components/ui/page-layout";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { PageLayout } from "@/shared/ui/page-layout";
 import { ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
 

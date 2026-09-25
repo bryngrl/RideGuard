@@ -1,10 +1,5 @@
-import { PageLayout } from "@/components/ui/page-layout";
-import {
-  BorderRadius,
-  BrandColors,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
+import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { PageLayout } from "@/shared/ui/page-layout";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";

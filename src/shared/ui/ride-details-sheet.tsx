@@ -1,13 +1,8 @@
 import React, { useEffect } from "react";
 
-import { Button } from "@/shared/ui";
-import {
-  BorderRadius,
-  BrandColors,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui";
 
 import RideCompleteIcon from "@/assets/icons/modal-icon/success-icon.svg";
 

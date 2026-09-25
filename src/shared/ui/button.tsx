@@ -10,13 +10,8 @@ import {
   ViewStyle,
 } from "react-native";
 
-import {
-  BorderRadius,
-  BrandColors,
-  Spacing,
-  Typography,
-} from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 
 export type ButtonVariant =
   | "primary"

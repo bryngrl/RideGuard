@@ -1,5 +1,5 @@
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { useRef } from "react";
 import {
   Animated,

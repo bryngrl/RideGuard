@@ -6,8 +6,8 @@ import SecurityIcon from "@/assets/icons/home-icons/security-icon.svg";
 import MainLogo from "@/assets/icons/main-logo.svg";
 import InactiveSensorIcon from "@/assets/icons/metal-sensor/inactive-metal-sensor.svg";
 import ActiveSensorIcon from "@/assets/icons/metal-sensor/metal-icon.svg";
-import { RideDetailsSheet } from "@/components/ui/ride-details-sheet";
-import { SweetAlert } from "@/components/ui/sweet-alert";
+import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
+import { SweetAlert } from "@/shared/ui/sweet-alert";
 
 import SystemReadyIcon from "@/assets/icons/modal-icon/success-icon.svg";
 
@@ -15,9 +15,9 @@ import ActiveCameraIcon from "@/assets/icons/navigation-icons/active-camera.svg"
 import InactiveCameraIcon from "@/assets/icons/navigation-icons/inactive-camera.svg";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { KeyboardAvoidingWrapper } from "@/components/ui/keyboard-avoiding-wrapper";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 
 import {
   BorderRadius,
@@ -25,9 +25,9 @@ import {
   FontFamily,
   Spacing,
   Typography,
-} from "@/constants/theme";
+} from "@/shared/theme";
 
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useDeviceStore } from "@/store/useDeviceStore";
 

@@ -1,8 +1,8 @@
 import SuccessIcon from "@/assets/icons/modal-icon/success-icon.svg";
-import { Button } from "@/components/ui/button";
-import { PageLayout } from "@/components/ui/page-layout";
-import { Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { PageLayout } from "@/shared/ui/page-layout";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";

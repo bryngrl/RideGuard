@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { Spacing, Typography } from "@/shared/theme";
 
 interface PageLayoutProps {
   title: string;
@@ -55,14 +55,11 @@ export function PageLayout({
   const theme = useTheme();
   const router = useRouter();
 
-  const pageBackgroundColor =
-    backgroundColor ?? theme.background;
+  const pageBackgroundColor = backgroundColor ?? theme.background;
 
-  const pageDividerColor =
-    dividerColor ?? theme.border;
+  const pageDividerColor = dividerColor ?? theme.border;
 
-  const pageHeaderTextColor =
-    headerTextColor ?? theme.text;
+  const pageHeaderTextColor = headerTextColor ?? theme.text;
 
   const handleBack = () => {
     // Use custom back behavior if provided
@@ -172,9 +169,7 @@ export function PageLayout({
         </Text>
 
         {/* RIGHT ACTION */}
-        <View style={styles.rightAction}>
-          {rightAction}
-        </View>
+        <View style={styles.rightAction}>{rightAction}</View>
       </View>
 
       {/* DIVIDER */}

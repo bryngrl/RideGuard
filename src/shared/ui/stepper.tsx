@@ -6,7 +6,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { Colors, Spacing, Typography } from "@/constants/theme";
+import { Colors, Spacing, Typography } from "@/shared/theme";
 import { Ionicons } from "@expo/vector-icons";
 
 interface StepperProps {

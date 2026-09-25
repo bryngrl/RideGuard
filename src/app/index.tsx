@@ -26,7 +26,7 @@ import {
 } from "@react-native-google-signin/google-signin";
 
 import { ThemedText } from "@/components/themed-text";
-import { GoogleButton } from "@/components/ui/google-button";
+import { GoogleButton } from "@/shared/ui/google-button";
 
 import {
   BrandColors,
@@ -34,11 +34,11 @@ import {
   MaxContentWidth,
   Spacing,
   Typography,
-} from "@/constants/theme";
+} from "@/shared/theme";
 
-import { useTheme } from "@/hooks/use-theme";
 import { auth } from "@/lib/firebase";
 import { checkIsOldUser } from "@/services/api";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 import {
   GoogleAuthProvider,

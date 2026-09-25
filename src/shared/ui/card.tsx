@@ -8,8 +8,8 @@ import {
   ViewStyle,
 } from "react-native";
 
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 
 export type CardSize = "small" | "large";
 export type ConnectionState = "connected" | "disconnected";

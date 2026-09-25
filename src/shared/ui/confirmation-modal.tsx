@@ -1,5 +1,5 @@
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
 import { useTheme } from "@/shared/hooks";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 interface ConfirmationModalProps {

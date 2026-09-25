@@ -7,13 +7,13 @@ import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import HelpIcon from "@/assets/icons/help-icon.svg";
 import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
 
-import { Button } from "@/components/ui/button";
-import { PageLayout } from "@/components/ui/page-layout";
-import { CustomTextInput } from "@/components/ui/text-input";
-import { BorderRadius, Spacing, Typography } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { useTheme } from "@/shared/hooks/use-theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { PageLayout } from "@/shared/ui/page-layout";
+import { CustomTextInput } from "@/shared/ui/text-input";
 
-import { PhotoOptionsBottomSheet } from "@/components/ui/photo-options-bottom-sheet";
+import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 
 const RELATIONSHIPS = [
   { label: "Parent", value: "Parent" },

@@ -1,7 +1,7 @@
 import SosActiveIcon from "@/assets/icons/arrows-icons/sos-activated-icon.svg";
-import { PageLayout } from "@/components/ui/page-layout";
-import { SlideButton } from "@/components/ui/slide-button";
-import { BrandColors, Spacing, Typography } from "@/constants/theme";
+import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { PageLayout } from "@/shared/ui/page-layout";
+import { SlideButton } from "@/shared/ui/slide-button";
 import { useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
