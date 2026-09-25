@@ -4,8 +4,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
-import HelpIcon from "@/assets/icons/help-icon.svg";
-import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
+import HelpIcon from "@/assets/icons/actions/help.svg";
+import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";

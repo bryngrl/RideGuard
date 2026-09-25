@@ -1,4 +1,4 @@
-import MainLogo from "@/assets/icons/main-logo.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";

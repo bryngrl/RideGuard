@@ -1,5 +1,5 @@
-import LighBulb from "@/assets/icons/lightbulb-icon.svg";
-import MainLogo from "@/assets/icons/main-logo.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
+import LighBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { claimDevice } from "@/services/api";
 import { useTheme } from "@/shared/hooks/use-theme";

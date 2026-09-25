@@ -55,7 +55,7 @@ export function GoogleButton({
         <View style={styles.content}>
           <View style={styles.iconContainer}>
             <Image
-              source={require("@/assets/images/google-logo.png")}
+              source={require("@/assets/images/logos/google-logo.png")}
               style={styles.googleLogo}
               contentFit="contain"
             />

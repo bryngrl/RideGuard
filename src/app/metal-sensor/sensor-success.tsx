@@ -1,4 +1,4 @@
-import SuccessIcon from "@/assets/icons/modal-icon/success-icon.svg";
+import SuccessIcon from "@/assets/icons/status/success.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";

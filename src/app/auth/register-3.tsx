@@ -1,4 +1,4 @@
-import MainLogo from "@/assets/icons/main-logo.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
 import { Button } from "@/shared/ui/button";
 
 import { ProfilePayload, submitProfile } from "@/services/api";

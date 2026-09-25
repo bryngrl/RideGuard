@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
 
-    "icon": "./assets/images/Logo/official-logo.png",
+    "icon": "./assets/images/logos/official-logo.png",
 
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
@@ -28,7 +28,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "ios": {
-      "icon": "./assets/images/Logo/official-logo.png"
+      "icon": "./assets/images/logos/official-logo.png"
     },
     "android": {
       "package": "com.rideguard.app",
@@ -37,15 +37,15 @@
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
 
-        "foregroundImage": "./assets/images/Logo/official-logo.png",
+        "foregroundImage": "./assets/images/logos/official-logo.png",
 
-        "monochromeImage": "./assets/images/Logo/official-logo.png"
+        "monochromeImage": "./assets/images/logos/official-logo.png"
       }
     },
     "web": {
       "output": "static",
 
-      "favicon": "./assets/images/Logo/official-logo.png"
+      "favicon": "./assets/images/logos/official-logo.png"
     },
     "experiments": {
       "typedRoutes": true,

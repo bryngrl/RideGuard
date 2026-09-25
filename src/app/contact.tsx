@@ -1,5 +1,5 @@
-import AddIcon from "@/assets/icons/arrows-icons/cross-icon.svg";
-import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
+import AddIcon from "@/assets/icons/arrows/cross.svg";
+import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import { EmergencyContactList } from "@/components/contacts/emergency-contact-list";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";

@@ -1,6 +1,6 @@
 // TODO: A motion in the start
 
-import MainLogo from "@/assets/icons/main-logo.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Dimensions, StyleSheet, View } from "react-native";

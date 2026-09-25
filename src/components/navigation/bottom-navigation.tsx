@@ -5,17 +5,17 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 
-import HomeActiveIcon from "@/assets/icons/navigation-icons/active-home.svg";
-import HomeInactiveIcon from "@/assets/icons/navigation-icons/inactive-home.svg";
+import HomeActiveIcon from "@/assets/icons/navigation/active-home.svg";
+import HomeInactiveIcon from "@/assets/icons/navigation/inactive-home.svg";
 
-import AlertActiveIcon from "@/assets/icons/navigation-icons/active-alerts.svg";
-import AlertInactiveIcon from "@/assets/icons/navigation-icons/inactive-alerts.svg";
+import AlertActiveIcon from "@/assets/icons/navigation/active-alerts.svg";
+import AlertInactiveIcon from "@/assets/icons/navigation/inactive-alerts.svg";
 
-import CameraActiveIcon from "@/assets/icons/navigation-icons/active-camera.svg";
-import CameraInactiveIcon from "@/assets/icons/navigation-icons/inactive-camera.svg";
+import CameraActiveIcon from "@/assets/icons/navigation/active-camera.svg";
+import CameraInactiveIcon from "@/assets/icons/navigation/inactive-camera.svg";
 
-import SettingActiveIcon from "@/assets/icons/navigation-icons/active-settings.svg";
-import SettingInactiveIcon from "@/assets/icons/navigation-icons/inactive-settings.svg";
+import SettingActiveIcon from "@/assets/icons/navigation/active-settings.svg";
+import SettingInactiveIcon from "@/assets/icons/navigation/inactive-settings.svg";
 
 type Tab = {
   label: string;

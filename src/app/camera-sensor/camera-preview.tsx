@@ -1,4 +1,4 @@
-import MainLogo from "@/assets/icons/main-logo.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
@@ -51,7 +51,7 @@ export default function CameraPreviewScreen() {
 
         <View style={styles.previewContainer}>
           <Image
-            source={require("@/assets/images/placeholder-camera-preview.png")}
+            source={require("@/assets/images/placeholder/placeholder-camera-preview.png")}
             style={styles.previewImage}
             resizeMode="cover"
           />

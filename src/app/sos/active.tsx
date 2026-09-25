@@ -1,4 +1,4 @@
-import SosActiveIcon from "@/assets/icons/arrows-icons/sos-activated-icon.svg";
+import SosActiveIcon from "@/assets/icons/actions/sos-activated.svg";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { SlideButton } from "@/shared/ui/slide-button";

@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
-import ProfilePlaceholder from "@/assets/icons/profile-placeholder.svg";
+import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";

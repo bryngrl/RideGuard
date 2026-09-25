@@ -1,4 +1,4 @@
-import AllSetIcon from "@/assets/icons/variant-logo/all-set-icon.svg";
+import AllSetIcon from "@/assets/icons/logos/all-set.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";

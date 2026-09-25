@@ -1,7 +1,7 @@
-import GreenCheckIcon from "@/assets/icons/green-check-icon.svg";
-import LocationIcon from "@/assets/icons/location.svg";
-import MainLogo from "@/assets/icons/main-logo.svg";
-import NotificationIcon from "@/assets/icons/notification.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
+import LocationIcon from "@/assets/icons/actions/location.svg";
+import NotificationIcon from "@/assets/icons/misc/notification.svg";
+import GreenCheckIcon from "@/assets/icons/status/green-check.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";

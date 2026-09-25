@@ -1,4 +1,4 @@
-import WarningIcon from "@/assets/icons/sweetalerts-icons/primary-warning-icon.svg";
+import WarningIcon from "@/assets/icons/alerts/primary-warning.svg";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 

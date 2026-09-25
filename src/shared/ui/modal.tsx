@@ -1,6 +1,6 @@
-import ErrorIcon from "@/assets/icons/modal-icon/error-icon.svg";
-import LoadingIcon from "@/assets/icons/modal-icon/loading-icon.svg";
-import SuccessIcon from "@/assets/icons/modal-icon/success-icon.svg";
+import ErrorIcon from "@/assets/icons/status/error.svg";
+import LoadingIcon from "@/assets/icons/status/loading.svg";
+import SuccessIcon from "@/assets/icons/status/success.svg";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useEffect, useState } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";

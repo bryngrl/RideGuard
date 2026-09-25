@@ -1,18 +1,18 @@
-import SosIcon from "@/assets/icons/home-icons/echo-sos-icon.svg";
-import ContactIcon from "@/assets/icons/home-icons/filled-contact-icon.svg";
-import SilentNotificationIcon from "@/assets/icons/home-icons/icon-for-sheet.svg";
-import InactiveRideIcon from "@/assets/icons/home-icons/inactive-ride-icon.svg";
-import SecurityIcon from "@/assets/icons/home-icons/security-icon.svg";
-import MainLogo from "@/assets/icons/main-logo.svg";
-import InactiveSensorIcon from "@/assets/icons/metal-sensor/inactive-metal-sensor.svg";
-import ActiveSensorIcon from "@/assets/icons/metal-sensor/metal-icon.svg";
+import MainLogo from "@/assets/icons//logos/main.svg";
+import SosIcon from "@/assets/icons/home/echo-sos.svg";
+import ContactIcon from "@/assets/icons/home/filled-contact.svg";
+import InactiveRideIcon from "@/assets/icons/home/ride-inactive.svg";
+import SecurityIcon from "@/assets/icons/home/security.svg";
+import SilentNotificationIcon from "@/assets/icons/home/sheet-icon.svg";
+import InactiveSensorIcon from "@/assets/icons/sensors/metal/inactive.svg";
+import ActiveSensorIcon from "@/assets/icons/sensors/metal/metal.svg";
 import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 
-import SystemReadyIcon from "@/assets/icons/modal-icon/success-icon.svg";
+import SystemReadyIcon from "@/assets/icons/status/success.svg";
 
-import ActiveCameraIcon from "@/assets/icons/navigation-icons/active-camera.svg";
-import InactiveCameraIcon from "@/assets/icons/navigation-icons/inactive-camera.svg";
+import ActiveCameraIcon from "@/assets/icons/navigation/active-camera.svg";
+import InactiveCameraIcon from "@/assets/icons/navigation/inactive-camera.svg";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { Button } from "@/shared/ui/button";

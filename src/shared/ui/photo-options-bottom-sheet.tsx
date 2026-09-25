@@ -9,12 +9,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import CameraIcon from "@/assets/icons/contact-icons/camera-icon.svg";
-import ImageIcon from "@/assets/icons/contact-icons/image-icon.svg";
+import CameraIcon from "@/assets/icons/contacts/camera.svg";
+import ImageIcon from "@/assets/icons/contacts/image.svg";
 
 import { useTheme } from "@/shared/hooks";
 import { Typography } from "@/shared/theme";
-
 
 type PhotoOptionsBottomSheetProps = {
   visible: boolean;

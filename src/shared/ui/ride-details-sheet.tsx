@@ -4,13 +4,13 @@ import { useTheme } from "@/shared/hooks";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui";
 
-import RideCompleteIcon from "@/assets/icons/modal-icon/success-icon.svg";
+import RideCompleteIcon from "@/assets/icons/status/success.svg";
 
 import {
   default as MetalDetectionIcon,
   default as MovementMonitoringIcon,
   default as RideDurationIcon,
-} from "@/assets/icons/home-icons/icon-for-sheet.svg";
+} from "@/assets/icons/home/sheet-icon.svg";
 
 import { LinearGradient } from "expo-linear-gradient";
 
