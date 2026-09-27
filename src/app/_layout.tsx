@@ -1,4 +1,6 @@
+import { saveRefreshedPushToken } from '@/features/notifications/push-registration';
 import { useFonts } from 'expo-font';
+import * as Notifications from 'expo-notifications';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -24,6 +26,22 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, fontError]);
+
+  useEffect(() => {
+    // Expo may rotate the native token while the app runs. Persist the new one
+    // against the same installation. Never fetch the token here or log it.
+    const subscription = Notifications.addPushTokenListener((token) => {
+      if (typeof token.data !== 'string') {
+        return;
+      }
+
+      void saveRefreshedPushToken(token.data).catch(() => {
+        console.error('Failed to update refreshed push token.');
+      });
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

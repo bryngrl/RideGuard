@@ -17,7 +17,6 @@ apiClient.interceptors.request.use(async (config) => {
   if (user) {
     // Firebase automatically refreshes the token when necessary.
     const firebaseToken = await user.getIdToken();
-    console.log("Firebase Token:", firebaseToken); // REMOVE THIS LINE AFTER TESTING
     config.headers.set("Authorization", `Bearer ${firebaseToken}`);
   }
 

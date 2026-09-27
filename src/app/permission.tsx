@@ -4,6 +4,7 @@ import MainLogo from "@/assets/icons/main-logo.svg";
 import NotificationIcon from "@/assets/icons/notification.svg";
 import { Button } from "@/components/ui/button";
 import { BorderRadius, Spacing, Typography } from "@/constants/theme";
+import { registerCurrentInstallationForPush } from "@/features/notifications/push-registration";
 import { useTheme } from "@/hooks/use-theme";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
@@ -74,7 +75,17 @@ export default function PermissionsScreen() {
         return;
       }
 
-      // Both permissions granted
+      // Both permissions granted — register this installation for push before
+      // navigating. Notification permission is already granted here, so this
+      // does not trigger a second permission prompt.
+      try {
+        await registerCurrentInstallationForPush();
+      } catch {
+        // Log a safe message only — never the error object, which could carry
+        // the auth header or FCM token.
+        console.error("Push registration failed.");
+      }
+
       router.replace("/provision");
     } catch (error) {
       console.error("Permission error:", error);
