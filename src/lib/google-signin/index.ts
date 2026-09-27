@@ -36,6 +36,13 @@ export async function signInWithGoogle(): Promise<string | null> {
   return googleIdToken;
 }
 
+// Clears the selected Google session so a different Google account can be
+// chosen on the next sign-in.
+export async function signOutFromGoogle(): Promise<void> {
+  configureGoogleSignIn();
+  await GoogleSignin.signOut();
+}
+
 function configureGoogleSignIn(): void {
   if (isConfigured) {
     return;

@@ -1,4 +1,5 @@
 import { checkIsOldUser, getAblyToken } from "@/features/auth/auth.api";
+import { registerCurrentInstallationForPush } from "@/features/notifications/push-registration";
 import { firebaseAuth } from "@/lib/firebase";
 import { signInWithGoogle } from "@/lib/google-signin";
 import { useRouter } from "expo-router";
@@ -48,8 +49,17 @@ export function useGoogleSignIn() {
 
       const isOldUser = await checkIsOldUser();
       console.log("Is Old User:", isOldUser); // REMOVE THIS LINE AFTER TESTING
-      const ablyToken = await getAblyToken();
-      console.log("Ably Token:", JSON.stringify(ablyToken)); // REMOVE THIS LINE AFTER TESTING
+      await getAblyToken();
+
+      // Existing users skip the permission screen, so register their
+      // installation here. A failure must not block sign-in.
+      if (isOldUser) {
+        try {
+          await registerCurrentInstallationForPush();
+        } catch {
+          console.error("Push registration failed after sign-in.");
+        }
+      }
 
       // The login screen may have closed while waiting.
       if (!isMountedRef.current) {

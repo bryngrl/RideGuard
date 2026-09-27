@@ -30,3 +30,31 @@ export async function registerPushNotification(
     throw error;
   }
 }
+
+// Removes this installation's push registration on the backend. The
+// authenticated apiClient attaches the current user's Firebase ID token, and
+// the backend only deletes a registration the caller owns.
+export async function unregisterPushNotification(
+  installationId: string,
+): Promise<void> {
+  const normalizedId = installationId.trim();
+
+  if (!normalizedId) {
+    throw new Error("Installation ID is required.");
+  }
+
+  try {
+    await apiClient.delete(
+      `/notifications/registrations/${encodeURIComponent(normalizedId)}`,
+    );
+  } catch (error) {
+    if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
+      throw new Error(
+        error.response?.data.message ??
+          "Unable to unregister push notifications.",
+      );
+    }
+
+    throw error;
+  }
+}
