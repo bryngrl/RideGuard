@@ -69,7 +69,7 @@ export function useGoogleSignIn() {
       // Finish the state update before leaving this screen.
       setIsLoading(false);
 
-      router.replace(isOldUser ? "/(tabs)" : "/auth/register-1");
+      router.replace(isOldUser ? "/dashboard" : "/auth/register-1");
     } catch (caughtError) {
       console.error(DEFAULT_ERROR_MESSAGE, caughtError);
 

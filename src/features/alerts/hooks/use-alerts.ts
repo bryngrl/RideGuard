@@ -25,23 +25,39 @@ export function useAlerts() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (signal?: AbortSignal) => {
+    // No authenticated user (e.g. after logout): skip the request entirely.
+    if (!firebaseAuth.currentUser) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setError(null);
-      setAlerts(await getAlerts());
+      setAlerts(await getAlerts(20, undefined, signal));
     } catch (caughtError) {
+      // A cancelled request is expected (unmount/logout) — not an error.
+      if (signal?.aborted) {
+        return;
+      }
       setError(
         caughtError instanceof Error
           ? caughtError.message
           : "Failed to load alerts.",
       );
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) {
+        setIsLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    void load();
+    const controller = new AbortController();
+    void load(controller.signal);
+
+    // Cancel the in-flight alerts request when the dashboard unmounts.
+    return () => controller.abort();
   }, [load]);
 
   // Prepend a live alert, ignoring anything we already have.

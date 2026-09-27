@@ -1,3 +1,5 @@
+import axios from "axios";
+
 import type { AlertEvent } from "@/lib/ably/alerts";
 import { apiClient } from "@/lib/api/client";
 import type { ApiResponse } from "@/lib/api/types";
@@ -14,11 +16,18 @@ type AlertsPage = {
 export async function getAlerts(
   limit = 20,
   cursor?: string,
+  signal?: AbortSignal,
 ): Promise<AlertEvent[]> {
   return apiClient
-    .get<ApiResponse<AlertsPage>>("/alerts", { params: { limit, cursor } })
+    .get<ApiResponse<AlertsPage>>("/alerts", { params: { limit, cursor }, signal })
     .then((response) => response.data.data.data.map(normalizeAlert))
     .catch((error) => {
+      // Let cancellations pass through untouched so callers can ignore them
+      // instead of surfacing a fetch error.
+      if (axios.isCancel(error)) {
+        throw error;
+      }
+
       console.error("Error fetching alerts:", error);
       throw new Error("Failed to fetch alerts");
     });
