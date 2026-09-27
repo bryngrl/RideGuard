@@ -1,3 +1,4 @@
+import { styles } from "./permission-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import LocationIcon from "@/assets/icons/actions/location.svg";
 import NotificationIcon from "@/assets/icons/misc/notification.svg";
@@ -9,7 +10,7 @@ import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { AppState, Linking, StyleSheet, Text, View } from "react-native";
+import { AppState, Linking, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PermissionsScreen() {
@@ -232,74 +233,3 @@ export default function PermissionsScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    flex: 1,
-    paddingHorizontal: Spacing.five,
-    paddingBottom: Spacing.five,
-    paddingTop: Spacing.four,
-  },
-
-  topSection: {
-    flex: 1,
-    paddingTop: Spacing.four,
-  },
-
-  logoContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.five,
-  },
-
-  logo: {
-    width: 60,
-    height: 60,
-  },
-
-  headerContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.five,
-  },
-
-  permissionsList: {
-    gap: Spacing.four,
-  },
-
-  permissionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: BorderRadius.full,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: Spacing.three,
-  },
-
-  permissionIcon: {
-    width: 16,
-    height: 16,
-  },
-
-  textContainer: {
-    flex: 1,
-  },
-
-  checkIcon: {
-    width: 16,
-    height: 16,
-    marginLeft: Spacing.three,
-  },
-
-  buttonContainer: {
-    paddingTop: Spacing.three,
-    paddingBottom: Spacing.three,
-  },
-});

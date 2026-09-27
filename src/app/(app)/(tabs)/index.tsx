@@ -28,7 +28,7 @@ import {
 } from "@/shared/theme";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useOnboardingStore } from "@/modules/onboarding";
 import { useDeviceStore } from "@/store/useDeviceStore";
 
 import { LinearGradient } from "expo-linear-gradient";
@@ -41,7 +41,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const colors = useTheme();
 
-  const firstName = useAuthStore((state) => state.firstName);
+  const firstName = useOnboardingStore((state) => state.firstName);
 
   const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
 

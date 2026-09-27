@@ -5,29 +5,38 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import { useOnboardingStore } from "../store/onboarding.store";
+import { styles } from "./vehicle-step-screen.styles";
 
 export default function RegisterStepTwoScreen() {
   const router = useRouter();
   const theme = useTheme();
 
-  const { vehicleName, plateNumber, color, updateProfile } = useAuthStore();
+  const { vehicleBrand, vehicleModel, plateNumber, color, updateDraft } =
+    useOnboardingStore();
 
-  const [vehicleNameError, setVehicleNameError] = useState("");
+  const [vehicleBrandError, setVehicleBrandError] = useState("");
+  const [vehicleModelError, setVehicleModelError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
 
   const handleNextStep = () => {
-    setVehicleNameError("");
+    setVehicleBrandError("");
+    setVehicleModelError("");
     setPlateNumberError("");
 
     let isValid = true;
 
-    if (!vehicleName.trim()) {
-      setVehicleNameError("Please enter your vehicle name.");
+    if (!vehicleBrand.trim()) {
+      setVehicleBrandError("Please enter your vehicle brand.");
+      isValid = false;
+    }
+
+    if (!vehicleModel.trim()) {
+      setVehicleModelError("Please enter your vehicle model.");
       isValid = false;
     }
 
@@ -73,13 +82,25 @@ export default function RegisterStepTwoScreen() {
 
         <View style={styles.formContainer}>
           <CustomTextInput
-            label="Vehicle Name"
+            label="Vehicle Brand"
             required
-            value={vehicleName}
-            error={vehicleNameError}
+            value={vehicleBrand}
+            error={vehicleBrandError}
             onChangeText={(text) => {
-              updateProfile({ vehicleName: text });
-              if (vehicleNameError) setVehicleNameError("");
+              updateDraft({ vehicleBrand: text });
+              if (vehicleBrandError) setVehicleBrandError("");
+            }}
+            containerStyle={{ paddingBottom: Spacing.two }}
+          />
+
+          <CustomTextInput
+            label="Vehicle Model"
+            required
+            value={vehicleModel}
+            error={vehicleModelError}
+            onChangeText={(text) => {
+              updateDraft({ vehicleModel: text });
+              if (vehicleModelError) setVehicleModelError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
@@ -90,7 +111,7 @@ export default function RegisterStepTwoScreen() {
             value={plateNumber}
             error={plateNumberError}
             onChangeText={(text) => {
-              updateProfile({ plateNumber: text });
+              updateDraft({ plateNumber: text });
               if (plateNumberError) setPlateNumberError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
@@ -100,7 +121,7 @@ export default function RegisterStepTwoScreen() {
             label="Color"
             value={color}
             onChangeText={(text) => {
-              updateProfile({ color: text });
+              updateDraft({ color: text });
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
@@ -133,32 +154,3 @@ export default function RegisterStepTwoScreen() {
     </KeyboardAvoidingWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  stepperContainer: {
-    alignItems: "center",
-    marginBottom: Spacing.five,
-  },
-  logoContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.three,
-  },
-  headerContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.four,
-  },
-  formContainer: {
-    marginTop: Spacing.three,
-    marginBottom: Spacing.five,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: "auto",
-    paddingTop: Spacing.three,
-  },
-});

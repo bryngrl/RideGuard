@@ -1,18 +1,19 @@
+import { styles } from "./complete-setup-screen.styles";
 import AllSetIcon from "@/assets/icons/logos/all-set.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useOnboardingStore } from "../store/onboarding.store";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CompleteSetupScreen() {
   const router = useRouter();
   const theme = useTheme();
 
-  const firstName = useAuthStore((state) => state.firstName);
+  const firstName = useOnboardingStore((state) => state.firstName);
 
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,35 +79,3 @@ export default function CompleteSetupScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-
-  container: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-  },
-
-  centerSection: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  title: {
-    textAlign: "center",
-    marginBottom: Spacing.two,
-  },
-
-  subtitle: {
-    textAlign: "center",
-    maxWidth: 280,
-  },
-
-  footer: {
-    width: "100%",
-    paddingBottom: Spacing.five,
-  },
-});

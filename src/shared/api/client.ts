@@ -15,10 +15,7 @@ export class APIClient {
     this.baseUrl = baseUrl;
   }
 
-  async request<T>(
-    endpoint: string,
-    options: RequestOptions = {},
-  ): Promise<T> {
+  async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const { token, headers, ...fetchOptions } = options;
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {
@@ -43,14 +40,47 @@ export class APIClient {
     }
 
     if (!response.ok) {
-      const message =
-        typeof data === "object" &&
-        data !== null &&
-        "message" in data
-          ? Array.isArray(data.message)
-            ? data.message.join(", ")
-            : String(data.message)
-          : "An API request failed.";
+      let message = "An API request failed.";
+
+      if (typeof data === "object" && data !== null) {
+        if ("detail" in data) {
+          const detail = data.detail;
+
+          if (Array.isArray(detail)) {
+            message = detail
+              .map((error) => {
+                if (
+                  typeof error === "object" &&
+                  error !== null &&
+                  "msg" in error
+                ) {
+                  const field =
+                    "loc" in error && Array.isArray(error.loc)
+                      ? error.loc[error.loc.length - 1]
+                      : "unknown field";
+
+                  return `${field}: ${String(error.msg)}`;
+                }
+
+                return String(error);
+              })
+              .join(", ");
+          } else {
+            message = String(detail);
+          }
+        } else if ("message" in data) {
+          const apiMessage = data.message;
+
+          message = Array.isArray(apiMessage)
+            ? apiMessage.join(", ")
+            : String(apiMessage);
+        }
+      }
+
+      console.error("API ERROR:", {
+        status: response.status,
+        data,
+      });
 
       throw new APIError(message, response.status, data);
     }
@@ -65,11 +95,7 @@ export class APIClient {
     });
   }
 
-  post<T>(
-    endpoint: string,
-    body?: unknown,
-    token?: string,
-  ): Promise<T> {
+  post<T>(endpoint: string, body?: unknown, token?: string): Promise<T> {
     return this.request<T>(endpoint, {
       method: "POST",
       token,
@@ -77,11 +103,7 @@ export class APIClient {
     });
   }
 
-  patch<T>(
-    endpoint: string,
-    body?: unknown,
-    token?: string,
-  ): Promise<T> {
+  patch<T>(endpoint: string, body?: unknown, token?: string): Promise<T> {
     return this.request<T>(endpoint, {
       method: "PATCH",
       token,

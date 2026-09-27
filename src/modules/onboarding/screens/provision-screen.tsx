@@ -1,7 +1,8 @@
+import { styles } from "./provision-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import LighBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
-import { claimDevice } from "@/services/api";
+import { claimDevice } from "../services/onboarding.api";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
@@ -11,7 +12,7 @@ import { CustomTextInput } from "@/shared/ui/text-input";
 import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 export default function ProvisionTokenScreen() {
   const router = useRouter();
@@ -216,47 +217,3 @@ export default function ProvisionTokenScreen() {
     </KeyboardAvoidingWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    width: "100%",
-  },
-  topSection: {
-    paddingTop: 72,
-  },
-  logoContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.three,
-  },
-  headerContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.five,
-  },
-  formContainer: {
-    marginTop: Spacing.one,
-  },
-  footerSection: {
-    marginTop: "auto",
-    paddingTop: Spacing.four,
-  },
-  helpContainer: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    marginBottom: Spacing.four,
-  },
-  iconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: Spacing.three,
-  },
-  helpTextContainer: {
-    flex: 1,
-  },
-  buttonContainer: {
-    width: "100%",
-  },
-});

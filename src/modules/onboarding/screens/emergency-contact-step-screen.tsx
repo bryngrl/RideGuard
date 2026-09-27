@@ -1,24 +1,25 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { Button } from "@/shared/ui/button";
+import { styles } from "./emergency-contact-step-screen.styles";
 
-import { ProfilePayload, submitProfile } from "@/services/api";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useAuthStore } from "@/store/useAuthStore";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, Text, View } from "react-native";
+import { ProfilePayload, submitProfile } from "../services/onboarding.api";
+import { useOnboardingStore } from "../store/onboarding.store";
 
 export default function RegisterStepThreeScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const store = useAuthStore();
+  const store = useOnboardingStore();
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
@@ -44,7 +45,8 @@ export default function RegisterStepThreeScreen() {
       first_name: store.firstName.trim(),
       last_name: store.lastName.trim(),
       phone_number: `+63${store.phone.trim().replace(/^0/, "")}`,
-      vehicle: store.vehicleName.trim(),
+      brand: store.vehicleBrand.trim(),
+      model: store.vehicleModel.trim(),
       plate_number: store.plateNumber.trim(),
       color: store.color.trim(),
     };
@@ -108,10 +110,13 @@ export default function RegisterStepThreeScreen() {
       await submitProfile(payload, firebaseToken);
 
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("PROFILE SUBMISSION ERROR:", error);
 
-      Alert.alert("Error", error.message || "Failed to submit profile.");
+      Alert.alert(
+        "Error",
+        error instanceof Error ? error.message : "Failed to submit profile.",
+      );
 
       return false;
     } finally {
@@ -186,7 +191,7 @@ export default function RegisterStepThreeScreen() {
               value={store.contactName}
               error={contactNameError}
               onChangeText={(text) => {
-                store.updateProfile({ contactName: text });
+                store.updateDraft({ contactName: text });
                 if (contactNameError) setContactNameError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
@@ -204,7 +209,7 @@ export default function RegisterStepThreeScreen() {
                 const digitsOnly = text.replace(/\D/g, "");
                 const formattedPhone = digitsOnly.replace(/^0+/, "");
 
-                store.updateProfile({ emergencyPhone: formattedPhone });
+                store.updateDraft({ emergencyPhone: formattedPhone });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
@@ -254,7 +259,7 @@ export default function RegisterStepThreeScreen() {
                       key={item.value}
                       style={styles.dropdownItem}
                       onPress={() => {
-                        store.updateProfile({
+                        store.updateDraft({
                           relationship: item.value,
                         });
                         if (relationshipError) setRelationshipError(""); // Clear error when selected
@@ -323,52 +328,3 @@ export default function RegisterStepThreeScreen() {
     </>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  stepperContainer: {
-    alignItems: "center",
-    marginBottom: Spacing.five,
-  },
-  logoContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.three,
-  },
-  logo: {
-    width: 60,
-    height: 60,
-  },
-  headerContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.four,
-  },
-  formContainer: {
-    marginTop: Spacing.three,
-    marginBottom: Spacing.five,
-  },
-  buttonContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: "auto",
-    paddingTop: Spacing.two,
-  },
-  relationshipDropdown: {
-    position: "relative",
-    zIndex: 10,
-    paddingBottom: Spacing.two,
-  },
-  dropdownMenu: {
-    borderWidth: 1.5,
-    borderTopWidth: 0,
-    marginTop: -Spacing.one,
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-});

@@ -1,3 +1,4 @@
+import { styles } from "./profile-step-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
@@ -5,16 +6,16 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useOnboardingStore } from "../store/onboarding.store";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const theme = useTheme();
 
-  const { lastName, firstName, phone, updateProfile } = useAuthStore();
+  const { lastName, firstName, phone, updateDraft } = useOnboardingStore();
   const [lastNameError, setLastNameError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -85,7 +86,7 @@ export default function RegisterScreen() {
             value={lastName}
             error={lastNameError}
             onChangeText={(text) => {
-              updateProfile({ lastName: text });
+              updateDraft({ lastName: text });
               if (lastNameError) setLastNameError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
@@ -98,7 +99,7 @@ export default function RegisterScreen() {
             value={firstName}
             error={firstNameError}
             onChangeText={(text) => {
-              updateProfile({ firstName: text });
+              updateDraft({ firstName: text });
               if (firstNameError) setFirstNameError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
@@ -117,7 +118,7 @@ export default function RegisterScreen() {
               const digitsOnly = text.replace(/\D/g, "");
               const formattedPhone = digitsOnly.replace(/^0+/, "");
 
-              updateProfile({ phone: formattedPhone });
+              updateDraft({ phone: formattedPhone });
 
               if (phoneError) setPhoneError("");
             }}
@@ -138,30 +139,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingWrapper>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  stepperContainer: {
-    alignItems: "center",
-    marginBottom: Spacing.five,
-  },
-  logoContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.three,
-  },
-  headerContainer: {
-    alignItems: "flex-start",
-    marginBottom: Spacing.four,
-  },
-  formContainer: {
-    marginTop: Spacing.three,
-    marginBottom: Spacing.five,
-  },
-  buttonContainer: {
-    marginTop: "auto",
-    paddingTop: Spacing.three,
-    alignItems: "flex-end",
-  },
-});

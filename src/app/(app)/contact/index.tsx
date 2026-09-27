@@ -39,12 +39,12 @@ export default function ContactScreen() {
   ]);
 
   const handleAddContact = () => {
-    router.push("/contact-pages/add-contact");
+    router.push("/contact/add-contact");
   };
 
   const handleContactPress = (contact: EmergencyContact) => {
     router.push({
-      pathname: "/contact-pages/edit-contact",
+      pathname: "/contact/edit-contact",
       params: {
         contactId: contact.id,
         contactName: contact.name,
