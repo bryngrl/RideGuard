@@ -23,6 +23,7 @@ import { GoogleButton } from "@/shared/ui/google-button";
 import { BrandColors, Typography } from "@/shared/theme";
 
 import { checkIsOldUser } from "../services/auth.api";
+import { useAuthStore } from "../store/auth.store";
 
 import { styles } from "./login-screen.styles";
 
@@ -35,6 +36,8 @@ export default function LoginScreen() {
   const theme = useTheme();
 
   const { signIn } = useGoogleSignin();
+  const setUser = useAuthStore((state) => state.setUser);
+  const setIsOldUser = useAuthStore((state) => state.setIsOldUser);
 
   const logoScale = useSharedValue(2.2);
   const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.28);
@@ -53,10 +56,13 @@ export default function LoginScreen() {
         const firebaseToken = await user.getIdToken();
         const isOldUser = await checkIsOldUser(firebaseToken);
 
+        setIsOldUser(isOldUser);
+        setUser(user);
+
         if (isOldUser) {
-          router.replace("/(tabs)");
+          router.replace("/(app)/(tabs)");
         } else {
-          router.replace("/auth/register-1");
+          router.replace("/(onboarding)/register/profile");
         }
       }
     } catch (error) {
