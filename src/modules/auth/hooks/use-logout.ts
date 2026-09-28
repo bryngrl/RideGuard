@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Alert } from "react-native";
 
 import { auth } from "@/lib/firebase";
+import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
 import { useAuthStore } from "../store/auth.store";
 
 export function useLogout() {
@@ -32,6 +33,8 @@ export function useLogout() {
       await signOut(auth);
 
       clearAuth();
+      // Drop the previous user's alerts so they don't leak into the next session.
+      useAlertsStore.getState().clearAlerts();
 
       router.replace("/(public)/sign-in");
     } catch (error) {
