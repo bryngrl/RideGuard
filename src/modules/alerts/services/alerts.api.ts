@@ -100,3 +100,25 @@ export async function markAlertAsFalseAlarm(
 
   return fields;
 }
+
+/**
+ * Mark an alert as seen (read). Returns the updated backend payload so the
+ * store can drop the unread styling for that row.
+ */
+export async function markAlertAsSeen(
+  alertId: string,
+  firebaseToken: string,
+): Promise<AlertFields> {
+  const envelope = await apiClient.patch<StandardEnvelope<unknown>>(
+    `/alerts/${encodeURIComponent(alertId)}/seen`,
+    { isSeen: true },
+    firebaseToken,
+  );
+
+  const fields = parseAlertFields(unwrapAlertFields(envelope?.data));
+  if (!fields) {
+    throw new Error("The server returned an invalid alert.");
+  }
+
+  return fields;
+}
