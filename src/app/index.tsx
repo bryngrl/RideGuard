@@ -13,5 +13,5 @@ export default function Index() {
     return <Redirect href="/(public)/sign-in" />;
   }
 
-  return <Redirect href="/(tabs)" />;
+  return <Redirect href="/(onboarding)/register/profile" />;
 }

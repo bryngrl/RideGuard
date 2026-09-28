@@ -128,7 +128,7 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(true);
 
     if (success) {
-      router.replace("/permission");
+      router.replace("/(onboarding)/register/permission");
     }
   };
   const handleSkipPress = () => {

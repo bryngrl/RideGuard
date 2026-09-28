@@ -91,7 +91,7 @@ export default function ProvisionTokenScreen() {
 
       // Redirect after success
       setTimeout(() => {
-        router.replace("/metal-sensor");
+        router.replace("/(onboarding)/devices/button");
       }, 1500);
     } catch (error: unknown) {
       const message =

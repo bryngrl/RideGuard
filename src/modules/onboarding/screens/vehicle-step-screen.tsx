@@ -47,7 +47,7 @@ export default function RegisterStepTwoScreen() {
 
     if (!isValid) return;
 
-    router.push("/auth/register-3");
+    router.push("/(onboarding)/register/emergency-contact");
   };
 
   return (

@@ -76,7 +76,7 @@ export default function PermissionsScreen() {
       }
 
       // Both permissions granted
-      router.replace("/provision");
+      router.replace("/(onboarding)/register/provision");
     } catch (error) {
       console.error("Permission error:", error);
     } finally {

@@ -45,7 +45,7 @@ export default function RegisterScreen() {
       isValid = false;
     }
     if (!isValid) return;
-    router.push("/auth/register-2");
+    router.push("/(onboarding)/register/vehicle");
   };
 
   return (

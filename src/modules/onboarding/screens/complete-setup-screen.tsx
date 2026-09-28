@@ -28,7 +28,7 @@ export default function CompleteSetupScreen() {
     setIsLoading(true);
 
     try {
-      router.replace("/(tabs)");
+      router.replace("/(app)/(tabs)");
     } finally {
       setIsLoading(false);
     }
