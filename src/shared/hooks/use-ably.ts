@@ -6,9 +6,8 @@ import { getAblyToken } from "@/modules/auth/services/auth.api";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
 import { parseAlertFields } from "@/modules/alerts/services/alerts.mapper";
+import { ALERT_CREATED_EVENT } from "@/modules/alerts/constants";
 import { useDeviceStore } from "@/modules/devices";
-
-const ALERT_CREATED_EVENT = "alert.created";
 
 /**
  * Builds the exact per-user/per-device alerts channel the backend publishes to:
