@@ -11,6 +11,8 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 
+import { useAbly } from "@/shared/hooks/use-ably";
+
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -24,6 +26,8 @@ export default function RootLayout() {
     "Geist-SemiBold": require("../../assets/fonts/Geist-SemiBold.ttf"),
     "Geist-Thin": require("../../assets/fonts/Geist-Thin.ttf"),
   });
+
+  useAbly();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
