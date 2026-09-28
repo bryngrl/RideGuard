@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
 
-    "icon": "./assets/images/logos/official-logo.png",
+    "icon": "./assets/images/logos/logo.png",
 
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
@@ -29,23 +29,23 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "alerts"
+          "defaultChannel": "alerts",
+          "icon": "./assets/images/logos/logo.png",
+          "color": "#1A2B4C"
         }
       ]
     ],
     "ios": {
-      "icon": "./assets/images/logos/official-logo.png"
+      "icon": "./assets/images/logos/logo.png"
     },
     "android": {
       "package": "com.rideguard.app",
       "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#FFFFFF",
 
-        "foregroundImage": "./assets/images/logos/official-logo.png",
-
-        "monochromeImage": "./assets/images/logos/official-logo.png"
+        "foregroundImage": "./assets/images/logos/logo.png"
       }
     },
     "web": {
