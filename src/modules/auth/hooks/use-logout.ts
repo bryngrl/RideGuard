@@ -6,6 +6,7 @@ import { Alert } from "react-native";
 
 import { auth } from "@/lib/firebase";
 import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
+import { unregisterDeviceForPush } from "@/modules/notifications";
 import { useAuthStore } from "../store/auth.store";
 
 export function useLogout() {
@@ -27,6 +28,17 @@ export function useLogout() {
         await GoogleSignin.signOut();
       } catch (error) {
         console.error("Failed to sign out of Google:", error);
+      }
+
+      // Remove this device's push registration while the token is still valid,
+      // so it stops receiving alerts. A failure here shouldn't block logout.
+      try {
+        const firebaseToken = await auth.currentUser?.getIdToken();
+        if (firebaseToken) {
+          await unregisterDeviceForPush(firebaseToken);
+        }
+      } catch (error) {
+        console.error("Failed to unregister push notifications:", error);
       }
 
       // End the user's Firebase session.

@@ -25,7 +25,13 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "alerts"
+        }
+      ]
     ],
     "ios": {
       "icon": "./assets/images/logos/official-logo.png"

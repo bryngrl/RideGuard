@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 
 import { useAbly } from "@/shared/hooks/use-ably";
+import { usePushNotifications } from "@/modules/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +29,7 @@ export default function RootLayout() {
   });
 
   useAbly();
+  usePushNotifications();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
