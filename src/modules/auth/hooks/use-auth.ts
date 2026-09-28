@@ -13,18 +13,26 @@ export function useAuth() {
   const isCheckingAuth = useAuthStore(
     (state) => state.isCheckingAuth,
   );
+  const isOldUser = useAuthStore(
+    (state) => state.isOldUser,
+  );
 
   const setUser = useAuthStore((state) => state.setUser);
   const setCheckingAuth = useAuthStore(
     (state) => state.setCheckingAuth,
+  );
+  const setIsOldUser = useAuthStore(
+    (state) => state.setIsOldUser,
   );
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(
       auth,
       async (firebaseUser) => {
+
         if (!firebaseUser) {
           setUser(null);
+          setIsOldUser(null);
           setCheckingAuth(false);
           return;
         }
@@ -32,10 +40,13 @@ export function useAuth() {
         try {
           setCheckingAuth(true);
 
-          const firebaseToken = await firebaseUser.getIdToken();
+          const firebaseToken =
+            await firebaseUser.getIdToken();
 
-          await checkIsOldUser(firebaseToken);
+          const oldUser =
+            await checkIsOldUser(firebaseToken);
 
+          setIsOldUser(oldUser);
           setUser(firebaseUser);
         } catch (error) {
           console.error(
@@ -44,6 +55,7 @@ export function useAuth() {
           );
 
           setUser(null);
+          setIsOldUser(null);
         } finally {
           setCheckingAuth(false);
         }
@@ -51,11 +63,16 @@ export function useAuth() {
     );
 
     return unsubscribe;
-  }, [setUser, setCheckingAuth]);
+  }, [
+    setUser,
+    setCheckingAuth,
+    setIsOldUser,
+  ]);
 
   return {
     user,
     isAuthenticated,
     isCheckingAuth,
+    isOldUser,
   };
 }
