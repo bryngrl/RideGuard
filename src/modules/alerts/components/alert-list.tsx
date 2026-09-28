@@ -8,6 +8,8 @@ import { Spacing, Typography } from "@/shared/theme";
 import type { AlertItem } from "../types/alert.types";
 import { AlertRow } from "./alert-row";
 
+const ON_END_REACHED_THRESHOLD = 0.3;
+
 interface AlertListProps {
   data: AlertItem[];
   ListHeaderComponent?: ReactElement;
@@ -42,7 +44,7 @@ export function AlertList({
         </View>
       }
       onEndReached={onEndReached}
-      onEndReachedThreshold={0.3}
+      onEndReachedThreshold={ON_END_REACHED_THRESHOLD}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     />
