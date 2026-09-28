@@ -26,7 +26,7 @@ import type { AlertItem } from "../types/alert.types";
 
 type AlertFilter = "all" | "unread";
 
-const PAGE_SIZE = 2;
+const PAGE_SIZE = 10;
 const SUCCESS_MESSAGE_DURATION = 1800;
 
 export function AlertsScreen() {
