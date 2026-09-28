@@ -10,7 +10,6 @@ import InactiveSensorIcon from "@/assets/icons/sensors/metal/inactive.svg";
 import ActiveSensorIcon from "@/assets/icons/sensors/metal/metal.svg";
 import SystemReadyIcon from "@/assets/icons/status/success.svg";
 
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useOnboardingStore } from "@/modules/onboarding";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Typography } from "@/shared/theme";
@@ -426,8 +425,6 @@ export function HomeScreen() {
         visible={showRideDetailsSheet}
         onClose={handleCloseRideDetails}
       />
-
-      <BottomNavigation />
     </View>
   );
 }

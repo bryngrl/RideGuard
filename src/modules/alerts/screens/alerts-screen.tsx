@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 
@@ -103,7 +102,6 @@ export function AlertsScreen() {
         onPressItem={openAlertDetails}
         onEndReached={handleEndReached}
       />
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

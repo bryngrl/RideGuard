@@ -64,7 +64,8 @@ export function BottomNavigation() {
   const colors = useTheme();
 
   const handleNavigation = (route: string) => {
-    router.push(route as never);
+    // navigate (not push) so tapping a tab switches to it instead of stacking.
+    router.navigate(route as never);
   };
 
   return (

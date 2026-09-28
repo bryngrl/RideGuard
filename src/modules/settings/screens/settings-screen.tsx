@@ -1,4 +1,3 @@
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useLogout } from "@/modules/auth";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
@@ -23,7 +22,6 @@ export function SettingsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-      <BottomNavigation />
     </View>
   );
 }
