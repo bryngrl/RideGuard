@@ -71,13 +71,19 @@ export function alertTimeValue(timeStamp: string): number {
 }
 
 /**
- * Human-friendly time label, e.g. "3:20 PM". Returns "" for invalid input.
+ * Human-friendly date + time label, e.g. "Sep 28, 10:30 AM".
+ * Returns "" for invalid input.
  */
 export function formatAlertTime(timeStamp: string): string {
   if (!timeStamp) return "";
   const date = new Date(timeStamp);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 /**
