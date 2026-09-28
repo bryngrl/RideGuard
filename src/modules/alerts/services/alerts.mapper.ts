@@ -88,6 +88,49 @@ export function formatAlertTime(timeStamp: string): string {
 }
 
 /**
+ * Time-only label, e.g. "9:05 am". Returns "" for invalid input.
+ */
+export function formatClockTime(timeStamp: string): string {
+  if (!timeStamp) return "";
+  const date = new Date(timeStamp);
+  if (Number.isNaN(date.getTime())) return "";
+  return date
+    .toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    .toLowerCase();
+}
+
+/**
+ * Relative day label: "Today", "Yesterday", or a date like "Sep 28".
+ * Returns "" for invalid input.
+ */
+export function formatRelativeDay(timeStamp: string): string {
+  if (!timeStamp) return "";
+  const date = new Date(timeStamp);
+  if (Number.isNaN(date.getTime())) return "";
+
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  const dayInMs = 24 * 60 * 60 * 1000;
+  const dayDiff = Math.round(
+    (startOfToday.getTime() - startOfDate.getTime()) / dayInMs,
+  );
+
+  if (dayDiff === 0) return "Today";
+  if (dayDiff === 1) return "Yesterday";
+  return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+/**
  * Map a backend payload to the UI item. The title and severity are derived
  * from `isFalseAlarm` only — never from the original message text.
  * Returns null when the payload lacks a usable alertId.
