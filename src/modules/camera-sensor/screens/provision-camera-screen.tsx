@@ -81,7 +81,7 @@ export function ProvisionCameraScreen() {
       });
 
       setTimeout(() => {
-        router.replace("/devices/camera/camera-preview" as any);
+        router.replace("/(onboarding)/devices/camera/camera-preview");
       }, 1500);
     } catch (error: unknown) {
       const message =

@@ -33,7 +33,6 @@ export function HomeScreen() {
 
   const firstName = useOnboardingStore((state) => state.firstName);
   const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
-  const metalDeviceId = useDeviceStore((state) => state.metalDeviceId);
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
@@ -176,7 +175,7 @@ export function HomeScreen() {
           <Card
             size="small"
             title="Metal sensor"
-            subtitle={metalDeviceId || "Hardware name"}
+            subtitle="Hardware name"
             status={isMetalSensorConnected ? "Connected" : "Not connected"}
             connectionState={
               isMetalSensorConnected ? "connected" : "disconnected"
