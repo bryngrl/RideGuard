@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
@@ -8,7 +8,10 @@ import {
   FALSE_ALARM_ERROR_MESSAGE,
   FALSE_ALARM_ERROR_TITLE,
 } from "../constants";
-import { markAlertAsFalseAlarm } from "../services/alerts.api";
+import {
+  markAlertAsFalseAlarm,
+  markAlertAsSeen,
+} from "../services/alerts.api";
 import { useAlertsStore } from "../store/alerts.store";
 
 /**
@@ -25,6 +28,40 @@ export function useAlertDetails() {
   const upsertAlert = useAlertsStore((state) => state.upsertAlert);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Remember which alert we've already marked seen, so opening the screen only
+  // fires the request once.
+  const markedSeenRef = useRef<string | null>(null);
+
+  // Opening an unread alert marks it as seen. We update the store with the
+  // backend result so the row loses its unread background + dot, and that state
+  // sticks when navigating back (it's persisted on the server too).
+  useEffect(() => {
+    if (!user || !alertId || !alert) return;
+    if (alert.isSeen) return;
+    if (markedSeenRef.current === alertId) return;
+
+    markedSeenRef.current = alertId;
+    let active = true;
+
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        const updated = await markAlertAsSeen(alertId, token);
+        if (active) upsertAlert(updated);
+      } catch (error) {
+        console.error("Failed to mark alert as seen:", error);
+        // Let a later open retry if this one failed.
+        if (markedSeenRef.current === alertId) {
+          markedSeenRef.current = null;
+        }
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [user, alertId, alert, upsertAlert]);
 
   const markAsFalseAlarm = async () => {
     if (!user || !alertId || isSubmitting) return;
