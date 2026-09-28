@@ -3,7 +3,7 @@ import { Redirect } from "expo-router";
 import { useAuth } from "@/modules/auth";
 
 export default function Index() {
-  const { isAuthenticated, isCheckingAuth } = useAuth();
+  const { isAuthenticated, isCheckingAuth, isOldUser } = useAuth();
 
   if (isCheckingAuth) {
     return null;
@@ -13,5 +13,17 @@ export default function Index() {
     return <Redirect href="/(public)/sign-in" />;
   }
 
-  return <Redirect href="/(onboarding)/register/profile" />;
+  if (isOldUser === null) {
+    return null;
+  }
+
+  return (
+    <Redirect
+      href={
+        isOldUser
+          ? "/(app)/(tabs)"
+          : "/(onboarding)/register/profile"
+      }
+    />
+  );
 }
