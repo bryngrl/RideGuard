@@ -1,6 +1,4 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -11,128 +9,24 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
-import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 
 import { AlertList } from "../components/alert-list";
-import { getSavedAlerts } from "../services/alerts.api";
-import {
-  alertTimeValue,
-  mapAlertFieldsToItem,
-} from "../services/alerts.mapper";
-import { useAlertsStore } from "../store/alerts.store";
-import type { AlertItem } from "../types/alert.types";
-
-type AlertFilter = "all" | "unread";
-
-const PAGE_SIZE = 10;
-const SUCCESS_MESSAGE_DURATION = 1800;
+import { ALERT_ICON } from "../constants";
+import { useAlerts } from "../hooks/use-alerts";
 
 export function AlertsScreen() {
   const colors = useTheme();
-  const router = useRouter();
-
-  const user = useAuthStore((state) => state.user);
-  const alerts = useAlertsStore((state) => state.alerts);
-  const mergeAlerts = useAlertsStore((state) => state.mergeAlerts);
-
-  const [filter, setFilter] = useState<AlertFilter>("all");
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showLoadedMessage, setShowLoadedMessage] = useState(false);
-
-  // Pagination bookkeeping kept in refs so the loader stays stable across pages.
-  const cursorRef = useRef<string | null>(null);
-  const hasMoreRef = useRef(true);
-  const isFetchingRef = useRef(false);
-  const initializedUidRef = useRef<string | null>(null);
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const loadAlerts = useCallback(
-    async (mode: "initial" | "more") => {
-      if (!user || isFetchingRef.current) return;
-      if (mode === "more" && (!hasMoreRef.current || !cursorRef.current))
-        return;
-
-      isFetchingRef.current = true;
-      if (mode === "more") setIsLoadingMore(true);
-
-      try {
-        const token = await user.getIdToken();
-        const page = await getSavedAlerts(token, {
-          limit: PAGE_SIZE,
-          cursor:
-            mode === "more" ? (cursorRef.current ?? undefined) : undefined,
-        });
-
-        // Merge by alertId so realtime updates and earlier pages aren't clobbered.
-        mergeAlerts(page.alerts);
-        cursorRef.current = page.nextCursor;
-        hasMoreRef.current = page.nextCursor !== null;
-
-        if (mode === "more") {
-          setShowLoadedMessage(true);
-          if (successTimerRef.current) clearTimeout(successTimerRef.current);
-          successTimerRef.current = setTimeout(
-            () => setShowLoadedMessage(false),
-            SUCCESS_MESSAGE_DURATION,
-          );
-        }
-      } catch (error) {
-        console.error("Failed to load saved alerts:", error);
-      } finally {
-        isFetchingRef.current = false;
-        if (mode === "more") setIsLoadingMore(false);
-      }
-    },
-    [user, mergeAlerts],
-  );
-
-  // Initial page load, once per signed-in user. Guarding on uid prevents the
-  // effect from re-firing (and re-fetching page 1) when the Firebase user
-  // reference changes on token refresh.
-  useEffect(() => {
-    if (!user) {
-      initializedUidRef.current = null;
-      return;
-    }
-
-    if (initializedUidRef.current === user.uid) return;
-    initializedUidRef.current = user.uid;
-
-    cursorRef.current = null;
-    hasMoreRef.current = true;
-    loadAlerts("initial");
-  }, [user, loadAlerts]);
-
-  // Clear any pending success-message timer on unmount.
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    };
-  }, []);
-
-  // Load the next page as the list nears its end. The cursor / in-flight guards
-  // inside loadAlerts prevent over-fetching and duplicate requests.
-  const handleEndReached = () => {
-    loadAlerts("more");
-  };
-
-  const visibleAlerts = useMemo(() => {
-    const items = [...alerts]
-      .sort((a, b) => alertTimeValue(b.timeStamp) - alertTimeValue(a.timeStamp))
-      .map(mapAlertFieldsToItem)
-      .filter((item): item is AlertItem => item !== null);
-
-    return filter === "unread" ? items.filter((item) => !item.read) : items;
-  }, [alerts, filter]);
-
-  const handlePressItem = (item: AlertItem) => {
-    router.push({
-      pathname: "/alerts/[alertId]",
-      params: { alertId: item.alertId },
-    });
-  };
+  const {
+    visibleAlerts,
+    filter,
+    setFilter,
+    isLoadingMore,
+    showLoadedMessage,
+    handleEndReached,
+    openAlertDetails,
+  } = useAlerts();
 
   const header = (
     <View>
@@ -185,7 +79,7 @@ export function AlertsScreen() {
         ) : (
           <>
             <Ionicons
-              name="checkmark-circle"
+              name={ALERT_ICON.LOADED}
               size={18}
               color={colors.success}
             />
@@ -206,7 +100,7 @@ export function AlertsScreen() {
         data={visibleAlerts}
         ListHeaderComponent={header}
         ListFooterComponent={footer}
-        onPressItem={handlePressItem}
+        onPressItem={openAlertDetails}
         onEndReached={handleEndReached}
       />
       <BottomNavigation />

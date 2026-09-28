@@ -4,9 +4,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 
+import { ALERT_ICON, UNREAD_BACKGROUND_COLOR } from "../constants";
 import type { AlertItem } from "../types/alert.types";
-
-const UNREAD_BACKGROUND = "#E9F2FD";
 
 interface AlertRowProps {
   alert: AlertItem;
@@ -18,7 +17,7 @@ export function AlertRow({ alert, onPress }: AlertRowProps) {
 
   const isThreat = alert.severity === "threat";
   const titleColor = isThreat ? colors.error : colors.text;
-  const iconName = isThreat ? "warning-outline" : "checkmark-circle-outline";
+  const iconName = isThreat ? ALERT_ICON.THREAT : ALERT_ICON.CLEAR;
   const iconColor = isThreat ? colors.error : colors.text;
 
   return (
@@ -26,7 +25,7 @@ export function AlertRow({ alert, onPress }: AlertRowProps) {
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        !alert.read && { backgroundColor: UNREAD_BACKGROUND },
+        !alert.read && { backgroundColor: UNREAD_BACKGROUND_COLOR },
         pressed && styles.pressed,
       ]}
     >
@@ -44,7 +43,11 @@ export function AlertRow({ alert, onPress }: AlertRowProps) {
       {/* TRAILING INDICATOR */}
       <View style={styles.trailing}>
         {alert.pending ? (
-          <Ionicons name="time-outline" size={24} color={colors.textMuted} />
+          <Ionicons
+            name={ALERT_ICON.PENDING}
+            size={24}
+            color={colors.textMuted}
+          />
         ) : !alert.read ? (
           <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />
         ) : null}

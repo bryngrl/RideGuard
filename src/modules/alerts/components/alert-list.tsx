@@ -5,10 +5,9 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 
+import { END_REACHED_THRESHOLD } from "../constants";
 import type { AlertItem } from "../types/alert.types";
 import { AlertRow } from "./alert-row";
-
-const ON_END_REACHED_THRESHOLD = 0.3;
 
 interface AlertListProps {
   data: AlertItem[];
@@ -44,7 +43,7 @@ export function AlertList({
         </View>
       }
       onEndReached={onEndReached}
-      onEndReachedThreshold={ON_END_REACHED_THRESHOLD}
+      onEndReachedThreshold={END_REACHED_THRESHOLD}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     />
