@@ -36,7 +36,18 @@ export const ALERT_ICON = {
   PENDING: "time-outline",
   // Filled check shown in the "Loaded successfully" footer.
   LOADED: "checkmark-circle",
+  // Clock icon on the auto-delete card in alert details.
+  AUTO_DELETE: "time-outline",
+  // Info icon on the response section in alert details.
+  RESPONSE_INFO: "information-circle-outline",
 } as const;
+
+// --- Alert details: auto-delete card (static UI only, no countdown yet) ---
+
+// Time shown remaining before the alert auto-deletes.
+export const AUTO_DELETE_COUNTDOWN_LABEL = "47h 12m";
+// How long the alert stays viewable in the app.
+export const AUTO_DELETE_RETENTION_HOURS = "47h";
 
 // Popup text shown when marking an alert as a false alarm fails.
 export const FALSE_ALARM_ERROR_TITLE = "Couldn't update alert";
