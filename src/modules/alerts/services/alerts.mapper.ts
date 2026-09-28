@@ -1,3 +1,4 @@
+import { ALERT_TITLE } from "../constants";
 import type { AlertFields, AlertItem } from "../types/alert.types";
 
 /**
@@ -100,7 +101,7 @@ export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
 
   return {
     alertId,
-    title: isFalseAlarm ? "All clear" : "Threat detected",
+    title: isFalseAlarm ? ALERT_TITLE.CLEAR : ALERT_TITLE.THREAT,
     severity: isFalseAlarm ? "clear" : "threat",
     time: formatAlertTime(fields.timeStamp),
     read: fields.isSeen === true,
