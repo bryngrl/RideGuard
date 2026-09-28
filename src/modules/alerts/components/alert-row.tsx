@@ -34,7 +34,9 @@ export function AlertRow({ alert, onPress }: AlertRowProps) {
 
       {/* TEXT */}
       <View style={styles.rowText}>
-        <Text style={[Typography.h4, { color: titleColor }]}>{alert.title}</Text>
+        <Text style={[Typography.h4, { color: titleColor }]}>
+          {alert.title}
+        </Text>
         <Text style={[Typography.bodyLarge, { color: colors.textMuted }]}>
           {alert.time}
         </Text>
@@ -49,7 +51,9 @@ export function AlertRow({ alert, onPress }: AlertRowProps) {
             color={colors.textMuted}
           />
         ) : !alert.read ? (
-          <View style={[styles.unreadDot, { backgroundColor: colors.accent }]} />
+          <View
+            style={[styles.unreadDot, { backgroundColor: colors.accent }]}
+          />
         ) : null}
       </View>
     </Pressable>

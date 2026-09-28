@@ -39,7 +39,7 @@ export function AlertDetailsScreen() {
     <Button
       title={isSubmitting ? "Submitting…" : "Flag as false alarm"}
       variant="primary"
-      size="lg"
+      size="md"
       onPress={markAsFalseAlarm}
       isLoading={isSubmitting}
       disabled={isSubmitting}
