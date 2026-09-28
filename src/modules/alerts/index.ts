@@ -1,5 +1,6 @@
 export * from "./screens/alerts-screen";
 export * from "./screens/alert-details-screen";
+export * from "./screens/alert-photo-screen";
 export * from "./components/alert-list";
 export * from "./components/alert-row";
 export * from "./hooks/use-alerts";

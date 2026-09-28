@@ -1,6 +1,6 @@
 import { Realtime } from "ably";
 import type { Message } from "ably";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 import { getAblyToken } from "@/modules/auth/services/auth.api";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
@@ -22,12 +22,30 @@ function buildAlertsChannelName(userId: string, deviceId: string): string {
 export function useAbly() {
   const user = useAuthStore((state) => state.user);
   const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
+  const alerts = useAlertsStore((state) => state.alerts);
   const upsertAlert = useAlertsStore((state) => state.upsertAlert);
 
+  // The device id isn't reliably in the (non-persisted) device store — e.g. after
+  // a restart or for a returning user. So we also learn it from the saved alerts
+  // loaded from the backend, and subscribe to every device we know about.
+  const deviceIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (cameraDeviceId) ids.add(cameraDeviceId);
+    for (const alert of alerts) {
+      if (alert.deviceId) ids.add(alert.deviceId);
+    }
+    return [...ids].sort();
+  }, [cameraDeviceId, alerts]);
+
+  // Stable key so the effect only re-subscribes when the *set* of devices
+  // changes, not on every alert update.
+  const deviceIdsKey = deviceIds.join("|");
+
   useEffect(() => {
-    // Need both an authenticated user and an assigned device to open the
-    // exact channel. Without the device id there is nothing to subscribe to.
-    if (!user || !cameraDeviceId) return;
+    // Need an authenticated user and at least one device channel to subscribe to.
+    if (!user || !deviceIdsKey) return;
+
+    const ids = deviceIdsKey.split("|");
 
     const client = new Realtime({
       authCallback: async (_params, callback) => {
@@ -48,9 +66,6 @@ export function useAbly() {
       },
     });
 
-    const channelName = buildAlertsChannelName(user.uid, cameraDeviceId);
-    const channel = client.channels.get(channelName);
-
     const handleAlert = (message: Message) => {
       const fields = parseAlertFields(message.data);
       if (fields) {
@@ -58,15 +73,24 @@ export function useAbly() {
       }
     };
 
-    // Subscription errors are handled separately from auth failures so an Ably
-    // problem never surfaces as an authentication error.
-    channel.subscribe(ALERT_CREATED_EVENT, handleAlert).catch((error) => {
-      console.error("Failed to subscribe to the alerts channel:", error);
+    // Subscribe to each known device's channel. Subscription errors are handled
+    // separately from auth failures so an Ably problem never surfaces as an
+    // authentication error.
+    const channels = ids.map((deviceId) => {
+      const channel = client.channels.get(
+        buildAlertsChannelName(user.uid, deviceId),
+      );
+      channel.subscribe(ALERT_CREATED_EVENT, handleAlert).catch((error) => {
+        console.error("Failed to subscribe to the alerts channel:", error);
+      });
+      return channel;
     });
 
     return () => {
-      channel.unsubscribe(ALERT_CREATED_EVENT, handleAlert);
+      for (const channel of channels) {
+        channel.unsubscribe(ALERT_CREATED_EVENT, handleAlert);
+      }
       client.close();
     };
-  }, [user, cameraDeviceId, upsertAlert]);
+  }, [user, deviceIdsKey, upsertAlert]);
 }

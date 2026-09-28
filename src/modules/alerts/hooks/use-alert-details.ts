@@ -1,4 +1,4 @@
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import { Alert } from "react-native";
 
@@ -20,6 +20,7 @@ import { useAlertsStore } from "../store/alerts.store";
  */
 export function useAlertDetails() {
   const { alertId } = useLocalSearchParams<{ alertId: string }>();
+  const router = useRouter();
 
   const user = useAuthStore((state) => state.user);
   const alert = useAlertsStore((state) =>
@@ -83,5 +84,14 @@ export function useAlertDetails() {
     }
   };
 
-  return { alert, isSubmitting, markAsFalseAlarm };
+  // Open the full-screen photo viewer for this alert.
+  const openPhoto = () => {
+    if (!alertId) return;
+    router.push({
+      pathname: "/alerts/[alertId]/photo",
+      params: { alertId },
+    });
+  };
+
+  return { alert, isSubmitting, markAsFalseAlarm, openPhoto };
 }

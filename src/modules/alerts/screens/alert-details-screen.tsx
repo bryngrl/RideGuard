@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
@@ -18,7 +18,7 @@ import { formatClockTime, formatRelativeDay } from "../services/alerts.mapper";
 
 export function AlertDetailsScreen() {
   const colors = useTheme();
-  const { alert, isSubmitting, markAsFalseAlarm } = useAlertDetails();
+  const { alert, isSubmitting, markAsFalseAlarm, openPhoto } = useAlertDetails();
 
   if (!alert) {
     return (
@@ -64,13 +64,18 @@ export function AlertDetailsScreen() {
         {formatRelativeDay(alert.timeStamp)}
       </Text>
 
-      {/* IMAGE (single) */}
+      {/* IMAGE (single) — tap to view full screen */}
       {alert.imageUrl ? (
-        <Image
-          source={alert.imageUrl}
-          style={[styles.image, { backgroundColor: colors.backgroundElement }]}
-          contentFit="cover"
-        />
+        <Pressable onPress={openPhoto}>
+          <Image
+            source={alert.imageUrl}
+            style={[
+              styles.image,
+              { backgroundColor: colors.backgroundElement },
+            ]}
+            contentFit="cover"
+          />
+        </Pressable>
       ) : (
         <View
           style={[
