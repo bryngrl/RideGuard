@@ -11,13 +11,17 @@ import { AlertRow } from "./alert-row";
 interface AlertListProps {
   data: AlertItem[];
   ListHeaderComponent?: ReactElement;
+  ListFooterComponent?: ReactElement | null;
   onPressItem?: (alert: AlertItem) => void;
+  onEndReached?: () => void;
 }
 
 export function AlertList({
   data,
   ListHeaderComponent,
+  ListFooterComponent,
   onPressItem,
+  onEndReached,
 }: AlertListProps) {
   const colors = useTheme();
 
@@ -29,6 +33,7 @@ export function AlertList({
         <AlertRow alert={item} onPress={() => onPressItem?.(item)} />
       )}
       ListHeaderComponent={ListHeaderComponent}
+      ListFooterComponent={ListFooterComponent}
       ListEmptyComponent={
         <View style={styles.empty}>
           <Text style={[Typography.bodyLarge, { color: colors.textMuted }]}>
@@ -36,6 +41,8 @@ export function AlertList({
           </Text>
         </View>
       }
+      onEndReached={onEndReached}
+      onEndReachedThreshold={0.3}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     />

@@ -29,15 +29,37 @@ function unwrapAlertFields(entry: unknown): unknown {
   return entry;
 }
 
+export interface SavedAlertsPage {
+  alerts: AlertFields[];
+  nextCursor: string | null;
+}
+
+export interface GetSavedAlertsOptions {
+  limit?: number;
+  cursor?: string;
+}
+
 /**
- * Load saved alerts for the signed-in user. The base URL already includes /v1,
- * so we call "/alerts" without duplicating it.
+ * Load one page of saved alerts for the signed-in user. The base URL already
+ * includes /v1, so we call "/alerts" without duplicating it. Returns the page
+ * of alerts plus the cursor for the next page (null when there are no more).
  */
 export async function getSavedAlerts(
   firebaseToken: string,
-): Promise<AlertFields[]> {
+  options: GetSavedAlertsOptions = {},
+): Promise<SavedAlertsPage> {
+  const params: string[] = [];
+  if (options.limit != null) {
+    params.push(`limit=${options.limit}`);
+  }
+  if (options.cursor) {
+    params.push(`cursor=${encodeURIComponent(options.cursor)}`);
+  }
+
+  const endpoint = params.length ? `/alerts?${params.join("&")}` : "/alerts";
+
   const envelope = await apiClient.get<StandardEnvelope<SavedAlertsData>>(
-    "/alerts",
+    endpoint,
     firebaseToken,
   );
 
@@ -45,9 +67,17 @@ export async function getSavedAlerts(
     ? envelope.data.data
     : [];
 
-  return rawList
-    .map((entry) => parseAlertFields(unwrapAlertFields(entry)))
-    .filter((alert): alert is AlertFields => alert !== null);
+  const nextCursor =
+    typeof envelope?.data?.nextCursor === "string"
+      ? envelope.data.nextCursor
+      : null;
+
+  return {
+    alerts: rawList
+      .map((entry) => parseAlertFields(unwrapAlertFields(entry)))
+      .filter((alert): alert is AlertFields => alert !== null),
+    nextCursor,
+  };
 }
 
 /**

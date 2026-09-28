@@ -1,6 +1,13 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
@@ -19,6 +26,9 @@ import type { AlertItem } from "../types/alert.types";
 
 type AlertFilter = "all" | "unread";
 
+const PAGE_SIZE = 2;
+const SUCCESS_MESSAGE_DURATION = 1800;
+
 export function AlertsScreen() {
   const colors = useTheme();
   const router = useRouter();
@@ -28,30 +38,85 @@ export function AlertsScreen() {
   const mergeAlerts = useAlertsStore((state) => state.mergeAlerts);
 
   const [filter, setFilter] = useState<AlertFilter>("all");
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [showLoadedMessage, setShowLoadedMessage] = useState(false);
 
-  // Load saved alerts so the list (including "All clear" rows) survives
-  // restarts. They are merged by alertId to avoid clobbering realtime updates.
-  useEffect(() => {
-    if (!user) return;
+  // Pagination bookkeeping kept in refs so the loader stays stable across pages.
+  const cursorRef = useRef<string | null>(null);
+  const hasMoreRef = useRef(true);
+  const isFetchingRef = useRef(false);
+  const initializedUidRef = useRef<string | null>(null);
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    let active = true;
+  const loadAlerts = useCallback(
+    async (mode: "initial" | "more") => {
+      if (!user || isFetchingRef.current) return;
+      if (mode === "more" && (!hasMoreRef.current || !cursorRef.current))
+        return;
 
-    (async () => {
+      isFetchingRef.current = true;
+      if (mode === "more") setIsLoadingMore(true);
+
       try {
         const token = await user.getIdToken();
-        const saved = await getSavedAlerts(token);
-        if (active) {
-          mergeAlerts(saved);
+        const page = await getSavedAlerts(token, {
+          limit: PAGE_SIZE,
+          cursor:
+            mode === "more" ? (cursorRef.current ?? undefined) : undefined,
+        });
+
+        // Merge by alertId so realtime updates and earlier pages aren't clobbered.
+        mergeAlerts(page.alerts);
+        cursorRef.current = page.nextCursor;
+        hasMoreRef.current = page.nextCursor !== null;
+
+        if (mode === "more") {
+          setShowLoadedMessage(true);
+          if (successTimerRef.current) clearTimeout(successTimerRef.current);
+          successTimerRef.current = setTimeout(
+            () => setShowLoadedMessage(false),
+            SUCCESS_MESSAGE_DURATION,
+          );
         }
       } catch (error) {
         console.error("Failed to load saved alerts:", error);
+      } finally {
+        isFetchingRef.current = false;
+        if (mode === "more") setIsLoadingMore(false);
       }
-    })();
+    },
+    [user, mergeAlerts],
+  );
 
+  // Initial page load, once per signed-in user. Guarding on uid prevents the
+  // effect from re-firing (and re-fetching page 1) when the Firebase user
+  // reference changes on token refresh.
+  useEffect(() => {
+    if (!user) {
+      initializedUidRef.current = null;
+      return;
+    }
+
+    if (initializedUidRef.current === user.uid) return;
+    initializedUidRef.current = user.uid;
+
+    cursorRef.current = null;
+    hasMoreRef.current = true;
+    loadAlerts("initial");
+  }, [user, loadAlerts]);
+
+  // Clear any pending success-message timer on unmount.
+  useEffect(() => {
     return () => {
-      active = false;
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
     };
-  }, [user, mergeAlerts]);
+  }, []);
+
+  // Load the next page as the list nears its end. The cursor / in-flight guards
+  // inside loadAlerts prevent over-fetching and duplicate requests.
+  const handleEndReached = () => {
+    loadAlerts("more");
+  };
 
   const visibleAlerts = useMemo(() => {
     const items = [...alerts]
@@ -107,6 +172,31 @@ export function AlertsScreen() {
     </View>
   );
 
+  const footer =
+    isLoadingMore || showLoadedMessage ? (
+      <View style={styles.footer}>
+        {isLoadingMore ? (
+          <>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={[Typography.body, { color: colors.textMuted }]}>
+              Loading more…
+            </Text>
+          </>
+        ) : (
+          <>
+            <Ionicons
+              name="checkmark-circle"
+              size={18}
+              color={colors.success}
+            />
+            <Text style={[Typography.body, { color: colors.textMuted }]}>
+              Loaded successfully
+            </Text>
+          </>
+        )}
+      </View>
+    ) : null;
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -115,7 +205,9 @@ export function AlertsScreen() {
       <AlertList
         data={visibleAlerts}
         ListHeaderComponent={header}
+        ListFooterComponent={footer}
         onPressItem={handlePressItem}
+        onEndReached={handleEndReached}
       />
       <BottomNavigation />
     </SafeAreaView>
@@ -177,5 +269,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.four,
     marginTop: Spacing.four,
     marginBottom: Spacing.two,
+  },
+  footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.two,
+    paddingVertical: Spacing.four,
   },
 });
