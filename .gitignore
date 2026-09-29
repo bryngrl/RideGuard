@@ -18,6 +18,17 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Native build outputs (generated per build; never commit/upload — they contain
+# machine-specific absolute paths that break EAS Linux builds)
+android/build/
+android/app/build/
+android/.gradle/
+android/.cxx/
+android/app/.cxx/
+android/app/release/
+ios/build/
+ios/Pods/
+
 # iOS
 ios/Podfile.lock
 ios/HuniLive.xcodeproj/*.pbxproj
