@@ -2,6 +2,10 @@ import { BorderRadius, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
+  edgeToEdgeWrapper: {
+    marginHorizontal: -Spacing.four,
+  },
+
   container: {
     alignItems: "center",
     borderRadius: BorderRadius.sm,
@@ -47,6 +51,7 @@ export const styles = StyleSheet.create({
   },
   subLabel: {
     marginTop: 2,
+    fontStyle: "italic",
   },
 
   // Center text

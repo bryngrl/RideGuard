@@ -54,9 +54,9 @@ export default function LoginScreen() {
         const isOldUser = await checkIsOldUser(firebaseToken);
 
         if (isOldUser) {
-          router.replace("/(tabs)");
+          router.replace("/(app)/(tabs)");
         } else {
-          router.replace("/auth/register-1");
+          router.replace("/(onboarding)/register/profile");
         }
       }
     } catch (error) {
@@ -202,7 +202,7 @@ export default function LoginScreen() {
             >
               By continuing, you agree to our{" "}
               <ThemedText
-                onPress={() => router.push("/settings/terms")}
+                onPress={() => router.push("/terms/terms")}
                 style={[
                   styles.legalLink,
                   {
@@ -214,7 +214,7 @@ export default function LoginScreen() {
               </ThemedText>
               {"\n and "}
               <ThemedText
-                onPress={() => router.push("/settings/privacy")}
+                onPress={() => router.push("/privacy/privacy")}
                 style={[
                   styles.legalLink,
                   {

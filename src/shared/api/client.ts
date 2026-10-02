@@ -110,6 +110,13 @@ export class APIClient {
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
   }
+
+  delete<T>(endpoint: string, token?: string): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: "DELETE",
+      token,
+    });
+  }
 }
 
 export const apiClient = new APIClient();

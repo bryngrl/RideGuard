@@ -76,7 +76,7 @@ export default function PermissionsScreen() {
       }
 
       // Both permissions granted
-      router.replace("/(onboarding)/register/provision");
+      router.replace("/devices/camera");
     } catch (error) {
       console.error("Permission error:", error);
     } finally {

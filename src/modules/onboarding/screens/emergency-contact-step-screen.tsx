@@ -143,7 +143,7 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(false);
 
     if (success) {
-      router.replace("/permission");
+      router.replace("/register/permission");
     }
   };
 

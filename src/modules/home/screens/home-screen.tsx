@@ -11,6 +11,7 @@ import ActiveSensorIcon from "@/assets/icons/sensors/metal/metal.svg";
 import SystemReadyIcon from "@/assets/icons/status/success.svg";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
+import { useDeviceStore } from "@/modules/devices";
 import { useOnboardingStore } from "@/modules/onboarding";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Typography } from "@/shared/theme";
@@ -19,7 +20,6 @@ import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
-import { useDeviceStore } from "@/modules/devices";
 
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
@@ -194,7 +194,7 @@ export function HomeScreen() {
         {/* START RIDE */}
         {!isRideActive && (
           <Button
-            title="Start Ride"
+            title="Start Capturing"
             variant="primary"
             size="md"
             fullWidth
@@ -266,11 +266,7 @@ export function HomeScreen() {
         {/* RIDE INFORMATION */}
         <View style={styles.todaySection}>
           <Text
-            style={[
-              Typography.h4,
-              styles.sectionTitle,
-              { color: colors.text },
-            ]}
+            style={[Typography.h4, styles.sectionTitle, { color: colors.text }]}
           >
             {isRideActive ? "Current ride" : "Today's rides"}
           </Text>
@@ -344,10 +340,7 @@ export function HomeScreen() {
             <View style={styles.emptyRides}>
               <InactiveRideIcon width={72} height={72} />
               <Text
-                style={[
-                  Typography.bodySmall,
-                  { color: colors.textInactive },
-                ]}
+                style={[Typography.bodySmall, { color: colors.textInactive }]}
               >
                 No rides taken today
               </Text>
@@ -358,7 +351,7 @@ export function HomeScreen() {
         {/* END RIDE */}
         {isRideActive && (
           <Button
-            title="End Ride"
+            title="Stop Capturing"
             variant="danger"
             size="md"
             fullWidth

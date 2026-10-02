@@ -6,13 +6,14 @@ import { useMemo, useState } from "react";
 import { Pressable, SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useAbly } from "@/shared/hooks/use-ably";
+import { useAlertsStore } from "../store/alerts.store";
 import { AlertItem } from "../components/alert-item";
-import { DUMMY_ALERTS } from "../data/alerts.dummy";
-import type { Alert } from "../types/alert.types";
+import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
+import type { AlertFields, AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alerts-screen.styles";
 
 // Tab Types
-
 type TabFilter = "all" | "unread";
 
 // Date Grouping Helper
@@ -34,20 +35,26 @@ function getDateLabel(isoDate: string): string {
 
 interface AlertSection {
   title: string;
-  data: Alert[];
+  data: AlertItemType[];
 }
 
-function groupAlertsByDate(alerts: Alert[]): AlertSection[] {
-  const map = new Map<string, Alert[]>();
+function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
+  const map = new Map<string, AlertItemType[]>();
 
   // Sort descending by date first
   const sorted = [...alerts].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    (a, b) => alertTimeValue(b.timeStamp) - alertTimeValue(a.timeStamp),
   );
 
   for (const alert of sorted) {
-    const existing = map.get(alert.date) ?? [];
-    map.set(alert.date, [...existing, alert]);
+    // Get the date from timeStamp
+    const dateStr = alert.timeStamp.split("T")[0];
+    const mappedItem = mapAlertFieldsToItem(alert);
+
+    if (!mappedItem) continue; // Skip invalid alerts
+
+    const existing = map.get(dateStr) ?? [];
+    map.set(dateStr, [...existing, mappedItem]);
   }
 
   return Array.from(map.entries()).map(([date, data]) => ({
@@ -56,28 +63,36 @@ function groupAlertsByDate(alerts: Alert[]): AlertSection[] {
   }));
 }
 
-//Screen
+// Screen
 export function AlertsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabFilter>("all");
+  const [filter, setFilter] = useState<TabFilter>("all");
 
-  const unreadCount = useMemo(
-    () => DUMMY_ALERTS.filter((a) => !a.isRead).length,
-    [],
-  );
+  // Mount realtime subscription
+  useAbly();
 
+  // Get raw alerts from store
+  const alerts = useAlertsStore((state) => state.alerts);
+
+  // Filter based on filter selection
+  const filtered = useMemo(() => {
+    if (filter === "unread") {
+      return alerts.filter((a) => !a.isSeen);
+    }
+    return alerts;
+  }, [alerts, filter]);
+
+  // Group alerts by date
   const sections = useMemo<AlertSection[]>(() => {
-    const filtered =
-      activeTab === "unread"
-        ? DUMMY_ALERTS.filter((a) => !a.isRead)
-        : DUMMY_ALERTS;
     return groupAlertsByDate(filtered);
-  }, [activeTab]);
+  }, [filtered]);
 
-  const handleAlertPress = (alert: Alert) => {
-    // pass the alert id
-    router.push(`/alerts/${alert.id}` as any);
+  const handleAlertPress = (item: AlertItemType) => {
+    router.push({
+      pathname: "/alerts/[alertId]",
+      params: { alertId: item.alertId },
+    });
   };
 
   return (
@@ -95,23 +110,24 @@ export function AlertsScreen() {
       {/* TABS */}
       <View style={styles.tabRow}>
         <Pressable
-          onPress={() => setActiveTab("all")}
+          onPress={() => setFilter("all")}
           style={[
             styles.tab,
-            activeTab === "all"
+            filter === "all"
               ? [styles.tabActive, { backgroundColor: BrandColors.primary }]
               : [styles.tabInactive, { borderColor: theme.border }],
           ]}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === "all" }}
+          accessibilityState={{ selected: filter === "all" }}
         >
           <Text
             style={[
               Typography.bodySmall,
               styles.tabText,
               {
-                color: activeTab === "all" ? BrandColors.secondary : theme.text,
-                fontWeight: activeTab === "all" ? "600" : "400",
+                color:
+                  filter === "all" ? BrandColors.secondary : theme.text,
+                fontWeight: filter === "all" ? "600" : "400",
               },
             ]}
           >
@@ -120,15 +136,15 @@ export function AlertsScreen() {
         </Pressable>
 
         <Pressable
-          onPress={() => setActiveTab("unread")}
+          onPress={() => setFilter("unread")}
           style={[
             styles.tab,
-            activeTab === "unread"
+            filter === "unread"
               ? [styles.tabActive, { backgroundColor: BrandColors.primary }]
               : [styles.tabInactive, { borderColor: theme.border }],
           ]}
           accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === "unread" }}
+          accessibilityState={{ selected: filter === "unread" }}
         >
           <Text
             style={[
@@ -136,13 +152,12 @@ export function AlertsScreen() {
               styles.tabText,
               {
                 color:
-                  activeTab === "unread" ? BrandColors.secondary : theme.text,
-                fontWeight: activeTab === "unread" ? "600" : "400",
+                  filter === "unread" ? BrandColors.secondary : theme.text,
+                fontWeight: filter === "unread" ? "600" : "400",
               },
             ]}
           >
             Unread
-            {unreadCount > 0 ? ` (${unreadCount})` : ""}
           </Text>
         </Pressable>
       </View>
@@ -150,7 +165,7 @@ export function AlertsScreen() {
       {/* Alert Sections List */}
       <SectionList
         sections={sections}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.alertId}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
@@ -166,7 +181,7 @@ export function AlertsScreen() {
           </Text>
         )}
         renderItem={({ item }) => (
-          <AlertItem alert={item} onPress={handleAlertPress} />
+          <AlertItem alert={item} onPress={() => handleAlertPress(item)} />
         )}
         SectionSeparatorComponent={() => (
           <View style={styles.sectionSeparator} />

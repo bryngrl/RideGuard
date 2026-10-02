@@ -1,22 +1,29 @@
-export type AlertSeverity = "all_clear" | "possible_threat" | "metal_detected";
+export type AlertSeverity = "clear" | "threat";
 
-export type AlertStatus = "unread" | "read" | "false_alarm" | "pending";
-
-export interface AlertTimelineEvent {
+/**
+ * UI shape rendered by the alert list/row.
+ */
+export interface AlertItem {
+  alertId: string;
+  title: string;
   time: string;
-  description: string;
+  severity: AlertSeverity;
+  read: boolean;
+  subLabel?: string;
+  pending?: boolean;
 }
 
-export interface Alert {
-  id: string;
-  severity: AlertSeverity;
-  status: AlertStatus;
-  timeRange: string;
-  date: string; // used for grouping
-  subLabel?: string;
-  isRead: boolean;
-  snapshotUris?: string[];
-  autoDeleteLabel?: string;
-  timeline: AlertTimelineEvent[];
-  contactsNotified: boolean;
+/**
+ * Raw backend payload for an alert. This is what Ably publishes on
+ * "alert.created" and what GET /alerts returns (nested under `alertFields`).
+ * The realtime `timeStamp` arrives as a JSON date string.
+ */
+export interface AlertFields {
+  alertId?: string;
+  deviceId: string;
+  message: string;
+  imageUrl?: string | null;
+  timeStamp: string;
+  isFalseAlarm: boolean;
+  isSeen: boolean;
 }
