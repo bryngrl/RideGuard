@@ -45,6 +45,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint-plugin-simple-import-sort": "^14.0.0",
     "react-native-svg-transformer": "^1.5.3",
     "typescript": "~6.0.3"
   },

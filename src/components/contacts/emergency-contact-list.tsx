@@ -1,8 +1,8 @@
 import { Pressable, StyleSheet, View } from "react-native";
 
-import { Spacing } from "@/constants/theme";
-import { EmergencyContactItem } from "./emergency-contact-item";
+import { Spacing } from "@/shared/theme";
 import type { EmergencyContact } from "@/types/emergency-contact";
+import { EmergencyContactItem } from "./emergency-contact-item";
 
 interface EmergencyContactListProps {
   contacts: EmergencyContact[];
@@ -16,10 +16,7 @@ export function EmergencyContactList({
   return (
     <View style={styles.container}>
       {contacts.map((contact) => (
-        <Pressable
-          key={contact.id}
-          onPress={() => onContactPress(contact)}
-        >
+        <Pressable key={contact.id} onPress={() => onContactPress(contact)}>
           <EmergencyContactItem
             name={contact.name}
             phoneNumber={contact.phoneNumber}

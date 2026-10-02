@@ -2,7 +2,8 @@ export interface ProfilePayload {
   first_name: string;
   last_name: string;
   phone_number: string;
-  vehicle: string;
+  brand: string;
+  model: string;
   plate_number: string;
   color?: string;
   contact_name?: string;

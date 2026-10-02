@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "extends": ["universe/native"],
+  "rules": {
+    "no-restricted-imports": [
+      "warn",
+      {
+        "patterns": [
+          {
+            "group": [
+              "@/modules/*/hooks/*",
+              "@/modules/*/services/*",
+              "@/modules/*/store/*"
+            ],
+            "message": "Import from @/modules/[module] barrel instead"
+          }
+        ]
+      }
+    ]
+  }
+}

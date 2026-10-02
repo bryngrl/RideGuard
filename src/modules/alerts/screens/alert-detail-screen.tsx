@@ -1,0 +1,370 @@
+import {
+  Image,
+  Pressable,
+  Alert as RNAlert,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
+import ClockIcon from "@/assets/icons/misc/clock.svg";
+import InformationIcon from "@/assets/icons/misc/information.svg";
+
+import { useTheme } from "@/shared/hooks/use-theme";
+import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
+import { PageLayout } from "@/shared/ui/page-layout";
+
+import { useAlertDetails } from "../hooks/use-alert-details";
+import { formatClockTime, formatRelativeDay } from "../services/alerts.mapper";
+import {
+  bannerStyles,
+  contentStyles,
+  footerStyles,
+  gridStyles,
+  responseStyles,
+} from "./alert-detail-screen.styles";
+
+// 2×2 grid placeholder
+
+interface SnapshotGridProps {
+  uris?: string[];
+}
+
+function SnapshotGrid({ uris }: SnapshotGridProps) {
+  const theme = useTheme();
+
+  // Show placeholder if no URIs
+  if (!uris || uris.length === 0) {
+    return (
+      <View style={gridStyles.container}>
+        <View
+          style={[
+            gridStyles.cell,
+            { backgroundColor: theme.backgroundElement },
+          ]}
+        >
+          <View style={gridStyles.placeholder}>
+            <Text
+              style={{
+                color: theme.textInactive,
+                fontSize: 11,
+                textAlign: "center",
+              }}
+            >
+              Snapshots coming soon
+            </Text>
+          </View>
+        </View>
+        <View
+          style={[
+            gridStyles.cell,
+            { backgroundColor: theme.backgroundElement },
+          ]}
+        >
+          <View style={gridStyles.placeholder}>
+            <Text
+              style={{
+                color: theme.textInactive,
+                fontSize: 11,
+                textAlign: "center",
+              }}
+            >
+              Snapshots coming soon
+            </Text>
+          </View>
+        </View>
+        <View
+          style={[
+            gridStyles.cell,
+            { backgroundColor: theme.backgroundElement },
+          ]}
+        >
+          <View style={gridStyles.placeholder}>
+            <Text
+              style={{
+                color: theme.textInactive,
+                fontSize: 11,
+                textAlign: "center",
+              }}
+            >
+              Snapshots coming soon
+            </Text>
+          </View>
+        </View>
+        <View
+          style={[
+            gridStyles.cell,
+            { backgroundColor: theme.backgroundElement },
+          ]}
+        >
+          <View style={gridStyles.placeholder}>
+            <Text
+              style={{
+                color: theme.textInactive,
+                fontSize: 11,
+                textAlign: "center",
+              }}
+            >
+              Snapshots coming soon
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Show actual snapshots if available
+  const cells = Array.from({ length: 4 }, (_, i) => uris[i] ?? null);
+
+  return (
+    <View style={gridStyles.container}>
+      {cells.map((uri, idx) => (
+        <View
+          key={idx}
+          style={[
+            gridStyles.cell,
+            { backgroundColor: theme.backgroundElement },
+          ]}
+        >
+          {uri ? (
+            <Image
+              source={{ uri }}
+              style={gridStyles.image}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={gridStyles.placeholder}>
+              <Text
+                style={{
+                  color: theme.textInactive,
+                  fontSize: 11,
+                }}
+              >
+                No snapshot
+              </Text>
+            </View>
+          )}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Auto delete notice banner
+
+interface AutoDeleteBannerProps {
+  label: string;
+}
+
+function AutoDeleteBanner({ label }: AutoDeleteBannerProps) {
+  const theme = useTheme();
+
+  const handleChange = () => {
+    RNAlert.alert("Change setting", "Auto-delete duration settings");
+  };
+
+  return (
+    <View
+      style={[
+        bannerStyles.container,
+        {
+          backgroundColor: theme.backgroundElement,
+          borderColor: theme.border,
+        },
+      ]}
+    >
+      <View style={bannerStyles.iconContainer}>
+        <ClockIcon width={16} height={16} color={theme.text} />
+      </View>
+
+      <View style={bannerStyles.textBlock}>
+        <Text
+          style={[
+            Typography.medium,
+            bannerStyles.mainText,
+            { color: theme.textMuted },
+          ]}
+        >
+          {label}
+        </Text>
+
+        <View style={bannerStyles.infoRow}>
+          <Text
+            style={[
+              Typography.bodySmall,
+              bannerStyles.infoText,
+              { color: theme.textInactive },
+            ]}
+            numberOfLines={1}
+          >
+            Viewable in-app only for 47h, then automatically deleted.
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={handleChange}
+          hitSlop={Spacing.one}
+          accessibilityRole="button"
+          accessibilityLabel="Change auto-delete setting"
+        >
+          <Text
+            style={[
+              Typography.medium,
+              bannerStyles.changeText,
+              { color: BrandColors.accent },
+            ]}
+          >
+            Change
+          </Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// Response section
+
+interface ResponseProps {
+  contactsNotified: boolean;
+}
+
+function Response({ contactsNotified }: ResponseProps) {
+  const theme = useTheme();
+
+  return (
+    <View style={responseStyles.container}>
+      <Text
+        style={[
+          Typography.h2,
+          responseStyles.sectionTitle,
+          { color: theme.text },
+        ]}
+      >
+        Response
+      </Text>
+
+      <View style={responseStyles.row}>
+        <InformationIcon height={16} width={16} />
+
+        <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
+          {contactsNotified
+            ? "Emergency contacts have been notified. They can track your live location."
+            : "No emergency contacts were notified."}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+// !! MAIN SCREEN !! MAIN SCREEN
+
+export function AlertDetailScreen() {
+  const theme = useTheme();
+
+  // Get alert data from hook
+  const { alert, isSubmitting, markAsFalseAlarm, openPhoto } =
+    useAlertDetails();
+
+  if (!alert) {
+    return (
+      <PageLayout title="Alert details" showBackButton>
+        <Text style={{ color: theme.textInactive }}>
+          Alert no longer available
+        </Text>
+      </PageLayout>
+    );
+  }
+
+  const isFalseAlarm = alert.isFalseAlarm === true;
+
+  const handleFlagAsFalseAlarm = () => {
+    RNAlert.alert(
+      "Flag as false alarm?",
+      "This will mark the alert as a false alarm and notify your contacts if any were alerted.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Flag",
+          style: "destructive",
+          onPress: markAsFalseAlarm,
+        },
+      ],
+    );
+  };
+
+  return (
+    <PageLayout
+      title="Alert details"
+      showBackButton
+      scrollable={false}
+      contentFlush
+      footer={
+        !isFalseAlarm ? (
+          <Button
+            title="Flag as false alarm"
+            variant="danger"
+            size="md"
+            isLoading={isSubmitting}
+            onPress={handleFlagAsFalseAlarm}
+            style={footerStyles.flagButton}
+            textStyle={footerStyles.flagButtonText}
+          />
+        ) : null
+      }
+    >
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={contentStyles.scroll}
+      >
+        {/* Alert title + date */}
+        <View style={contentStyles.titleRow}>
+          <View style={contentStyles.titleBlock}>
+            <Text
+              style={[
+                Typography.h2,
+                contentStyles.alertTitle,
+                { color: BrandColors.error },
+              ]}
+            >
+              Threat detected
+            </Text>
+
+            <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
+              {formatRelativeDay(alert.timeStamp)}
+            </Text>
+
+            {isFalseAlarm ? (
+              <Text style={[Typography.bodySmall, { color: theme.text }]}>
+                Marked as false alarm
+              </Text>
+            ) : null}
+          </View>
+
+          <Text
+            style={[
+              Typography.bodySmall,
+              contentStyles.timeLabel,
+              { color: theme.textInactive },
+            ]}
+          >
+            {formatClockTime(alert.timeStamp)}
+          </Text>
+        </View>
+
+        {/* Image or Placeholder */}
+        <SnapshotGrid uris={alert.imageUrl ? [alert.imageUrl] : []} />
+        {/* 2×2 Snapshot grid - shows placeholder if no data */}
+
+        {/* Auto-delete notice */}
+        <AutoDeleteBanner label="Auto-deletes in 47h 12m" />
+
+        {/* Response */}
+        <Response contactsNotified={true} />
+      </ScrollView>
+    </PageLayout>
+  );
+}
