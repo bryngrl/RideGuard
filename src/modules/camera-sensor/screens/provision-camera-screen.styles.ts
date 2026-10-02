@@ -5,6 +5,8 @@ export const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
   },
+  stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
+
   container: {
     flex: 1,
     justifyContent: "space-between",

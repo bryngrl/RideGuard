@@ -1,6 +1,7 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
+import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { useRouter } from "expo-router";
@@ -27,6 +28,9 @@ export function CameraPreviewScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
+        <View style={styles.stepperContainer}>
+          <Stepper currentStep={5} steps={10} size={6} />
+        </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />
@@ -78,6 +82,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
   },
+  stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
+
   footerContainer: {
     marginTop: "auto",
     paddingTop: Spacing.two,

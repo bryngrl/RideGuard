@@ -162,7 +162,7 @@ export function Button({
           container: {
             paddingVertical: 10,
             paddingHorizontal: Spacing.four,
-            borderRadius: BorderRadius.sm,
+            borderRadius: BorderRadius.full,
             minHeight: 40,
           },
           text: {

@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { styles } from "./provision-camera-screen.styles";
+import { Stepper } from "@/shared/ui";
 
 export function ProvisionCameraScreen() {
   const router = useRouter();
@@ -106,6 +107,9 @@ export function ProvisionCameraScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
+        <View style={styles.stepperContainer}>
+            <Stepper currentStep={5} steps={10} size={6} />
+          </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />

@@ -10,6 +10,8 @@ export const styles = StyleSheet.create({
     paddingTop: Spacing.four,
   },
   topSection: { flex: 1, paddingTop: Spacing.four },
+    stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
+
   logoContainer: { alignItems: "flex-start", marginBottom: Spacing.five },
   logo: { width: 60, height: 60 },
   headerContainer: { alignItems: "flex-start", marginBottom: Spacing.five },
