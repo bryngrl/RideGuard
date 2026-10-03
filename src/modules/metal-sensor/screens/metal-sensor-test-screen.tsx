@@ -1,4 +1,4 @@
-import SearchingIcon from "@/assets/icons/sensors/metal/searching.svg";
+import SearchingIcon from "@/assets/icons/sensors/button/searching.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";

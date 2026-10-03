@@ -1,34 +1,57 @@
 import { create } from "zustand";
 
 export interface DeviceState {
-  metalDeviceId: string;
-  cameraDeviceId: string;
-  isMetalActivated: boolean;
-  isCameraActivated: boolean;
+  camera1DeviceId: string;
+  camera2DeviceId: string;
+  buttonDeviceId: string;
 
-  setMetalDeviceId: (id: string) => void;
-  setCameraDeviceId: (id: string) => void;
-  setMetalActivated: (activated: boolean) => void;
-  setCameraActivated: (activated: boolean) => void;
+  isCamera1Activated: boolean;
+  isCamera2Activated: boolean;
+  isButtonActivated: boolean;
+
+  setCamera1DeviceId: (id: string) => void;
+  setCamera2DeviceId: (id: string) => void;
+  setButtonDeviceId: (id: string) => void;
+
+  setCamera1Activated: (activated: boolean) => void;
+  setCamera2Activated: (activated: boolean) => void;
+  setButtonActivated: (activated: boolean) => void;
+
   resetDevices: () => void;
 }
 
 export const useDeviceStore = create<DeviceState>((set) => ({
-  metalDeviceId: "",
-  cameraDeviceId: "",
-  isMetalActivated: false,
-  isCameraActivated: false,
+  camera1DeviceId: "",
+  camera2DeviceId: "",
+  buttonDeviceId: "",
 
-  setMetalDeviceId: (id: string) => set({ metalDeviceId: id }),
-  setCameraDeviceId: (id: string) => set({ cameraDeviceId: id }),
-  setMetalActivated: (activated: boolean) => set({ isMetalActivated: activated }),
-  setCameraActivated: (activated: boolean) => set({ isCameraActivated: activated }),
+  isCamera1Activated: false,
+  isCamera2Activated: false,
+  isButtonActivated: false,
+
+  setCamera1DeviceId: (id: string) => set({ camera1DeviceId: id }),
+
+  setCamera2DeviceId: (id: string) => set({ camera2DeviceId: id }),
+
+  setButtonDeviceId: (id: string) => set({ buttonDeviceId: id }),
+
+  setCamera1Activated: (activated: boolean) =>
+    set({ isCamera1Activated: activated }),
+
+  setCamera2Activated: (activated: boolean) =>
+    set({ isCamera2Activated: activated }),
+
+  setButtonActivated: (activated: boolean) =>
+    set({ isButtonActivated: activated }),
 
   resetDevices: () =>
     set({
-      metalDeviceId: "",
-      cameraDeviceId: "",
-      isMetalActivated: false,
-      isCameraActivated: false,
+      camera1DeviceId: "",
+      camera2DeviceId: "",
+      buttonDeviceId: "",
+
+      isCamera1Activated: false,
+      isCamera2Activated: false,
+      isButtonActivated: false,
     }),
 }));

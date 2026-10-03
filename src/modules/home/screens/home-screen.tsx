@@ -4,11 +4,18 @@ import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import InactiveRideIcon from "@/assets/icons/home/ride-inactive.svg";
 import SecurityIcon from "@/assets/icons/home/security.svg";
 import SilentNotificationIcon from "@/assets/icons/home/sheet-icon.svg";
-import ActiveCameraIcon from "@/assets/icons/navigation/active-camera.svg";
-import InactiveCameraIcon from "@/assets/icons/navigation/inactive-camera.svg";
-import InactiveSensorIcon from "@/assets/icons/sensors/metal/inactive.svg";
-import ActiveSensorIcon from "@/assets/icons/sensors/metal/metal.svg";
+import {
+  default as ActiveCameraIcon,
+  default as InactiveCameraIcon,
+} from "@/assets/icons/navigation/active-camera.svg";
 import SystemReadyIcon from "@/assets/icons/status/success.svg";
+import {
+  default as ButtonIcon,
+  default as InactiveSensorIcon,
+} from "@assets/icons/sensors/button/button.svg";
+// import Warning from "@assets/icons/status/brown-warning.svg";
+// import GreenEye from "@assets/icons/status/green-eye.svg";
+// import RedEye from "@assets/icons/status/red-eye.svg";
 
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useDeviceStore } from "@/modules/devices";
@@ -32,27 +39,36 @@ export function HomeScreen() {
   const colors = useTheme();
 
   const firstName = useOnboardingStore((state) => state.firstName);
-  const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
-  const metalDeviceId = useDeviceStore((state) => state.metalDeviceId);
+  // const camera1DeviceId = useDeviceStore((state) => state.camera1DeviceId);
+  // const camera2DeviceId = useDeviceStore((state) => state.camera2DeviceId);
+  // const buttonDeviceId = useDeviceStore((state) => state.buttonDeviceId);
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
   const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
 
   // Temporary frontend states
-  const isCameraConnected = true;
-  const isMetalSensorConnected = true;
+  const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+
+  const isCamera1Connected = !!camera1DeviceId;
+  const isCamera2Connected = !!camera2DeviceId;
+  const isButtonConnected = !!buttonDeviceId;
 
   const displayName = firstName.trim() || "Jovilyn";
-  const areAllSafetySystemsActive = isCameraConnected && isMetalSensorConnected;
+  const areAllSafetySystemsActive =
+    isCamera1Connected && isCamera2Connected && isButtonConnected;
 
   const systemStatusText = areAllSafetySystemsActive
     ? "All safety systems active."
-    : !isCameraConnected && !isMetalSensorConnected
+    : !isCamera1Connected && !isCamera2Connected && !isButtonConnected
       ? "Safety systems are not connected."
-      : !isCameraConnected
-        ? "Camera is not connected."
-        : "Metal sensor is not connected.";
+      : !isCamera1Connected && !isCamera2Connected
+        ? "Both cameras are not connected."
+        : !isCamera1Connected
+          ? "Camera 1 is not connected."
+          : !isCamera2Connected
+            ? "Camera 2 is not connected."
+            : "Button is not connected.";
 
   const systemStatusIconBackground = areAllSafetySystemsActive
     ? "#E6F8E7"
@@ -157,33 +173,32 @@ export function HomeScreen() {
         </View>
 
         {/* DEVICE CARDS */}
+        {/* TODO: Add another card for camera 2 */}
         <View style={styles.deviceCards}>
           <Card
             size="small"
             title="Camera"
-            subtitle={cameraDeviceId || "Hardware name"}
-            status={isCameraConnected ? "Connected" : "Not connected"}
-            connectionState={isCameraConnected ? "connected" : "disconnected"}
+            subtitle={camera1DeviceId || "Hardware name"}
+            status={isCamera1Connected ? "Connected" : "Not connected"}
+            connectionState={isCamera1Connected ? "connected" : "disconnected"}
             icon={
-              isCameraConnected ? (
-                <ActiveCameraIcon width={18} height={18} />
+              isCamera1Connected ? (
+                <ActiveCameraIcon width={14} height={14} />
               ) : (
-                <InactiveCameraIcon width={18} height={18} />
+                <InactiveCameraIcon width={14} height={14} />
               )
             }
           />
 
           <Card
             size="small"
-            title="Metal sensor"
-            subtitle={metalDeviceId || "Hardware name"}
-            status={isMetalSensorConnected ? "Connected" : "Not connected"}
-            connectionState={
-              isMetalSensorConnected ? "connected" : "disconnected"
-            }
+            title="Button"
+            subtitle={buttonDeviceId || "Hardware name"}
+            status={isButtonConnected ? "Connected" : "Not connected"}
+            connectionState={isButtonConnected ? "connected" : "disconnected"}
             icon={
-              isMetalSensorConnected ? (
-                <ActiveSensorIcon width={18} height={18} />
+              isButtonConnected ? (
+                <ButtonIcon width={18} height={18} />
               ) : (
                 <InactiveSensorIcon width={18} height={18} />
               )

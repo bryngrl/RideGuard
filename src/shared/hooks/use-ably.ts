@@ -18,7 +18,8 @@ function buildAlertsChannelName(userId: string, deviceId: string): string {
 
 export function useAbly() {
   const user = useAuthStore((state) => state.user);
-  const cameraDeviceId = useDeviceStore((state) => state.cameraDeviceId);
+  const camera1DeviceId = useDeviceStore((state) => state.camera1DeviceId);
+// TODO: Add camera2 and button here
 
   const alerts = useAlertsStore((state) => state.alerts);
   const upsertAlert = useAlertsStore((state) => state.upsertAlert);
@@ -62,8 +63,8 @@ export function useAbly() {
   const deviceIds = useMemo(() => {
     const ids = new Set<string>();
 
-    if (cameraDeviceId) {
-      ids.add(cameraDeviceId);
+    if (camera1DeviceId) {
+      ids.add(camera1DeviceId);
     }
 
     for (const alert of alerts) {
@@ -73,7 +74,7 @@ export function useAbly() {
     }
 
     return [...ids].sort();
-  }, [cameraDeviceId, alerts]);
+  }, [camera1DeviceId, alerts]);
 
   const deviceIdsKey = deviceIds.join("|");
 
@@ -108,9 +109,7 @@ export function useAbly() {
     });
 
     const handleAlert = (message: Message) => {
-
       const fields = parseAlertFields(message.data);
-
 
       if (fields) {
         upsertAlert(fields);

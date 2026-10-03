@@ -1,9 +1,10 @@
-import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import MainLogo from "@/assets/icons//logos/main.svg";
+import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { claimDevice, useDeviceStore } from "@/modules/devices";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { LoadingModal } from "@/shared/ui/modal";
@@ -12,12 +13,11 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { styles } from "./provision-camera-screen.styles";
-import { Stepper } from "@/shared/ui";
 
 export function ProvisionCameraScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { setCameraDeviceId } = useDeviceStore();
+  const { setCamera1DeviceId } = useDeviceStore();
 
   const [deviceId, setDeviceId] = useState("");
   const [deviceIdError, setDeviceIdError] = useState("");
@@ -73,7 +73,7 @@ export function ProvisionCameraScreen() {
 
       const firebaseToken = await user.getIdToken(true);
       await claimDevice(cleanedId, firebaseToken);
-      setCameraDeviceId(cleanedId);
+      setCamera1DeviceId(cleanedId);
 
       setAlertState({
         visible: true,
@@ -108,8 +108,8 @@ export function ProvisionCameraScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-            <Stepper currentStep={5} steps={10} size={6} />
-          </View>
+          <Stepper currentStep={5} steps={10} size={6} />
+        </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />
