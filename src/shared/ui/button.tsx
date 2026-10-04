@@ -65,7 +65,7 @@ export function Button({
         return {
           container: {
             backgroundColor: theme.backgroundElement,
-            borderWidth: 1,
+
             borderColor: theme.border,
           },
           text: {

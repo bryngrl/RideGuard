@@ -37,6 +37,7 @@ export function HomeScreen() {
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
+  const [showStartCaptureAlert, setShowStartCaptureAlert] = useState(false);
   const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
   const [rideStartedAt, setRideStartedAt] = useState<Date | null>(null);
 
@@ -46,7 +47,7 @@ export function HomeScreen() {
   const isCamera2Connected = Boolean(camera2DeviceId);
   const isButtonConnected = Boolean(buttonDeviceId);
   //!! FOR TESTING ONLY
-  // const isCamera1Connected = false;
+  // const isCamera1Connected = true;
   // const isCamera2Connected = false;
   // const isButtonConnected = true;
 
@@ -72,6 +73,46 @@ export function HomeScreen() {
     setRideStartedAt(new Date());
     setIsRideActive(true);
   };
+
+  const handleStartCapture = () => {
+    if (!isCamera1Connected) return;
+
+    if (isCamera2Connected && isButtonConnected) {
+      handleStartRide();
+      return;
+    }
+
+    setShowStartCaptureAlert(true);
+  };
+
+  const handleStartAnyway = () => {
+    setShowStartCaptureAlert(false);
+    handleStartRide();
+  };
+
+  const handleConnectDevices = () => {
+    setShowStartCaptureAlert(false);
+    router.push("/devices" as any);
+  };
+
+  const startCaptureAlert =
+    !isCamera2Connected && !isButtonConnected
+      ? {
+          title: "Start capturing with limited setup?",
+          description:
+            "Camera 2 and your Quick Button aren't connected. You'll only have single-camera coverage this ride.",
+        }
+      : !isCamera2Connected
+        ? {
+            title: "Start capturing with one camera?",
+            description:
+              "Camera 2 isn't connected. Coverage will be limited to a single angle this ride.",
+          }
+        : {
+            title: "Start capturing without the Quick Button?",
+            description:
+              "Your Quick Button isn't connected. Use the app for SOS, ending the ride, or reporting a false alarm.",
+          };
 
   const handleEndRide = () => {
     setRideStartedAt(null);
@@ -338,8 +379,8 @@ export function HomeScreen() {
             variant={isRideActive ? "danger" : "primary"}
             size="md"
             fullWidth
-            disabled={!hasCameraConnected}
-            onPress={isRideActive ? handleEndRide : handleStartRide}
+            disabled={!isCamera1Connected}
+            onPress={isRideActive ? handleEndRide : handleStartCapture}
             style={isRideActive ? styles.endRideButton : styles.rideButton}
           />
           {!hasCameraConnected && (
@@ -392,6 +433,22 @@ export function HomeScreen() {
           </Pressable>
         </View>
       </View>
+
+      <SweetAlert
+        visible={showStartCaptureAlert}
+        type="warning"
+        showIcon={false}
+        title={startCaptureAlert.title}
+        description={startCaptureAlert.description}
+        secondaryButtonText="Start anyway"
+        secondaryButtonVariant="secondary"
+        primaryButtonText="Connect"
+        primaryButtonVariant="primary"
+        buttonBorderRadius={9999}
+        onSecondaryPress={handleStartAnyway}
+        onPrimaryPress={handleConnectDevices}
+        onClose={() => setShowStartCaptureAlert(false)}
+      />
 
       <SweetAlert
         visible={showEndRideAlert}
