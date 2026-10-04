@@ -5,10 +5,7 @@ import {
   default as ActiveCameraIcon,
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
-import {
-  default as ButtonIcon,
-  default as InactiveSensorIcon,
-} from "@assets/icons/sensors/button/button.svg";
+import ErrorIcon from "@/assets/icons/status/error.svg";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useDeviceStore } from "@/modules/devices";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
@@ -20,6 +17,10 @@ import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
+import {
+  default as ButtonIcon,
+  default as InactiveSensorIcon,
+} from "@assets/icons/sensors/button/button.svg";
 
 import { Typography } from "@/shared/theme";
 import { BrandColors, Colors } from "@/shared/theme/colors";
@@ -39,15 +40,15 @@ export function HomeScreen() {
   const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
   const [rideStartedAt, setRideStartedAt] = useState<Date | null>(null);
 
-  const {
-    camera1DeviceId,
-    camera2DeviceId,
-    buttonDeviceId,
-  } = useDeviceStore();
+  const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
 
   const isCamera1Connected = Boolean(camera1DeviceId);
   const isCamera2Connected = Boolean(camera2DeviceId);
   const isButtonConnected = Boolean(buttonDeviceId);
+  //!! FOR TESTING ONLY
+  // const isCamera1Connected = false;
+  // const isCamera2Connected = false;
+  // const isButtonConnected = true;
 
   const displayName = firstName.trim() || "Jovilyn";
 
@@ -341,6 +342,15 @@ export function HomeScreen() {
             onPress={isRideActive ? handleEndRide : handleStartRide}
             style={isRideActive ? styles.endRideButton : styles.rideButton}
           />
+          {!hasCameraConnected && (
+            <View style={styles.cameraWarning}>
+              <ErrorIcon width={16} height={16} />
+
+              <Text style={styles.cameraWarningText}>
+                Connect at least 1 camera to enable monitoring
+              </Text>
+            </View>
+          )}
         </View>
       </KeyboardAvoidingWrapper>
 

@@ -1,4 +1,11 @@
-import { BorderRadius, BrandColors, FontFamily, Spacing } from "@/shared/theme";
+import { Typography } from "@/constants/theme";
+import {
+  BorderRadius,
+  BrandColors,
+  Colors,
+  FontFamily,
+  Spacing,
+} from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -186,5 +193,19 @@ export const styles = StyleSheet.create({
     flex: 1,
     minHeight: 86,
     marginTop: Spacing.three,
+  },
+  cameraWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    marginTop: Spacing.two,
+    paddingLeft: Spacing.two,
+    gap: Spacing.one,
+  },
+
+  cameraWarningText: {
+    ...Typography.medium,
+    fontSize: 12,
+    color: Colors.light.dangerHeader,
   },
 });
