@@ -76,7 +76,7 @@ export function Button({
       case "outline":
         return {
           container: {
-            backgroundColor: "transparent",
+            backgroundColor: "#FFFFFF",
             borderWidth: 1.5,
             borderColor: theme.primary,
           },
@@ -130,14 +130,14 @@ export function Button({
       case "sm":
         return {
           container: {
-            paddingVertical: Spacing.two,
-            paddingHorizontal: Spacing.three,
-            borderRadius: BorderRadius.sm,
-            minHeight: 32,
+            paddingVertical: Spacing.one,
+            paddingHorizontal: 10,
+            minHeight: 28,
+            borderRadius: BorderRadius.lg,
           },
           text: {
             ...Typography.bodySmall,
-            fontWeight: "600",
+            fontWeight: "700",
           },
           iconSize: 16,
         };

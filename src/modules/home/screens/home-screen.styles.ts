@@ -41,6 +41,7 @@ export const styles = StyleSheet.create({
 
   currentRideContainer: {
     marginTop: Spacing.three,
+    marginBottom: Spacing.three,
   },
 
   currentRideLabel: {
@@ -61,13 +62,18 @@ export const styles = StyleSheet.create({
   },
 
   deviceCards: {
-    flexDirection: "row",
-    gap: Spacing.three,
     marginTop: Spacing.two,
     position: "relative",
     zIndex: 2,
   },
 
+  deviceCardsScrollContent: {
+    gap: Spacing.one,
+  },
+
+  deviceCardItem: {
+    width: 180,
+  },
   emptyRides: {
     alignItems: "center",
     flex: 1,
@@ -124,42 +130,6 @@ export const styles = StyleSheet.create({
     marginTop: Spacing.three,
   },
 
-  sectionTitle: {
-    fontSize: 16,
-  },
-
-  silentNotificationCard: {
-    alignItems: "center",
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: Spacing.two,
-    marginVertical: Spacing.three,
-    minHeight: 50,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-
-  silentNotificationDescription: {
-    fontSize: 11,
-    marginTop: 1,
-  },
-
-  silentNotificationIcon: {
-    alignItems: "center",
-    height: 32,
-    justifyContent: "center",
-    width: 32,
-  },
-
-  silentNotificationTextContainer: {
-    flex: 1,
-  },
-
-  silentNotificationTitle: {
-    fontWeight: "500",
-  },
-
   sosButton: {
     alignItems: "center",
     backgroundColor: BrandColors.error,
@@ -191,33 +161,25 @@ export const styles = StyleSheet.create({
     position: "relative",
     zIndex: 2,
   },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 9999,
+    minWidth: 42,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  statusBadgeText: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontWeight: "600",
+  },
 
   statusSectionWrapper: {
     marginHorizontal: -Spacing.five,
     position: "relative",
     zIndex: 1,
-  },
-
-  systemStatus: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: Spacing.two,
-    marginTop: Spacing.two,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-
-  systemStatusIcon: {
-    alignItems: "center",
-    borderRadius: BorderRadius.full,
-    height: 14,
-    justifyContent: "center",
-    width: 14,
-  },
-
-  systemStatusText: {
-    flex: 1,
-    flexShrink: 1,
   },
 
   todaySection: {

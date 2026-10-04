@@ -1,88 +1,79 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import SosIcon from "@/assets/icons/home/echo-sos.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
-import InactiveRideIcon from "@/assets/icons/home/ride-inactive.svg";
-import SecurityIcon from "@/assets/icons/home/security.svg";
-import SilentNotificationIcon from "@/assets/icons/home/sheet-icon.svg";
 import {
   default as ActiveCameraIcon,
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
-import SystemReadyIcon from "@/assets/icons/status/success.svg";
 import {
   default as ButtonIcon,
   default as InactiveSensorIcon,
 } from "@assets/icons/sensors/button/button.svg";
-// import Warning from "@assets/icons/status/brown-warning.svg";
-// import GreenEye from "@assets/icons/status/green-eye.svg";
-// import RedEye from "@assets/icons/status/red-eye.svg";
-
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useDeviceStore } from "@/modules/devices";
+import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
+import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
 import { useOnboardingStore } from "@/modules/onboarding";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 
+import { Typography } from "@/shared/theme";
+import { BrandColors, Colors } from "@/shared/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { styles } from "./home-screen.styles";
-
 export function HomeScreen() {
   const router = useRouter();
   const colors = useTheme();
 
   const firstName = useOnboardingStore((state) => state.firstName);
-  // const camera1DeviceId = useDeviceStore((state) => state.camera1DeviceId);
-  // const camera2DeviceId = useDeviceStore((state) => state.camera2DeviceId);
-  // const buttonDeviceId = useDeviceStore((state) => state.buttonDeviceId);
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
   const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
+  const [rideStartedAt, setRideStartedAt] = useState<Date | null>(null);
 
-  // Temporary frontend states
-  const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const {
+    camera1DeviceId,
+    camera2DeviceId,
+    buttonDeviceId,
+  } = useDeviceStore();
 
-  const isCamera1Connected = !!camera1DeviceId;
-  const isCamera2Connected = !!camera2DeviceId;
-  const isButtonConnected = !!buttonDeviceId;
+  const isCamera1Connected = Boolean(camera1DeviceId);
+  const isCamera2Connected = Boolean(camera2DeviceId);
+  const isButtonConnected = Boolean(buttonDeviceId);
 
   const displayName = firstName.trim() || "Jovilyn";
-  const areAllSafetySystemsActive =
-    isCamera1Connected && isCamera2Connected && isButtonConnected;
 
-  const systemStatusText = areAllSafetySystemsActive
-    ? "All safety systems active."
-    : !isCamera1Connected && !isCamera2Connected && !isButtonConnected
-      ? "Safety systems are not connected."
-      : !isCamera1Connected && !isCamera2Connected
-        ? "Both cameras are not connected."
-        : !isCamera1Connected
-          ? "Camera 1 is not connected."
-          : !isCamera2Connected
-            ? "Camera 2 is not connected."
-            : "Button is not connected.";
+  const hasCameraConnected = isCamera1Connected || isCamera2Connected;
 
-  const systemStatusIconBackground = areAllSafetySystemsActive
-    ? "#E6F8E7"
-    : colors.backgroundSelected;
+  const {
+    monitoringCardState,
+    monitoringCardStyles,
+    monitoringTitle,
+    monitoringSubtitle,
+    monitoringIcon,
+  } = useMonitoringStatus({ hasCameraConnected });
 
-  const systemStatusTextColor = areAllSafetySystemsActive
-    ? colors.textMuted
-    : colors.textInactive;
+  let monitoringAction: (() => void) | undefined;
+
+  if (monitoringCardState === "no-camera") {
+    monitoringAction = () => router.push("/(onboarding)/devices/camera" as any);
+  }
 
   const handleStartRide = () => {
+    setRideStartedAt(new Date());
     setIsRideActive(true);
   };
 
   const handleEndRide = () => {
+    setRideStartedAt(null);
     setShowEndRideAlert(true);
   };
 
@@ -102,10 +93,23 @@ export function HomeScreen() {
     setShowEndRideAlert(false);
   };
 
+  const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
+    Boolean,
+  ).length;
+
+  const { formattedDuration } = useRideTimer(isRideActive, rideStartedAt);
+
+  const cameraCoverageColor =
+    activeCameraCount === 0
+      ? BrandColors.error
+      : activeCameraCount === 1
+        ? Colors.light.warningHeader
+        : "#2CB031";
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingWrapper
-        enableScrollView={true}
+        enableScrollView={false}
         contentContainerStyle={styles.content}
       >
         {/* HEADER */}
@@ -155,225 +159,189 @@ export function HomeScreen() {
           <View style={styles.statusSection}>
             <Card
               size="large"
-              title={isRideActive ? "System Ready" : "No active ride"}
-              subtitle={
-                isRideActive
-                  ? "Waiting for passenger to board."
-                  : "Start a ride to begin system monitoring."
+              title={monitoringTitle}
+              subtitle={monitoringSubtitle}
+              icon={monitoringIcon}
+              backgroundColor={monitoringCardStyles.backgroundColor}
+              borderColor={monitoringCardStyles.borderColor}
+              titleColor={monitoringCardStyles.titleColor}
+              subtitleColor={monitoringCardStyles.subtitleColor}
+              actionTitle={
+                monitoringCardState === "no-camera" ? "Connect" : undefined
               }
-              icon={
-                isRideActive ? (
-                  <SystemReadyIcon width={38} height={38} />
-                ) : (
-                  <InactiveRideIcon width={38} height={38} />
-                )
-              }
+              onActionPress={monitoringAction}
             />
           </View>
         </View>
 
         {/* DEVICE CARDS */}
-        {/* TODO: Add another card for camera 2 */}
         <View style={styles.deviceCards}>
-          <Card
-            size="small"
-            title="Camera"
-            subtitle={camera1DeviceId || "Hardware name"}
-            status={isCamera1Connected ? "Connected" : "Not connected"}
-            connectionState={isCamera1Connected ? "connected" : "disconnected"}
-            icon={
-              isCamera1Connected ? (
-                <ActiveCameraIcon width={14} height={14} />
-              ) : (
-                <InactiveCameraIcon width={14} height={14} />
-              )
-            }
-          />
-
-          <Card
-            size="small"
-            title="Button"
-            subtitle={buttonDeviceId || "Hardware name"}
-            status={isButtonConnected ? "Connected" : "Not connected"}
-            connectionState={isButtonConnected ? "connected" : "disconnected"}
-            icon={
-              isButtonConnected ? (
-                <ButtonIcon width={18} height={18} />
-              ) : (
-                <InactiveSensorIcon width={18} height={18} />
-              )
-            }
-          />
-        </View>
-
-        {/* START RIDE */}
-        {!isRideActive && (
-          <Button
-            title="Start Capturing"
-            variant="primary"
-            size="md"
-            fullWidth
-            onPress={handleStartRide}
-            style={styles.rideButton}
-          />
-        )}
-
-        {/* SYSTEM STATUS */}
-        {isRideActive ? (
-          <View
-            style={[
-              styles.silentNotificationCard,
-              {
-                backgroundColor: colors.backgroundElement,
-                borderColor: "#C9D6EA",
-              },
-            ]}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.deviceCardsScrollContent}
           >
-            <View style={styles.silentNotificationIcon}>
-              <SilentNotificationIcon width={20} height={20} />
+            <View style={styles.deviceCardItem}>
+              <Card
+                size="small"
+                title="Camera 1"
+                subtitle={camera1DeviceId || "Hardware name"}
+                status={isCamera1Connected ? "Connected" : "Not connected"}
+                connectionState={
+                  isCamera1Connected ? "connected" : "disconnected"
+                }
+                icon={
+                  isCamera1Connected ? (
+                    <ActiveCameraIcon width={14} height={14} />
+                  ) : (
+                    <InactiveCameraIcon width={14} height={14} />
+                  )
+                }
+                onPress={() => router.push("/devices" as any)}
+              />
             </View>
 
-            <View style={styles.silentNotificationTextContainer}>
+            <View style={styles.deviceCardItem}>
+              <Card
+                size="small"
+                title="Camera 2"
+                subtitle={camera2DeviceId || "Hardware name"}
+                status={isCamera2Connected ? "Connected" : "Not connected"}
+                connectionState={
+                  isCamera2Connected ? "connected" : "disconnected"
+                }
+                icon={
+                  isCamera2Connected ? (
+                    <ActiveCameraIcon width={14} height={14} />
+                  ) : (
+                    <InactiveCameraIcon width={14} height={14} />
+                  )
+                }
+                onPress={() => router.push("/devices" as any)}
+              />
+            </View>
+
+            <View style={styles.deviceCardItem}>
+              <Card
+                size="small"
+                title="Button"
+                subtitle={buttonDeviceId || "Hardware name"}
+                status={isButtonConnected ? "Connected" : "Not connected"}
+                connectionState={
+                  isButtonConnected ? "connected" : "disconnected"
+                }
+                icon={
+                  isButtonConnected ? (
+                    <ButtonIcon width={18} height={18} />
+                  ) : (
+                    <InactiveSensorIcon width={18} height={18} />
+                  )
+                }
+                onPress={() => router.push("/devices" as any)}
+              />
+            </View>
+          </ScrollView>
+        </View>
+
+        {/* OVERVIEW */}
+        <View style={styles.todaySection}>
+          <Text style={[Typography.h2, { color: colors.primary }]}>
+            Overview
+          </Text>
+
+          <View style={styles.currentRideContainer}>
+            {/* Capturing Status */}
+            <View style={styles.currentRideRow}>
               <Text
                 style={[
                   Typography.caption,
-                  styles.silentNotificationTitle,
+                  styles.currentRideLabel,
                   { color: colors.text },
                 ]}
               >
-                Silent notifications active
+                Capturing status
+              </Text>
+
+              <View
+                style={[
+                  styles.statusBadge,
+                  {
+                    backgroundColor: isRideActive ? "#E5FFE6" : "#7b7b7b20",
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.statusBadgeText,
+                    {
+                      color: isRideActive ? "#2CB031" : "#7B7B7B",
+                    },
+                  ]}
+                >
+                  {isRideActive ? "On" : "Off"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Duration */}
+            <View style={styles.currentRideRow}>
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.currentRideLabel,
+                  { color: colors.text },
+                ]}
+              >
+                Duration
               </Text>
 
               <Text
                 style={[
                   Typography.caption,
-                  styles.silentNotificationDescription,
+                  styles.currentRideValue,
                   { color: colors.textMuted },
                 ]}
               >
-                Alerts will be displayed without sound.
+                {formattedDuration}
               </Text>
             </View>
-          </View>
-        ) : (
-          <View style={styles.systemStatus}>
-            <View
-              style={[
-                styles.systemStatusIcon,
-                { backgroundColor: systemStatusIconBackground },
-              ]}
-            >
-              <SecurityIcon width={16} height={16} />
-            </View>
 
-            <Text
-              style={[
-                Typography.bodySmall,
-                styles.systemStatusText,
-                { color: systemStatusTextColor },
-              ]}
-            >
-              {systemStatusText}
-            </Text>
-          </View>
-        )}
-
-        {/* RIDE INFORMATION */}
-        <View style={styles.todaySection}>
-          <Text
-            style={[Typography.h4, styles.sectionTitle, { color: colors.text }]}
-          >
-            {isRideActive ? "Current ride" : "Today's rides"}
-          </Text>
-
-          {isRideActive ? (
-            <View style={styles.currentRideContainer}>
-              <View style={styles.currentRideRow}>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideLabel,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  Passenger boarded
-                </Text>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideValue,
-                    { color: colors.text },
-                  ]}
-                >
-                  Waiting for passenger
-                </Text>
-              </View>
-
-              <View style={styles.currentRideRow}>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideLabel,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  Metal detection
-                </Text>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideValue,
-                    { color: colors.text },
-                  ]}
-                >
-                  Standby
-                </Text>
-              </View>
-
-              <View style={styles.currentRideRow}>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideLabel,
-                    { color: colors.textMuted },
-                  ]}
-                >
-                  Camera monitoring
-                </Text>
-                <Text
-                  style={[
-                    Typography.caption,
-                    styles.currentRideValue,
-                    { color: colors.text },
-                  ]}
-                >
-                  Active
-                </Text>
-              </View>
-            </View>
-          ) : (
-            <View style={styles.emptyRides}>
-              <InactiveRideIcon width={72} height={72} />
+            {/* Camera Coverage */}
+            <View style={styles.currentRideRow}>
               <Text
-                style={[Typography.bodySmall, { color: colors.textInactive }]}
+                style={[
+                  Typography.caption,
+                  styles.currentRideLabel,
+                  { color: colors.text },
+                ]}
               >
-                No rides taken today
+                Camera coverage
+              </Text>
+
+              <Text
+                style={[
+                  Typography.caption,
+                  styles.currentRideValue,
+                  {
+                    color: cameraCoverageColor,
+                  },
+                ]}
+              >
+                {activeCameraCount} of 2 active
               </Text>
             </View>
-          )}
-        </View>
-
-        {/* END RIDE */}
-        {isRideActive && (
+          </View>
+          {/* CAPTURING BUTTON */}
           <Button
-            title="Stop Capturing"
-            variant="danger"
+            title={isRideActive ? "Stop Capturing" : "Start Capturing"}
+            variant={isRideActive ? "danger" : "primary"}
             size="md"
             fullWidth
-            onPress={handleEndRide}
-            style={styles.endRideButton}
+            disabled={!hasCameraConnected}
+            onPress={isRideActive ? handleEndRide : handleStartRide}
+            style={isRideActive ? styles.endRideButton : styles.rideButton}
           />
-        )}
+        </View>
       </KeyboardAvoidingWrapper>
 
       {/* QUICK ACTIONS */}
