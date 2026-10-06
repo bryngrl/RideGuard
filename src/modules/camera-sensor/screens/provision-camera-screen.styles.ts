@@ -1,3 +1,4 @@
+import { Colors, Typography } from "@/constants/theme";
 import { Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
@@ -21,6 +22,7 @@ export const styles = StyleSheet.create({
   headerContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.five,
+    marginTop: Spacing.three,
   },
   helpContainer: {
     alignItems: "flex-start",
@@ -48,6 +50,16 @@ export const styles = StyleSheet.create({
   },
   topSection: {
     flex: 1,
-    paddingTop: 72,
+  },
+  cameraNumber: {
+    alignSelf: "flex-start",
+    backgroundColor: "#ECF3FF",
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: 9999,
+  },
+  cameraNumberText: {
+    color: Colors.light.primary,
+    ...Typography.medium,
   },
 });
