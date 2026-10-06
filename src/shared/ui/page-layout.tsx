@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
 
   divider: {
-    height: 2,
+    height: 1,
     width: "100%",
   },
 
