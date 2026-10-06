@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.one,
     justifyContent: "center",
-    minHeight: 32,
+    minHeight: 40,
     paddingHorizontal: Spacing.three,
   },
 
@@ -144,7 +144,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     gap: Spacing.one,
     justifyContent: "center",
-    minHeight: 32,
+    minHeight: 40,
     paddingHorizontal: Spacing.three,
   },
 
