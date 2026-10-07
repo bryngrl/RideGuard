@@ -1,3 +1,5 @@
-import { MetalSensorScreen } from "@/modules/metal-sensor";
+import { ButtonTestScreen } from "@/modules/button";
 
-export default MetalSensorScreen;
+export default function ButtonShortPressRoute() {
+  return <ButtonTestScreen test="short" />;
+}

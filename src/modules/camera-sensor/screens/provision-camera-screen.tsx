@@ -119,7 +119,7 @@ export function ProvisionCameraScreen() {
       return;
     }
 
-    router.replace("/(onboarding)/register/complete-setup" as any);
+    router.replace("/devices/button" as any);
   };
 
   return (
@@ -128,7 +128,7 @@ export function ProvisionCameraScreen() {
         <View style={styles.stepperContainer}>
           <Stepper
             currentStep={cameraNumber === 1 ? 5 : 6}
-            steps={10}
+            steps={8}
             size={6}
           />
         </View>

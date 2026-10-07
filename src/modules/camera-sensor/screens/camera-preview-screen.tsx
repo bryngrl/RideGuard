@@ -23,7 +23,7 @@ export function CameraPreviewScreen() {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       router.replace(
         isSecondCamera
-          ? "/(onboarding)/register/complete-setup"
+          ? "/devices/button"
           : "/devices/camera?camera=2",
       );
     } finally {
@@ -35,7 +35,7 @@ export function CameraPreviewScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={10} size={6} />
+          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={8} size={6} />
         </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>

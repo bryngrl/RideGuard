@@ -1,3 +1,5 @@
-import { MetalSensorTestScreen } from "@/modules/metal-sensor";
+import { ButtonTestScreen } from "@/modules/button";
 
-export default MetalSensorTestScreen;
+export default function ButtonLongPressRoute() {
+  return <ButtonTestScreen test="long" />;
+}
