@@ -97,7 +97,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: theme.inputBackground,
+              backgroundColor: "#F6F6F6",
               borderColor: hasError
                 ? theme.error
                 : isFocused
@@ -227,8 +227,8 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderRadius: 0,
+    borderWidth: 1,
+    borderRadius: 999,
     paddingHorizontal: Spacing.three,
     minHeight: 50,
   },

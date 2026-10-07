@@ -1,4 +1,3 @@
-import { styles } from "./profile-step-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
@@ -6,10 +5,11 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useOnboardingStore } from "../store/onboarding.store";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
+import { useOnboardingStore } from "../store/onboarding.store";
+import { styles } from "./profile-step-screen.styles";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -52,12 +52,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper
-            currentStep={1}
-            steps={3}
-            size={28}
-            containerStyle={{ width: "70%" }}
-          />
+          <Stepper currentStep={1} steps={10} size={6} />
         </View>
 
         <View style={styles.logoContainer}>

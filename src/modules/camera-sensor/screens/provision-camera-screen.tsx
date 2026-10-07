@@ -1,22 +1,26 @@
-import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import MainLogo from "@/assets/icons//logos/main.svg";
+import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { claimDevice, useDeviceStore } from "@/modules/devices";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 import { styles } from "./provision-camera-screen.styles";
 
 export function ProvisionCameraScreen() {
   const router = useRouter();
+  const { camera } = useLocalSearchParams<{ camera?: string }>();
   const theme = useTheme();
-  const { setCameraDeviceId } = useDeviceStore();
+  const { setCamera1DeviceId, setCamera2DeviceId } = useDeviceStore();
+  const isSecondCamera = camera === "2";
+  const cameraNumber = isSecondCamera ? 2 : 1;
 
   const [deviceId, setDeviceId] = useState("");
   const [deviceIdError, setDeviceIdError] = useState("");
@@ -72,7 +76,11 @@ export function ProvisionCameraScreen() {
 
       const firebaseToken = await user.getIdToken(true);
       await claimDevice(cleanedId, firebaseToken);
-      setCameraDeviceId(cleanedId);
+      if (isSecondCamera) {
+        setCamera2DeviceId(cleanedId);
+      } else {
+        setCamera1DeviceId(cleanedId);
+      }
 
       setAlertState({
         visible: true,
@@ -81,7 +89,9 @@ export function ProvisionCameraScreen() {
       });
 
       setTimeout(() => {
-        router.replace("/devices/camera/camera-preview" as any);
+        router.replace(
+          `/devices/camera/camera-preview?camera=${cameraNumber}` as any,
+        );
       }, 1500);
     } catch (error: unknown) {
       const message =
@@ -103,14 +113,34 @@ export function ProvisionCameraScreen() {
     }
   };
 
+  const handleSkip = () => {
+    if (deviceId.trim()) {
+      setDeviceIdError("Clear the Device ID before skipping.");
+      return;
+    }
+
+    router.replace("/devices/button" as any);
+  };
+
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
+        <View style={styles.stepperContainer}>
+          <Stepper
+            currentStep={cameraNumber === 1 ? 5 : 6}
+            steps={8}
+            size={6}
+          />
+        </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />
           </View>
-
+          <View style={styles.cameraNumber}>
+            <Text style={styles.cameraNumberText}>
+              Camera {cameraNumber} of 2
+            </Text>
+          </View>
           <View style={styles.headerContainer}>
             <Text style={[Typography.largeTitle, { color: theme.text }]}>
               Connect your{"\n"}camera
@@ -174,6 +204,17 @@ export function ProvisionCameraScreen() {
               onPress={handleConnect}
               isLoading={isLoading}
             />
+            {isSecondCamera && (
+              <Button
+                title="Skip for now"
+                variant="ghost"
+                size="md"
+                fullWidth
+                onPress={handleSkip}
+                disabled={isLoading}
+                style={{ marginTop: Spacing.two }}
+              />
+            )}
           </View>
         </View>
 

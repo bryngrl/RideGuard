@@ -10,6 +10,7 @@ import {
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { Button } from "@/shared/ui/button";
 
 export type CardSize = "small" | "large";
 export type ConnectionState = "connected" | "disconnected";
@@ -27,9 +28,19 @@ export interface CardProps {
   connectedStatusIcon?: React.ReactNode;
   disconnectedStatusIcon?: React.ReactNode;
 
+  backgroundColor?: string;
+  borderColor?: string;
+  titleColor?: string;
+  subtitleColor?: string;
+  iconBackgroundColor?: string;
+
+  actionTitle?: string;
+  onActionPress?: () => void;
+
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
 }
+
 export function Card({
   size,
   title,
@@ -42,11 +53,19 @@ export function Card({
   statusIcon,
   connectedStatusIcon,
   disconnectedStatusIcon,
+  backgroundColor,
+  borderColor,
+  titleColor,
+  subtitleColor,
+  iconBackgroundColor,
+  actionTitle,
+  onActionPress,
   onPress,
   style,
 }: CardProps) {
   const colors = useTheme();
   const isLarge = size === "large";
+  const hasAction = isLarge && Boolean(actionTitle && onActionPress);
 
   const displayIcon =
     connectionState === "connected"
@@ -75,8 +94,8 @@ export function Card({
         styles.card,
         isLarge ? styles.largeCard : styles.smallCard,
         {
-          backgroundColor: colors.card,
-          borderColor: colors.border,
+          backgroundColor: backgroundColor ?? colors.card,
+          borderColor: borderColor ?? colors.border,
         },
         pressed && onPress && styles.pressed,
         style,
@@ -90,19 +109,23 @@ export function Card({
           !isLarge && {
             backgroundColor: colors.backgroundSelected,
           },
+          isLarge &&
+            iconBackgroundColor && {
+              backgroundColor: iconBackgroundColor,
+            },
         ]}
       >
         {displayIcon}
       </View>
 
       {/* TEXT CONTENT */}
-      <View style={styles.copy}>
+      <View style={[styles.copy, hasAction && styles.largeCopyWithAction]}>
         {/* TITLE */}
         <Text
           style={[
             isLarge ? Typography.bodyLarge : Typography.bodySmall,
             styles.title,
-            { color: colors.text },
+            { color: titleColor ?? colors.text },
           ]}
           numberOfLines={2}
         >
@@ -117,9 +140,9 @@ export function Card({
                 ? Typography.bodySmall
                 : [Typography.bodySmall, styles.smallSubtitle],
               styles.subtitle,
-              { color: colors.textMuted },
+              { color: subtitleColor ?? colors.textMuted },
             ]}
-            numberOfLines={1}
+            numberOfLines={isLarge ? 3 : 1}
             adjustsFontSizeToFit
             minimumFontScale={0.75}
           >
@@ -156,6 +179,17 @@ export function Card({
               {status}
             </Text>
           </View>
+        ) : null}
+
+        {/* ACTION */}
+        {hasAction ? (
+          <Button
+            title={actionTitle ?? ""}
+            variant="outline"
+            size="sm"
+            onPress={onActionPress}
+            style={styles.actionButton}
+          />
         ) : null}
       </View>
     </Pressable>
@@ -206,6 +240,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
+  largeCopyWithAction: {
+    alignSelf: "stretch",
+    justifyContent: "center",
+  },
+
   title: {
     flexShrink: 1,
   },
@@ -214,10 +253,12 @@ const styles = StyleSheet.create({
     marginTop: Spacing.half,
     flexShrink: 1,
   },
+
   smallSubtitle: {
     fontSize: 10,
     lineHeight: 12,
   },
+
   smallStatusText: {
     fontSize: 9,
     lineHeight: 11,
@@ -243,6 +284,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
+  actionButton: {
+    marginTop: Spacing.two,
+    width: 90,
+    alignSelf: "flex-start",
+  },
   pressed: {
     opacity: 0.8,
     transform: [{ scale: 0.99 }],

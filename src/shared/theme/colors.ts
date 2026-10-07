@@ -34,6 +34,16 @@ export const Colors = {
     errorBackground: "#FDE2E2",
     success: BrandColors.success,
     warning: BrandColors.warning,
+    // Alerts-Cards-Warning
+    warningHeader: "#BF5300",
+    warningStroke: "#FFEFC0",
+    warningSubHeader: "#9A6943",
+    warningBackground: "#FFFAF0",
+    // Alerts-Cards-Danger
+    dangerHeader: "#D81A1A",
+    dangerStroke: "#FECACA",
+    dangerSubHeader: "#CE3838",
+    dangerBackground: "#FEF2F2",
   },
 
   // BLOCKED: dark theme
@@ -62,8 +72,17 @@ export const Colors = {
     errorBackground: "#451A1A",
     success: "#34D399",
     warning: "#FBBF24",
+    // Alerts-Cards-Warning
+    warningHeader: "#BF5300",
+    warningStroke: "#FFEFC0",
+    warningSubHeader: "#9A6943",
+    warningBackground: "#FFFAF0",
+    // Alerts-Cards-Danger
+    dangerHeader: "#D81A1A",
+    dangerStroke: "#FECACA",
+    dangerSubHeader: "#CE3838",
+    dangerBackground: "#FEF2F2",
   },
 } as const;
 
-export type ThemeColor =
-  keyof typeof Colors.light & keyof typeof Colors.dark;
+export type ThemeColor = keyof typeof Colors.light & keyof typeof Colors.dark;

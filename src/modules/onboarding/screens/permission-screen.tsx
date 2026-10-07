@@ -1,10 +1,10 @@
-import { styles } from "./permission-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import LocationIcon from "@/assets/icons/actions/location.svg";
 import NotificationIcon from "@/assets/icons/misc/notification.svg";
 import GreenCheckIcon from "@/assets/icons/status/green-check.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
+import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { AppState, Linking, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { styles } from "./permission-screen.styles";
 
 export default function PermissionsScreen() {
   const router = useRouter();
@@ -100,6 +101,9 @@ export default function PermissionsScreen() {
       ]}
     >
       <View style={styles.container}>
+        <View style={styles.stepperContainer}>
+          <Stepper currentStep={4} steps={10} size={6} />
+        </View>
         {/* MAIN CONTENT */}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>

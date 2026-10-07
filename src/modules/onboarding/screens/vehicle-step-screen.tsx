@@ -54,12 +54,7 @@ export default function RegisterStepTwoScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper
-            currentStep={2}
-            steps={3}
-            size={28}
-            containerStyle={{ width: "70%" }}
-          />
+          <Stepper currentStep={2} steps={10} size={6} />
         </View>
 
         <View style={styles.logoContainer}>

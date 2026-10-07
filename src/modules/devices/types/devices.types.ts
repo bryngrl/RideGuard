@@ -6,5 +6,4 @@ export interface DeviceApiResponse<T = Record<string, unknown>> {
   statusCode?: number;
   fields?: Record<string, string>;
 }
-
-export type DeviceType = "Camera" | "Metal-Detector";
+export type DeviceType = "Camera" | "Button";

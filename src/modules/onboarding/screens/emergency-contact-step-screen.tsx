@@ -157,12 +157,7 @@ export default function RegisterStepThreeScreen() {
       <KeyboardAvoidingWrapper>
         <View style={styles.container}>
           <View style={styles.stepperContainer}>
-            <Stepper
-              currentStep={3}
-              steps={3}
-              size={28}
-              containerStyle={{ width: "70%" }}
-            />
+            <Stepper currentStep={3} steps={10} size={6} />
           </View>
 
           <View style={styles.logoContainer}>

@@ -1,9 +1,10 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
+import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
 
@@ -11,14 +12,20 @@ const screenWidth = Dimensions.get("window").width;
 
 export function CameraPreviewScreen() {
   const router = useRouter();
+  const { camera } = useLocalSearchParams<{ camera?: string }>();
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
+  const isSecondCamera = camera === "2";
 
   const handleDone = async () => {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.replace("/(onboarding)/register/complete-setup" as any);
+      router.replace(
+        isSecondCamera
+          ? "/devices/button"
+          : "/devices/camera?camera=2",
+      );
     } finally {
       setIsLoading(false);
     }
@@ -27,6 +34,9 @@ export function CameraPreviewScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
+        <View style={styles.stepperContainer}>
+          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={8} size={6} />
+        </View>
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />
@@ -78,6 +88,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "space-between",
   },
+  stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
+
   footerContainer: {
     marginTop: "auto",
     paddingTop: Spacing.two,
@@ -102,7 +114,5 @@ const styles = StyleSheet.create({
     height: "100%",
     width: "100%",
   },
-  topSection: {
-    paddingTop: 72,
-  },
+  topSection: {},
 });
