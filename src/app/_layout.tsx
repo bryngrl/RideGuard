@@ -1,17 +1,12 @@
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useAuth } from "@/modules/auth";
+import { useAbly } from "@/shared/hooks/use-ably";
 import { useFonts } from "expo-font";
-import {
-  DarkTheme,
-  DefaultTheme,
-  Stack,
-  ThemeProvider,
-} from "expo-router";
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
-import { useAbly } from "@/shared/hooks/use-ably";
-import { useAuth } from "@/modules/auth";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -41,13 +36,26 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider
-        value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-      >
-        <StatusBar
-          style={colorScheme === "dark" ? "light" : "dark"}
-        />
-        <Stack screenOptions={{ headerShown: false }} />
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen
+            name="(app)/(tabs)/index"
+            options={{ animation: "none" }}
+          />
+          <Stack.Screen
+            name="(app)/(tabs)/alerts"
+            options={{ animation: "none" }}
+          />
+          <Stack.Screen
+            name="(app)/(tabs)/camera"
+            options={{ animation: "none" }}
+          />
+          <Stack.Screen
+            name="(app)/(tabs)/settings"
+            options={{ animation: "none" }}
+          />
+        </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>
   );
