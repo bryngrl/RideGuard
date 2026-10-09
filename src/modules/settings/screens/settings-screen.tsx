@@ -176,7 +176,6 @@ export function SettingsScreen() {
           )}
         </View>
       </KeyboardAvoidingWrapper>
-      <BottomNavigation />
     </View>
   );
 }

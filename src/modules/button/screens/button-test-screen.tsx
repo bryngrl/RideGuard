@@ -25,11 +25,7 @@ export function ButtonTestScreen({
   const {
     state,
     recognizedButtons,
-    progress,
-    isHolding,
     pressedButtons,
-    handleButtonPressStart,
-    handleButtonPressEnd,
     handleRetry,
   } = useButtonTest(testType, () =>
     router.replace("/devices/button/test-page"),
@@ -43,9 +39,6 @@ export function ButtonTestScreen({
     <ButtonTestVisual
       color={color}
       isPressed={pressedButtons[color]}
-      onPressStart={() => handleButtonPressStart(color)}
-      onPressEnd={() => handleButtonPressEnd(color)}
-      disabled={state === "success"}
     />
   );
 
@@ -91,27 +84,6 @@ export function ButtonTestScreen({
   };
 
   const renderLongStatus = () => {
-    if (isHolding) {
-      return (
-        <>
-          <View style={styles.progressTrack}>
-            <View
-              style={[styles.progressFill, { width: `${progress * 100}%` }]}
-            />
-          </View>
-          <Text
-            style={[
-              Typography.body,
-              styles.holdingText,
-              { color: theme.textMuted },
-            ]}
-          >
-            Holding...
-          </Text>
-        </>
-      );
-    }
-
     if (state === "success") {
       return (
         <>
@@ -232,23 +204,6 @@ const styles = StyleSheet.create({
   },
   status: {
     alignItems: "flex-start",
-  },
-  progressTrack: {
-    backgroundColor: "#E4E7EC",
-    borderRadius: 8,
-    height: 12,
-    overflow: "hidden",
-    width: "70%",
-    alignSelf: "center",
-  },
-  progressFill: {
-    backgroundColor: "#1A2B4C",
-    borderRadius: 8,
-    height: "100%",
-  },
-  holdingText: {
-    marginTop: Spacing.two,
-    textAlign: "center",
   },
   continueButton: {
     marginTop: Spacing.two,

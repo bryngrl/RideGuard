@@ -39,7 +39,6 @@ export function CameraTabScreen() {
       </KeyboardAvoidingWrapper>
 
       <QuickActions />
-      <BottomNavigation />
     </View>
   );
 }
