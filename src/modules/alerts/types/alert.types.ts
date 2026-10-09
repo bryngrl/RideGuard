@@ -1,16 +1,16 @@
 export type AlertSeverity = "clear" | "threat";
-export type AlertDetectionTitle =
-  | "No detections"
-  | "Weapon detected"
-  | "Violence detected"
-  | "Violence and Weapon detected";
+export type AlertDetectionType =
+  | "none"
+  | "weapon"
+  | "violence"
+  | "both";
 
 /**
  * UI shape rendered by the alert list/row.
  */
 export interface AlertItem {
   alertId: string;
-  title: AlertDetectionTitle;
+  title: string;
   time: string;
   severity: AlertSeverity;
   read: boolean;

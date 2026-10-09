@@ -46,7 +46,10 @@ export function useAlertDetails() {
       try {
         const token = await user.getIdToken();
         const updated = await markAlertAsSeen(alertId, token);
-        if (active) upsertAlert(updated);
+        if (active) {
+          // Marking an alert seen is a status update;
+          upsertAlert({ ...updated, message: alert.message });
+        }
       } catch (error) {
         console.error("Failed to mark alert as seen:", error);
         // Let a later open retry if this one failed.

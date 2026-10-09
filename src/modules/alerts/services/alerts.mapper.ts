@@ -1,5 +1,5 @@
 import type {
-  AlertDetectionTitle,
+  AlertDetectionType,
   AlertFields,
   AlertItem,
 } from "../types/alert.types";
@@ -146,24 +146,32 @@ export function formatRelativeDay(timeStamp: string): string {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-/**
- * Convert the backend alert title/message into the stable detection title used
- * by the list and detail screens. False-alarm state is intentionally excluded.
- */
-export function getAlertDetectionTitle(message: string): AlertDetectionTitle {
-  const title = message.trim().toLowerCase();
+export function getAlertDetectionType(message: string): AlertDetectionType {
+  const title = message.trim().toLowerCase().replace(/[_-]+/g, " ");
 
-  if (title.includes("violence") && title.includes("weapon")) {
-    return "Violence and Weapon detected";
+  if (
+    title.includes("all clear") ||
+    title.includes("no detection") ||
+    title.includes("nothing detected")
+  ) {
+    return "none";
   }
-  if (title.includes("violence")) return "Violence detected";
-  if (title.includes("weapon")) return "Weapon detected";
-  return "No detections";
+
+  const hasViolence =
+    title.includes("violence") && !title.includes("no violence");
+  const hasWeapon = title.includes("weapon") && !title.includes("no weapon");
+
+  if (hasViolence && hasWeapon) {
+    return "both";
+  }
+  if (hasViolence) return "violence";
+  if (hasWeapon) return "weapon";
+  return "none";
 }
 
 /**
- * Map a backend payload to the UI item. Detection title and severity are
- * derived from the original alert message, never from false-alarm state.
+ * Map a backend payload to the UI item. The displayed title remains the
+ * original backend message; detection type and severity are derived from it.
  * Returns null when the payload lacks a usable alertId.
  */
 export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
@@ -172,12 +180,12 @@ export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
 
   if (!alertId) return null;
 
-  const title = getAlertDetectionTitle(fields.message);
+  const detectionType = getAlertDetectionType(fields.message);
 
   return {
     alertId,
-    title,
-    severity: title === "No detections" ? "clear" : "threat",
+    title: fields.message,
+    severity: detectionType === "none" ? "clear" : "threat",
     time: formatClockTime(fields.timeStamp),
     read: fields.isSeen === true,
     subLabel: fields.isFalseAlarm ? "Marked as false alarm" : undefined,
