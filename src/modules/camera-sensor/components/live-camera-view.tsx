@@ -1,38 +1,20 @@
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
-import { useMemo, useState } from "react";
+import { Image } from "expo-image";
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { WebView } from "react-native-webview";
 
 import type { LiveCamera } from "../types/live-camera.types";
 
-/**
- * Wraps the MJPEG stream in a full-bleed <img>. A browser/WebView renders a
- * multipart/x-mixed-replace response as a continuously updating image, so this
- * is all it takes to play the feed. onerror reports back so we can show a
- * "stream unavailable" state instead of a blank frame.
- */
-function buildStreamHtml(streamUrl: string): string {
-  return `<!DOCTYPE html>
-<html>
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <style>
-      html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
-      img { width: 100%; height: 100%; object-fit: cover; display: block; }
-    </style>
-  </head>
-  <body>
-    <img
-      src="${streamUrl}"
-      onerror="window.ReactNativeWebView && window.ReactNativeWebView.postMessage('error')"
-    />
-  </body>
-</html>`;
-}
+// The model API holds the newest frame per device in memory. Polling it a
+// couple of times a second approximates a live stream and works from anywhere,
+// since the server is public (no shared network needed).
+const INFERENCE_BASE_URL =
+  process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1";
+const POLL_INTERVAL_MS = 500;
 
-function streamOrigin(streamUrl: string): string {
-  const match = streamUrl.match(/^[a-z]+:\/\/[^/]+/i);
-  return match ? match[0] : streamUrl;
+function relayUrl(deviceId: string, tick: number): string {
+  // tick busts any cache so each poll gets the current frame.
+  return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/latest.jpg?t=${tick}`;
 }
 
 export function LiveCameraView({
@@ -42,44 +24,53 @@ export function LiveCameraView({
   camera: LiveCamera;
   label: string;
 }) {
-  const [streamFailed, setStreamFailed] = useState(false);
+  const [tick, setTick] = useState(() => Date.now());
+  const [failed, setFailed] = useState(false);
 
-  const canStream = camera.online && !!camera.streamUrl && !streamFailed;
+  // Only poll while the camera is reporting. A stopped camera just shows the
+  // offline state instead of hammering the relay for 404s.
+  useEffect(() => {
+    if (!camera.online) return;
 
-  const html = useMemo(
-    () => (camera.streamUrl ? buildStreamHtml(camera.streamUrl) : ""),
-    [camera.streamUrl],
-  );
+    const id = setInterval(() => setTick(Date.now()), POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [camera.online]);
+
+  // Live only when the camera is reporting and the last frame loaded. The Image
+  // stays mounted while online and keeps polling, so onLoad can clear a
+  // transient failure on its own once frames resume.
+  const isLive = camera.online && !failed;
 
   return (
     <View style={styles.container}>
-      {canStream && camera.streamUrl ? (
-        <WebView
+      {camera.online ? (
+        <Image
           style={styles.media}
-          originWhitelist={["*"]}
-          // The stream is plain HTTP on the LAN; allow it to load.
-          mixedContentMode="always"
-          source={{ html, baseUrl: streamOrigin(camera.streamUrl) }}
-          onMessage={(event) => {
-            if (event.nativeEvent.data === "error") setStreamFailed(true);
-          }}
-          scrollEnabled={false}
-          javaScriptEnabled
+          source={{ uri: relayUrl(camera.deviceId, tick) }}
+          cachePolicy="none"
+          contentFit="cover"
+          transition={0}
+          onError={() => setFailed(true)}
+          onLoad={() => setFailed(false)}
         />
       ) : (
         <View style={[styles.media, styles.placeholder]}>
-          <Text style={styles.placeholderText}>
-            {camera.online ? "Stream unavailable" : "Camera offline"}
-          </Text>
+          <Text style={styles.placeholderText}>Camera offline</Text>
         </View>
       )}
+
+      {camera.online && failed ? (
+        <View style={[styles.media, styles.placeholder, styles.overlay]}>
+          <Text style={styles.placeholderText}>Stream unavailable</Text>
+        </View>
+      ) : null}
 
       <View style={styles.label}>
         <View style={styles.labelRow}>
           <View
             style={[
               styles.labelDot,
-              { backgroundColor: canStream ? BrandColors.error : "#9CA3AF" },
+              { backgroundColor: isLive ? BrandColors.error : "#9CA3AF" },
             ]}
           />
           <Text style={[Typography.h3, styles.labelText]}>{label}</Text>
@@ -108,6 +99,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#1F2937",
     justifyContent: "center",
+  },
+  overlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   placeholderText: {
     color: "#FFFFFF",
