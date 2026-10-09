@@ -2,28 +2,13 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { QuickActions } from "@/shared/ui/quick-actions";
-import { StyleSheet, Text, View } from "react-native";
-import { CameraView, CameraViewMedia } from "../components/camera-view";
-
-const cameras: CameraViewMedia[] = [
-  {
-    id: "camera-1",
-    label: "Camera 1",
-    mediaType: "image",
-    // TODO: Map this camera ID to the backend/ESP32 image or live-stream source.
-    source: require("@/assets/images/placeholder/placeholder-camera-preview.png"),
-  },
-  {
-    id: "camera-2",
-    label: "Camera 2",
-    mediaType: "image",
-    // TODO: Map this camera ID to the backend/ESP32 image or live-stream source.
-    source: require("@/assets/images/placeholder/placeholder-camera-preview.png"),
-  },
-];
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { LiveCameraView } from "../components/live-camera-view";
+import { useCameras } from "../hooks/use-cameras";
 
 export function CameraTabScreen() {
   const colors = useTheme();
+  const { cameras, isLoading, error } = useCameras();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -31,11 +16,34 @@ export function CameraTabScreen() {
         <Text style={[Typography.largeTitle, { color: colors.text }]}>
           Live camera
         </Text>
-        <View style={styles.cameraList}>
-          {cameras.map((camera) => (
-            <CameraView key={camera.id} camera={camera} />
-          ))}
-        </View>
+
+        {isLoading ? (
+          <View style={styles.statusBox}>
+            <ActivityIndicator color={colors.text} />
+          </View>
+        ) : error ? (
+          <View style={styles.statusBox}>
+            <Text style={[Typography.body, { color: colors.text }]}>
+              {error}
+            </Text>
+          </View>
+        ) : cameras.length === 0 ? (
+          <View style={styles.statusBox}>
+            <Text style={[Typography.body, { color: colors.text }]}>
+              No cameras linked to your account yet.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.cameraList}>
+            {cameras.map((camera, index) => (
+              <LiveCameraView
+                key={camera.deviceId}
+                camera={camera}
+                label={`Camera ${index + 1}`}
+              />
+            ))}
+          </View>
+        )}
       </KeyboardAvoidingWrapper>
 
       <QuickActions />
@@ -49,6 +57,12 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: Spacing.three,
+  },
+  statusBox: {
+    marginTop: Spacing.six,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: Spacing.six,
   },
   cameraList: {
     marginTop: Spacing.six,
