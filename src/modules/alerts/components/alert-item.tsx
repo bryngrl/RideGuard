@@ -1,6 +1,9 @@
 import { Pressable, Text, View } from "react-native";
 
-import CheckCircleIcon from "@/assets/icons/alerts/circle-check.svg";
+import BothDetectedIcon from "@/assets/icons/alerts/both-detected.svg";
+import NoDetectedIcon from "@/assets/icons/alerts/no-detected.svg";
+import ViolenceDetectedIcon from "@/assets/icons/alerts/violence-detected.svg";
+import WeaponDetectedIcon from "@/assets/icons/alerts/weapon-detected.svg";
 import ClockIcon from "@/assets/icons/misc/clock.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -13,26 +16,24 @@ interface AlertItemProps {
   onPress: (alert: AlertItemType) => void;
 }
 
-const SEVERITY_CONFIG: Record<
-  AlertItemType["severity"],
-  { label: string; labelColor?: string }
-> = {
-  clear: {
-    label: "All clear",
-  },
-  threat: {
-    label: "Threat detected",
-    labelColor: BrandColors.error,
-  },
-};
+function DetectionIcon({ title }: { title: AlertItemType["title"] }) {
+  if (title === "Violence and Weapon detected") {
+    return <BothDetectedIcon height={35} width={35} />;
+  }
+  if (title === "Weapon detected") {
+    return <WeaponDetectedIcon height={35} width={35} />;
+  }
+  if (title === "Violence detected") {
+    return <ViolenceDetectedIcon height={35} width={35} />;
+  }
+  return <NoDetectedIcon height={35} width={35} />;
+}
 
 export function AlertItem({ alert, onPress }: AlertItemProps) {
   const theme = useTheme();
 
-  const config = SEVERITY_CONFIG[alert.severity];
-
   const labelColor =
-    alert.severity === "threat" ? BrandColors.error : theme.text;
+    alert.title === "No detections" ? BrandColors.success : BrandColors.error;
 
   const isUnread = !alert.read;
 
@@ -49,33 +50,29 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
         onPress={() => onPress(alert)}
         style={({ pressed }) => [styles.container, pressed && styles.pressed]}
         accessibilityRole="button"
-        accessibilityLabel={`${config.label}, ${alert.time}`}
+        accessibilityLabel={`${alert.title}, ${alert.time}`}
       >
         {/* left icon */}
         <View style={styles.iconWrapper}>
           <View style={[styles.iconPlaceholder, { borderColor: theme.border }]}>
-            <CheckCircleIcon height={28} width={28} />
+            <DetectionIcon title={alert.title} />
           </View>
         </View>
 
-        {/* label + time */}
+        {/* time + label */}
         <View style={styles.textBlock}>
           <Text
-            style={[Typography.medium, styles.label, { color: labelColor }]}
-            numberOfLines={1}
-          >
-            {config.label}
-          </Text>
-
-          <Text
-            style={[
-              Typography.medium,
-              styles.timeRange,
-              { color: theme.textInactive },
-            ]}
+            style={[Typography.medium, styles.label, { color: "#000000" }]}
             numberOfLines={1}
           >
             {alert.time}
+          </Text>
+
+          <Text
+            style={[Typography.medium, styles.timeRange, { color: labelColor }]}
+            numberOfLines={1}
+          >
+            {alert.title}
           </Text>
 
           {alert.subLabel ? (
@@ -83,7 +80,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
               style={[
                 Typography.bodySmall,
                 styles.subLabel,
-                { color: theme.text },
+                { color: "#0046CE" },
               ]}
               numberOfLines={1}
             >

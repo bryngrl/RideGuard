@@ -1,6 +1,4 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
-import SosIcon from "@/assets/icons/home/echo-sos.svg";
-import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import {
   default as ActiveCameraIcon,
   default as InactiveCameraIcon,
@@ -26,7 +24,8 @@ import { BrandColors, Colors } from "@/shared/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
+import { QuickActions } from "@/shared/ui/quick-actions";
 import { styles } from "./home-screen.styles";
 export function HomeScreen() {
   const router = useRouter();
@@ -394,44 +393,7 @@ export function HomeScreen() {
         </View>
       </KeyboardAvoidingWrapper>
 
-      {/* QUICK ACTIONS */}
-      <View
-        style={[
-          styles.quickActionsContainer,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <View style={styles.quickActions}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.sosButton,
-              pressed && styles.actionPressed,
-            ]}
-            onPress={() => router.push("/sos" as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Open SOS emergency screen"
-          >
-            <SosIcon width={15} height={15} />
-            <Text style={[Typography.caption, styles.sosButtonText]}>SOS</Text>
-          </Pressable>
-
-          <Pressable
-            style={({ pressed }) => [
-              styles.contactsButton,
-              { borderColor: colors.primary },
-              pressed && styles.actionPressed,
-            ]}
-            onPress={() => router.push("/contact" as any)}
-            accessibilityRole="button"
-            accessibilityLabel="Open emergency contacts"
-          >
-            <ContactIcon width={13} height={16} />
-            <Text style={[Typography.caption, { color: colors.primary }]}>
-              Contacts
-            </Text>
-          </Pressable>
-        </View>
-      </View>
+      <QuickActions />
 
       <SweetAlert
         visible={showStartCaptureAlert}

@@ -1,4 +1,8 @@
-import type { AlertFields, AlertItem } from "../types/alert.types";
+import type {
+  AlertDetectionTitle,
+  AlertFields,
+  AlertItem,
+} from "../types/alert.types";
 
 /**
  * Normalize a timestamp coming from either the realtime channel (a JSON date
@@ -27,8 +31,22 @@ function normalizeTimeStamp(input: unknown): string {
   return "";
 }
 
-function normalizeImageUrl(input: unknown): string | null {
-  return typeof input === "string" && input.length > 0 ? input : null;
+function normalizeImageUrl(input: unknown): string | string[] | null {
+  if (typeof input === "string" && input.length > 0) return input;
+  if (Array.isArray(input)) {
+    const urls = input.filter(
+      (value): value is string => typeof value === "string" && value.length > 0,
+    );
+    return urls.length > 0 ? urls : null;
+  }
+  return null;
+}
+
+export function getSnapshotUris(
+  imageUrl: string | string[] | null | undefined,
+): string[] {
+  if (typeof imageUrl === "string") return [imageUrl];
+  return imageUrl ?? [];
 }
 
 /**
@@ -129,8 +147,23 @@ export function formatRelativeDay(timeStamp: string): string {
 }
 
 /**
- * Map a backend payload to the UI item. The title and severity are derived
- * from `isFalseAlarm` only — never from the original message text.
+ * Convert the backend alert title/message into the stable detection title used
+ * by the list and detail screens. False-alarm state is intentionally excluded.
+ */
+export function getAlertDetectionTitle(message: string): AlertDetectionTitle {
+  const title = message.trim().toLowerCase();
+
+  if (title.includes("violence") && title.includes("weapon")) {
+    return "Violence and Weapon detected";
+  }
+  if (title.includes("violence")) return "Violence detected";
+  if (title.includes("weapon")) return "Weapon detected";
+  return "No detections";
+}
+
+/**
+ * Map a backend payload to the UI item. Detection title and severity are
+ * derived from the original alert message, never from false-alarm state.
  * Returns null when the payload lacks a usable alertId.
  */
 export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
@@ -139,11 +172,13 @@ export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
 
   if (!alertId) return null;
 
+  const title = getAlertDetectionTitle(fields.message);
+
   return {
     alertId,
-    title: "Threat detected",
-    severity: "threat",
-    time: formatAlertTime(fields.timeStamp),
+    title,
+    severity: title === "No detections" ? "clear" : "threat",
+    time: formatClockTime(fields.timeStamp),
     read: fields.isSeen === true,
     subLabel: fields.isFalseAlarm ? "Marked as false alarm" : undefined,
   };
