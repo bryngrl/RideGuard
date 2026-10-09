@@ -4,10 +4,10 @@ import {
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
 import ErrorIcon from "@/assets/icons/status/error.svg";
+import { useCurrentUser } from "@/modules/auth";
 import { useDeviceStore } from "@/modules/devices";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
-import { useOnboardingStore } from "@/modules/onboarding";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
@@ -31,7 +31,7 @@ export function HomeScreen() {
   const router = useRouter();
   const colors = useTheme();
 
-  const firstName = useOnboardingStore((state) => state.firstName);
+  const { firstName } = useCurrentUser();
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
@@ -49,7 +49,7 @@ export function HomeScreen() {
   // const isCamera2Connected = false;
   // const isButtonConnected = true;
 
-  const displayName = firstName.trim() || "Jovilyn";
+  const displayName = firstName?.trim() || "there";
 
   const hasCameraConnected = isCamera1Connected || isCamera2Connected;
 
