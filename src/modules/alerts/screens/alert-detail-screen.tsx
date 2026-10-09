@@ -23,8 +23,8 @@ import { useAlertDetails } from "../hooks/use-alert-details";
 import {
   formatClockTime,
   formatRelativeDay,
+  getAlertDetectionType,
   getSnapshotUris,
-  getAlertDetectionTitle,
 } from "../services/alerts.mapper";
 import {
   bannerStyles,
@@ -373,7 +373,7 @@ export function AlertDetailScreen() {
   }
 
   const isFalseAlarm = alert.isFalseAlarm === true;
-  const detectionTitle = getAlertDetectionTitle(alert.message);
+  const detectionType = getAlertDetectionType(alert.message);
   const snapshotUris = getSnapshotUris(alert.imageUrl);
 
   const handleFlagAsFalseAlarm = () => {
@@ -427,13 +427,13 @@ export function AlertDetailScreen() {
                 contentStyles.alertTitle,
                 {
                   color:
-                    detectionTitle === "No detections"
+                    detectionType === "none"
                       ? BrandColors.success
                       : BrandColors.error,
                 },
               ]}
             >
-              {detectionTitle}
+              {alert.message}
             </Text>
 
             <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>

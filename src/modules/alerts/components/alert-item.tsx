@@ -8,6 +8,7 @@ import ClockIcon from "@/assets/icons/misc/clock.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Typography } from "@/shared/theme";
+import { getAlertDetectionType } from "../services/alerts.mapper";
 import type { AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alert-item.styles";
 
@@ -17,13 +18,15 @@ interface AlertItemProps {
 }
 
 function DetectionIcon({ title }: { title: AlertItemType["title"] }) {
-  if (title === "Violence and Weapon detected") {
+  const detectionType = getAlertDetectionType(title);
+
+  if (detectionType === "both") {
     return <BothDetectedIcon height={35} width={35} />;
   }
-  if (title === "Weapon detected") {
+  if (detectionType === "weapon") {
     return <WeaponDetectedIcon height={35} width={35} />;
   }
-  if (title === "Violence detected") {
+  if (detectionType === "violence") {
     return <ViolenceDetectedIcon height={35} width={35} />;
   }
   return <NoDetectedIcon height={35} width={35} />;
@@ -33,7 +36,9 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
   const theme = useTheme();
 
   const labelColor =
-    alert.title === "No detections" ? BrandColors.success : BrandColors.error;
+    getAlertDetectionType(alert.title) === "none"
+      ? BrandColors.success
+      : BrandColors.error;
 
   const isUnread = !alert.read;
 
