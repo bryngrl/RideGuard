@@ -16,7 +16,11 @@ import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
 
 import { useAlertDetails } from "../hooks/use-alert-details";
-import { formatClockTime, formatRelativeDay } from "../services/alerts.mapper";
+import {
+  formatClockTime,
+  formatRelativeDay,
+  getAlertDetectionTitle,
+} from "../services/alerts.mapper";
 import {
   bannerStyles,
   contentStyles,
@@ -277,6 +281,7 @@ export function AlertDetailScreen() {
   }
 
   const isFalseAlarm = alert.isFalseAlarm === true;
+  const detectionTitle = getAlertDetectionTitle(alert.message);
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
@@ -327,10 +332,15 @@ export function AlertDetailScreen() {
               style={[
                 Typography.h2,
                 contentStyles.alertTitle,
-                { color: BrandColors.error },
+                {
+                  color:
+                    detectionTitle === "No detections"
+                      ? BrandColors.success
+                      : BrandColors.error,
+                },
               ]}
             >
-              Threat detected
+              {detectionTitle}
             </Text>
 
             <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
@@ -338,7 +348,7 @@ export function AlertDetailScreen() {
             </Text>
 
             {isFalseAlarm ? (
-              <Text style={[Typography.bodySmall, { color: theme.text }]}>
+              <Text style={[Typography.bodySmall, { color: "#0046CE" }]}>
                 Marked as false alarm
               </Text>
             ) : null}

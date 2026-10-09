@@ -68,8 +68,8 @@ export function useAlertDetails() {
       setIsSubmitting(true);
       const token = await user.getIdToken();
       const updated = await markAlertAsFalseAlarm(alertId, token);
-      // Update the same stored alert; the row/detail now reads "All clear".
-      upsertAlert(updated);
+      // Keep the original detection title even if the response changes message.
+      upsertAlert({ ...updated, message: alert?.message ?? updated.message });
     } catch (error) {
       // On failure keep the current status untouched (we never mutated it).
       Alert.alert(
