@@ -3,6 +3,7 @@
     "name": "RideGuard",
     "slug": "RideGuard",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
 
     "icon": "./assets/images/logos/official-logo.png",
@@ -20,12 +21,13 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/Logo/official-logo.png",
+          "image": "./assets/images/logos/official-logo.png",
           "imageWidth": 76
         }
       ],
       "expo-web-browser",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-notifications"
     ],
     "ios": {
       "icon": "./assets/images/logos/official-logo.png"

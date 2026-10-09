@@ -1,0 +1,67 @@
+# Version control metadata
+.git/
+
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Generated Android files. These can contain machine-specific absolute paths.
+android/.gradle/
+android/.kotlin/
+android/.idea/
+android/build/
+android/app/build/
+android/app/.cxx/
+android/local.properties
+android/**/*.iml
+android/**/*.hprof
+android/app/src/main/java/inline/
+android/**/*.jsbundle
+
+# Native credentials
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# iOS
+ios/Podfile.lock
+ios/HuniLive.xcodeproj/*.pbxproj
+
+# Metro
+.metro-health-check*
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# OS files
+.DS_Store
+*.pem
+
+# Local environment files
+.env
+.env.local
+.env.development
+.env.staging
+.env.production
+.env*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Project-local generated and private files
+app-example/
+.claude/**/*.md
+agents/**/*.md
+credentials.json
+credentials/
+GEMINI.md

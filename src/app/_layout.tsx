@@ -6,14 +6,26 @@ import {
   Stack,
   ThemeProvider,
 } from "expo-router";
+import * as Notifications from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { useColorScheme } from "react-native";
 import { useAbly } from "@/shared/hooks/use-ably";
 import { useAuth } from "@/modules/auth";
+import { usePushRegistration } from "@/modules/notifications";
 
 SplashScreen.preventAutoHideAsync();
+
+// Show incoming push notifications while the app is foregrounded.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -28,6 +40,7 @@ export default function RootLayout() {
   });
   useAuth();
   useAbly();
+  usePushRegistration();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

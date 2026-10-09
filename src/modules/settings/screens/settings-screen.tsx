@@ -4,6 +4,10 @@ import { Spacing, Typography } from "@/shared/theme";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { Button, KeyboardAvoidingWrapper } from "@/shared/ui";
+import {
+  getInstallationId,
+  unregisterPushNotification,
+} from "@/modules/notifications";
 import { Href, useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { useState } from "react";
@@ -86,6 +90,22 @@ export function SettingsScreen() {
   const handleLogout = async () => {
     try {
       const auth = getAuth();
+
+      // Remove this device's push registration while we still hold a valid
+      // Firebase token. Best-effort: never block logout if it fails.
+      try {
+        const current = auth.currentUser;
+        if (current) {
+          const [installationId, token] = await Promise.all([
+            getInstallationId(),
+            current.getIdToken(),
+          ]);
+          await unregisterPushNotification(token, installationId);
+        }
+      } catch (error) {
+        console.error("Failed to unregister push notifications:", error);
+      }
+
       await signOut(auth);
       router.replace("/(public)/sign-in");
     } catch (error) {
