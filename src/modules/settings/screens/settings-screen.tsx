@@ -1,3 +1,4 @@
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { Href, useRouter } from "expo-router";
 import { getAuth, signOut } from "firebase/auth";
 import { useState } from "react";
@@ -104,6 +105,15 @@ export function SettingsScreen() {
         }
       } catch (error) {
         console.error("Failed to unregister push notifications:", error);
+      }
+
+      // Clear the native Google session too, otherwise the SDK keeps the
+      // cached account and silently reuses it on the next sign-in instead of
+      // showing the account picker. Best-effort: never block logout if it fails.
+      try {
+        await GoogleSignin.signOut();
+      } catch (error) {
+        console.error("Failed to sign out of Google:", error);
       }
 
       await signOut(auth);
