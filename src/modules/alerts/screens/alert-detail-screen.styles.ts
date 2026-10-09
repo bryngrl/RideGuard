@@ -23,6 +23,48 @@ export const gridStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  snapshotButton: {
+    flex: 1,
+  },
+});
+
+export const viewerStyles = StyleSheet.create({
+  closeButton: {
+    alignItems: "center",
+    backgroundColor: "#00000099",
+    borderRadius: 20,
+    height: 40,
+    justifyContent: "center",
+    position: "absolute",
+    right: Spacing.four,
+    top: Spacing.four,
+    width: 40,
+  },
+  closeText: {
+    color: "#FFFFFF",
+    fontSize: 28,
+    fontWeight: "300",
+    lineHeight: 32,
+  },
+  container: {
+    backgroundColor: "#000000",
+    flex: 1,
+  },
+  image: {
+    height: "100%",
+    width: "100%",
+  },
+  pageIndicator: {
+    backgroundColor: "#00000099",
+    borderRadius: 14,
+    bottom: Spacing.four,
+    color: "#FFFFFF",
+    fontSize: 14,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    position: "absolute",
+    alignSelf: "center",
+  },
 });
 
 export const bannerStyles = StyleSheet.create({

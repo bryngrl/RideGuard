@@ -32,5 +32,6 @@ export {
   formatClockTime,
   formatRelativeDay,
   getAlertDetectionTitle,
+  getSnapshotUris,
   mapAlertFieldsToItem
 } from "./services/alerts.mapper";

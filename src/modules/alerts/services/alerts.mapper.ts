@@ -31,8 +31,22 @@ function normalizeTimeStamp(input: unknown): string {
   return "";
 }
 
-function normalizeImageUrl(input: unknown): string | null {
-  return typeof input === "string" && input.length > 0 ? input : null;
+function normalizeImageUrl(input: unknown): string | string[] | null {
+  if (typeof input === "string" && input.length > 0) return input;
+  if (Array.isArray(input)) {
+    const urls = input.filter(
+      (value): value is string => typeof value === "string" && value.length > 0,
+    );
+    return urls.length > 0 ? urls : null;
+  }
+  return null;
+}
+
+export function getSnapshotUris(
+  imageUrl: string | string[] | null | undefined,
+): string[] {
+  if (typeof imageUrl === "string") return [imageUrl];
+  return imageUrl ?? [];
 }
 
 /**

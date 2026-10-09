@@ -27,7 +27,7 @@ export interface AlertFields {
   alertId?: string;
   deviceId: string;
   message: string;
-  imageUrl?: string | null;
+  imageUrl?: string | string[] | null;
   timeStamp: string;
   isFalseAlarm: boolean;
   isSeen: boolean;

@@ -1,11 +1,15 @@
 import {
   Image,
+  Modal,
   Pressable,
   Alert as RNAlert,
+  FlatList,
   ScrollView,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
+import { useEffect, useState } from "react";
 
 import ClockIcon from "@/assets/icons/misc/clock.svg";
 import InformationIcon from "@/assets/icons/misc/information.svg";
@@ -19,6 +23,7 @@ import { useAlertDetails } from "../hooks/use-alert-details";
 import {
   formatClockTime,
   formatRelativeDay,
+  getSnapshotUris,
   getAlertDetectionTitle,
 } from "../services/alerts.mapper";
 import {
@@ -27,19 +32,98 @@ import {
   footerStyles,
   gridStyles,
   responseStyles,
+  viewerStyles,
 } from "./alert-detail-screen.styles";
 
 // 2×2 grid placeholder
 
-interface SnapshotGridProps {
-  uris?: string[];
+interface SnapshotViewerProps {
+  uris: string[];
+  initialIndex: number;
+  visible: boolean;
+  onClose: () => void;
 }
 
-function SnapshotGrid({ uris }: SnapshotGridProps) {
+function SnapshotViewer({
+  uris,
+  initialIndex,
+  visible,
+  onClose,
+}: SnapshotViewerProps) {
+  const { width, height } = useWindowDimensions();
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+
+  useEffect(() => {
+    if (visible) setCurrentIndex(initialIndex);
+  }, [initialIndex, visible]);
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="fade"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
+      <View style={viewerStyles.container}>
+        <FlatList
+          key={`${visible}-${initialIndex}`}
+          data={uris}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          initialScrollIndex={initialIndex}
+          getItemLayout={(_, index) => ({
+            length: width,
+            offset: width * index,
+            index,
+          })}
+          keyExtractor={(uri, index) => `${uri}-${index}`}
+          onMomentumScrollEnd={(event) => {
+            setCurrentIndex(
+              Math.round(event.nativeEvent.contentOffset.x / width),
+            );
+          }}
+          renderItem={({ item }) => (
+            <View style={{ height, width }}>
+              <Image
+                source={{ uri: item }}
+                style={viewerStyles.image}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+        />
+
+        <Pressable
+          onPress={onClose}
+          style={viewerStyles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close image viewer"
+          hitSlop={8}
+        >
+          <Text style={viewerStyles.closeText}>×</Text>
+        </Pressable>
+
+        {uris.length > 1 ? (
+          <Text style={viewerStyles.pageIndicator}>
+            {currentIndex + 1}/{uris.length}
+          </Text>
+        ) : null}
+      </View>
+    </Modal>
+  );
+}
+
+interface SnapshotGridProps {
+  uris?: string[];
+  onSnapshotPress: (index: number) => void;
+}
+
+function SnapshotGrid({ uris = [], onSnapshotPress }: SnapshotGridProps) {
   const theme = useTheme();
 
   // Show placeholder if no URIs
-  if (!uris || uris.length === 0) {
+  if (uris.length === 0) {
     return (
       <View style={gridStyles.container}>
         <View
@@ -132,11 +216,18 @@ function SnapshotGrid({ uris }: SnapshotGridProps) {
           ]}
         >
           {uri ? (
-            <Image
-              source={{ uri }}
-              style={gridStyles.image}
-              resizeMode="cover"
-            />
+            <Pressable
+              onPress={() => onSnapshotPress(idx)}
+              style={gridStyles.snapshotButton}
+              accessibilityRole="button"
+              accessibilityLabel={`Open snapshot ${idx + 1}`}
+            >
+              <Image
+                source={{ uri }}
+                style={gridStyles.image}
+                resizeMode="cover"
+              />
+            </Pressable>
           ) : (
             <View style={gridStyles.placeholder}>
               <Text
@@ -265,10 +356,11 @@ function Response({ contactsNotified }: ResponseProps) {
 
 export function AlertDetailScreen() {
   const theme = useTheme();
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [viewerIndex, setViewerIndex] = useState(0);
 
   // Get alert data from hook
-  const { alert, isSubmitting, markAsFalseAlarm, openPhoto } =
-    useAlertDetails();
+  const { alert, isSubmitting, markAsFalseAlarm } = useAlertDetails();
 
   if (!alert) {
     return (
@@ -282,6 +374,7 @@ export function AlertDetailScreen() {
 
   const isFalseAlarm = alert.isFalseAlarm === true;
   const detectionTitle = getAlertDetectionTitle(alert.message);
+  const snapshotUris = getSnapshotUris(alert.imageUrl);
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
@@ -366,7 +459,19 @@ export function AlertDetailScreen() {
         </View>
 
         {/* Image or Placeholder */}
-        <SnapshotGrid uris={alert.imageUrl ? [alert.imageUrl] : []} />
+        <SnapshotGrid
+          uris={snapshotUris}
+          onSnapshotPress={(index) => {
+            setViewerIndex(index);
+            setViewerVisible(true);
+          }}
+        />
+        <SnapshotViewer
+          uris={snapshotUris}
+          initialIndex={viewerIndex}
+          visible={viewerVisible}
+          onClose={() => setViewerVisible(false)}
+        />
         {/* 2×2 Snapshot grid - shows placeholder if no data */}
 
         {/* Auto-delete notice */}
