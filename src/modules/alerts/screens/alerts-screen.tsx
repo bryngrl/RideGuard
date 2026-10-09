@@ -1,4 +1,3 @@
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Typography } from "@/shared/theme";
 import { useRouter } from "expo-router";
@@ -194,7 +193,6 @@ export function AlertsScreen() {
           </View>
         }
       />
-      <BottomNavigation />
     </SafeAreaView>
   );
 }

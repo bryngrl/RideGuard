@@ -60,24 +60,7 @@ export default function RootLayout() {
         <StatusBar
           style={colorScheme === "dark" ? "light" : "dark"}
         />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen
-            name="(app)/(tabs)/index"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/alerts"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/camera"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/settings"
-            options={{ animation: "none" }}
-          />
-        </Stack>
+        <Stack screenOptions={{ headerShown: false }} />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

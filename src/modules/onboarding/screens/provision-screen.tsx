@@ -2,6 +2,7 @@ import { styles } from "./provision-screen.styles";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import LighBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
+import { useDeviceStore } from "@/modules/devices";
 import { claimDevice } from "../services/onboarding.api";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
@@ -9,18 +10,17 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useDeviceStore } from "@/store/useDeviceStore";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
 
-export default function ProvisionTokenScreen() {
+export default function ButtonProvisionScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { setMetalDeviceId } = useDeviceStore();
+  const setButtonDeviceId = useDeviceStore((state) => state.setButtonDeviceId);
 
-  const [deviceId, setDeviceId] = useState("");
-  const [deviceIdError, setDeviceIdError] = useState("");
+  const [buttonId, setButtonId] = useState("");
+  const [buttonIdError, setButtonIdError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [alertState, setAlertState] = useState<{
@@ -36,13 +36,13 @@ export default function ProvisionTokenScreen() {
   const handleConnect = async () => {
     if (isLoading) return;
 
-    setDeviceIdError("");
+    setButtonIdError("");
 
-    const cleanedId = deviceId.trim().toUpperCase();
+    const cleanedButtonId = buttonId.trim().toUpperCase();
 
     // validation
-    if (!cleanedId) {
-      setDeviceIdError("This field is required.");
+    if (!cleanedButtonId) {
+      setButtonIdError("This field is required.");
       return;
     }
 
@@ -73,20 +73,20 @@ export default function ProvisionTokenScreen() {
       setAlertState({
         visible: true,
         status: "loading",
-        message: "Verifying device...",
+        message: "Verifying Quick Button...",
       });
       const firebaseToken = await user.getIdToken(true);
 
-      await claimDevice(cleanedId, firebaseToken);
+      await claimDevice(cleanedButtonId, firebaseToken);
 
-      // Save claimed device
-      setMetalDeviceId(cleanedId);
+      // Save claimed button
+      setButtonDeviceId(cleanedButtonId);
 
       // Show success modal
       setAlertState({
         visible: true,
         status: "success",
-        message: "Successfully connected",
+        message: "Quick Button connected",
       });
 
       // Redirect after success
@@ -95,7 +95,7 @@ export default function ProvisionTokenScreen() {
       }, 1500);
     } catch (error: unknown) {
       const message =
-        error instanceof Error ? error.message : "Device ID not recognized.";
+        error instanceof Error ? error.message : "Button ID not recognized.";
 
       setAlertState({
         visible: true,
@@ -124,7 +124,7 @@ export default function ProvisionTokenScreen() {
 
           <View style={styles.headerContainer}>
             <Text style={[Typography.largeTitle, { color: theme.text }]}>
-              Connect your{"\n"}metal sensor
+              Connect your{"\n"}Quick Button
             </Text>
 
             <Text
@@ -136,24 +136,24 @@ export default function ProvisionTokenScreen() {
                 },
               ]}
             >
-              Enter your unique device identifier to continue.
+              Enter your Quick Button identifier to continue.
             </Text>
           </View>
 
           <View style={styles.formContainer}>
             <CustomTextInput
-              label="Device ID"
+              label="Button ID"
               required
               labelStyle={{ color: BrandColors.primary }}
-              placeholder="e.g., MET-071-XKD"
+              placeholder="e.g., BTN-071-XKD"
               autoCapitalize="characters"
-              value={deviceId}
-              error={deviceIdError}
+              value={buttonId}
+              error={buttonIdError}
               onChangeText={(text) => {
-                setDeviceId(text.toUpperCase());
+                setButtonId(text.toUpperCase());
 
-                if (deviceIdError) {
-                  setDeviceIdError("");
+                if (buttonIdError) {
+                  setButtonIdError("");
                 }
               }}
               containerStyle={{
@@ -179,7 +179,7 @@ export default function ProvisionTokenScreen() {
                   },
                 ]}
               >
-                Where to find your Device ID
+                Where to find your Button ID
               </Text>
 
               <Text
@@ -191,7 +191,7 @@ export default function ProvisionTokenScreen() {
                   },
                 ]}
               >
-                Look for the printed label on the back of the device.
+                Look for the printed label on the back of the Quick Button.
               </Text>
             </View>
           </View>

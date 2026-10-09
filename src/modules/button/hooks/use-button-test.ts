@@ -1,4 +1,5 @@
 import { createMockButtonEvent } from "../services/button-hardware.service";
+import { useButtonRealtime } from "./use-button-realtime";
 import type {
   ButtonColor,
   ButtonHardwareEvent,
@@ -49,6 +50,24 @@ export function useButtonTest(
 
   const handleButtonEvent = ({ type, button }: ButtonHardwareEvent) => {
     if (state !== "waiting") return;
+
+    if (type === "long-press") {
+      if (testType !== "long") return;
+
+      clearTimers();
+      pressStart.current = null;
+      setIsHolding(false);
+      setProgress(0);
+      setPressedButtons({ white: false, red: false });
+      setState("success");
+      return;
+    }
+
+    if (type === "pulse") {
+      handleButtonEvent({ type: "pressed", button });
+      handleButtonEvent({ type: "released", button });
+      return;
+    }
 
     if (type === "pressed") {
       setPressedButtons((current) => ({ ...current, [button]: true }));
@@ -104,6 +123,8 @@ export function useButtonTest(
 
   const handleButtonPressEnd = (button: ButtonColor) =>
     handleButtonEvent(createMockButtonEvent("released", button));
+
+  useButtonRealtime(handleButtonEvent);
 
   const handleRetry = () => {
     clearTimers();

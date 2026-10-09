@@ -1,4 +1,3 @@
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -173,7 +172,6 @@ export function SettingsScreen() {
             </View>
           )}
         </View>
-        <BottomNavigation />
       </View>
     </KeyboardAvoidingWrapper>
   );

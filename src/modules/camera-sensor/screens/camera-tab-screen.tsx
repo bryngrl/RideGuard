@@ -1,4 +1,3 @@
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { StyleSheet, Text, View } from "react-native";
@@ -11,7 +10,6 @@ export function CameraTabScreen() {
       <View style={styles.content}>
         <Text style={[Typography.h1, { color: colors.text }]}>Camera</Text>
       </View>
-      <BottomNavigation />
     </View>
   );
 }

@@ -11,7 +11,7 @@ export interface ButtonHardwareEventSource {
 // This adapter currently creates local mock events for the Pressable test input.
 // Remove it when real hardware events are connected to the test controller.
 export function createMockButtonEvent(
-  type: ButtonHardwareEvent["type"],
+  type: "pressed" | "released",
   button: ButtonColor,
 ): ButtonHardwareEvent {
   return { type, button };

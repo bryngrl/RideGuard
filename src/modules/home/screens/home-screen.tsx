@@ -6,7 +6,6 @@ import {
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
 import ErrorIcon from "@/assets/icons/status/error.svg";
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useDeviceStore } from "@/modules/devices";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
@@ -471,7 +470,6 @@ export function HomeScreen() {
         onClose={handleCloseRideDetails}
       />
 
-      <BottomNavigation />
     </View>
   );
 }
