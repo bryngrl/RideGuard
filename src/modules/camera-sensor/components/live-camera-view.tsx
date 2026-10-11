@@ -1,20 +1,32 @@
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
-import { Image } from "expo-image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { WebView } from "react-native-webview";
 
 import type { LiveCamera } from "../types/live-camera.types";
 
-// The model API holds the newest frame per device in memory. Polling it a
-// couple of times a second approximates a live stream and works from anywhere,
-// since the server is public (no shared network needed).
+// The model API serves one held-open MJPEG stream per device. A WebView renders
+// multipart/x-mixed-replace as live video, so the frame arrives as it is pushed
+// instead of the client polling one JPEG at a time. Works from anywhere, since
+// the server is public (no shared network needed).
 const INFERENCE_BASE_URL =
   process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1";
-const POLL_INTERVAL_MS = 500;
 
-function relayUrl(deviceId: string, tick: number): string {
-  // tick busts any cache so each poll gets the current frame.
-  return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/latest.jpg?t=${tick}`;
+function streamUrl(deviceId: string): string {
+  return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/live.mjpeg`;
+}
+
+// The stream is shown full-bleed inside the WebView. object-fit: cover matches
+// the old expo-image contentFit, and the black background fills letterboxing
+// before the first frame lands.
+function streamHtml(deviceId: string): string {
+  return `<!DOCTYPE html>
+<html>
+  <head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /></head>
+  <body style="margin:0;background:#000;overflow:hidden">
+    <img src="${streamUrl(deviceId)}" style="width:100vw;height:100vh;object-fit:cover" />
+  </body>
+</html>`;
 }
 
 export function LiveCameraView({
@@ -24,34 +36,24 @@ export function LiveCameraView({
   camera: LiveCamera;
   label: string;
 }) {
-  const [tick, setTick] = useState(() => Date.now());
   const [failed, setFailed] = useState(false);
 
-  // Only poll while the camera is reporting. A stopped camera just shows the
-  // offline state instead of hammering the relay for 404s.
-  useEffect(() => {
-    if (!camera.online) return;
-
-    const id = setInterval(() => setTick(Date.now()), POLL_INTERVAL_MS);
-    return () => clearInterval(id);
-  }, [camera.online]);
-
-  // Live only when the camera is reporting and the last frame loaded. The Image
-  // stays mounted while online and keeps polling, so onLoad can clear a
-  // transient failure on its own once frames resume.
+  // Live only when the camera is reporting and the stream loaded.
   const isLive = camera.online && !failed;
 
   return (
     <View style={styles.container}>
       {camera.online ? (
-        <Image
+        <WebView
           style={styles.media}
-          source={{ uri: relayUrl(camera.deviceId, tick) }}
-          cachePolicy="none"
-          contentFit="cover"
-          transition={0}
+          originWhitelist={["*"]}
+          source={{ html: streamHtml(camera.deviceId) }}
+          // The stream is plain http, so allow it inside the WebView.
+          mixedContentMode="always"
+          scrollEnabled={false}
+          pointerEvents="none"
           onError={() => setFailed(true)}
-          onLoad={() => setFailed(false)}
+          onLoadEnd={() => setFailed(false)}
         />
       ) : (
         <View style={[styles.media, styles.placeholder]}>
