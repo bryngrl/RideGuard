@@ -1,105 +1,18 @@
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
-import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Platform, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 import type { LiveCamera } from "../types/live-camera.types";
+import { createMjpegDocument } from "../utils/mjpeg-document";
 
-// The model API serves one held-open MJPEG stream per device. Chromium (and so
-// the Android WebView) does not reliably paint a multipart/x-mixed-replace
-// stream in an <img> tag, so the page reads the stream itself: fetch the bytes,
-// split out each JPEG frame, and swap the <img> via blob URLs. Works from
-// anywhere, since the server is public (no shared network needed).
-const INFERENCE_BASE_URL =
-  process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1";
+const INFERENCE_BASE_URL = (
+  process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1"
+).replace(/\/+$/, "");
+const RETRY_DELAY_MS = 3000;
 
-// The stream page is given this as its origin so fetch() to the stream is
-// same-origin and the plain-http request is not blocked as mixed content.
-const STREAM_ORIGIN = INFERENCE_BASE_URL.match(/^https?:\/\/[^/]+/)?.[0] ?? "";
-
-function streamUrl(deviceId: string): string {
-  return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/live.mjpeg`;
-}
-
-// Reads the MJPEG stream and renders each frame by hand. It scans the byte
-// stream for JPEG start (FF D8) and end (FF D9) markers, so it does not depend
-// on the browser understanding multipart boundaries. Posts "frame" on the first
-// frame and "error:<msg>" if the stream fails, so React Native can update the
-// live/offline state.
-function streamHtml(deviceId: string): string {
-  const url = streamUrl(deviceId);
-  return `<!DOCTYPE html>
-<html>
-  <head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /></head>
-  <body style="margin:0;background:#000;overflow:hidden">
-    <img id="view" style="width:100vw;height:100vh;object-fit:cover" />
-    <script>
-      (function () {
-        var img = document.getElementById("view");
-        var buf = new Uint8Array(0);
-        var current = null;
-        var sawFrame = false;
-
-        function post(msg) {
-          if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
-        }
-
-        function append(chunk) {
-          var next = new Uint8Array(buf.length + chunk.length);
-          next.set(buf, 0);
-          next.set(chunk, buf.length);
-          buf = next;
-        }
-
-        function drainFrames() {
-          while (true) {
-            var start = -1;
-            for (var i = 0; i + 1 < buf.length; i++) {
-              if (buf[i] === 0xff && buf[i + 1] === 0xd8) { start = i; break; }
-            }
-            if (start < 0) return;
-
-            var end = -1;
-            for (var j = start + 2; j + 1 < buf.length; j++) {
-              if (buf[j] === 0xff && buf[j + 1] === 0xd9) { end = j + 1; break; }
-            }
-            if (end < 0) return;
-
-            var frame = buf.slice(start, end + 1);
-            buf = buf.slice(end + 1);
-
-            var blobUrl = URL.createObjectURL(new Blob([frame], { type: "image/jpeg" }));
-            img.src = blobUrl;
-            if (current) URL.revokeObjectURL(current);
-            current = blobUrl;
-
-            if (!sawFrame) { sawFrame = true; post("frame"); }
-          }
-        }
-
-        async function run() {
-          try {
-            var resp = await fetch("${url}");
-            if (!resp.ok || !resp.body) throw new Error("status " + resp.status);
-            var reader = resp.body.getReader();
-            while (true) {
-              var r = await reader.read();
-              if (r.done) break;
-              append(r.value);
-              drainFrames();
-            }
-            post("error:stream ended");
-          } catch (e) {
-            post("error:" + (e && e.message ? e.message : e));
-          }
-        }
-
-        run();
-      })();
-    </script>
-  </body>
-</html>`;
-}
+type StreamStatus = "connecting" | "playing" | "error";
 
 export function LiveCameraView({
   camera,
@@ -108,56 +21,147 @@ export function LiveCameraView({
   camera: LiveCamera;
   label: string;
 }) {
-  const [failed, setFailed] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [appState, setAppState] = useState(AppState.currentState);
 
-  // Live only when the camera is reporting and the stream loaded.
-  const isLive = camera.online && !failed;
+  useFocusEffect(
+    useCallback(() => {
+      setFocused(true);
+      return () => setFocused(false);
+    }, []),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", setAppState);
+    return () => subscription.remove();
+  }, []);
+
+  const active = focused && (appState === "active" || appState === null);
+  const streamUrl = `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(camera.deviceId)}/live.mjpeg`;
+
+  // Remount on camera/status changes so old callbacks cannot update a new feed.
+  return (
+    <CameraStream
+      key={`${streamUrl}:${camera.online}:${active}`}
+      streamUrl={streamUrl}
+      online={camera.online}
+      active={active}
+      label={label}
+    />
+  );
+}
+
+function CameraStream({
+  streamUrl,
+  online,
+  active,
+  label,
+}: {
+  streamUrl: string;
+  online: boolean;
+  active: boolean;
+  label: string;
+}) {
+  const [status, setStatus] = useState<StreamStatus>("connecting");
+  const [attempt, setAttempt] = useState(0);
+  const iframe = useRef<HTMLIFrameElement>(null);
+  const source = useMemo(
+    () => ({ html: createMjpegDocument(streamUrl), baseUrl: streamUrl }),
+    [streamUrl],
+  );
+
+  const handleMessage = useCallback((message: unknown) => {
+    if (message === "mjpeg:playing") setStatus("playing");
+    if (message === "mjpeg:error") setStatus("error");
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const receive = (event: MessageEvent) => {
+      if (iframe.current && event.source === iframe.current.contentWindow) {
+        handleMessage(event.data);
+      }
+    };
+    window.addEventListener("message", receive);
+    return () => window.removeEventListener("message", receive);
+  }, [handleMessage]);
+
+  useEffect(() => {
+    if (!online || !active || status !== "error") return;
+    const timer = setTimeout(() => {
+      setAttempt((value) => value + 1);
+      setStatus("connecting");
+    }, RETRY_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [online, active, status]);
+
+  const isPlaying = online && active && status === "playing";
+  const showStream = online && active && status !== "error";
+  const message = !online
+    ? "Camera offline"
+    : !active
+      ? "Stream paused"
+      : status === "error"
+        ? "Stream unavailable. Retrying…"
+        : status === "connecting"
+          ? "Connecting…"
+          : null;
 
   return (
     <View style={styles.container}>
-      {camera.online ? (
-        <WebView
-          style={styles.media}
-          originWhitelist={["*"]}
-          // baseUrl gives the page a real http origin so the fetch() to the
-          // stream is same-origin and not blocked as mixed content.
-          source={{ html: streamHtml(camera.deviceId), baseUrl: STREAM_ORIGIN }}
-          // The stream is plain http, so allow it inside the WebView.
-          mixedContentMode="always"
-          // Lets you inspect the WebView from chrome://inspect while debugging.
-          webviewDebuggingEnabled
-          scrollEnabled={false}
-          pointerEvents="none"
-          // The page posts "frame" once frames flow and "error:..." if the
-          // stream fails, so the live dot and overlay track the real state.
-          onMessage={(event) => {
-            const message = event.nativeEvent.data;
-            if (message === "frame") {
-              setFailed(false);
-            } else if (message.startsWith("error")) {
-              setFailed(true);
-            }
-          }}
-          onError={() => setFailed(true)}
-        />
-      ) : (
-        <View style={[styles.media, styles.placeholder]}>
-          <Text style={styles.placeholderText}>Camera offline</Text>
-        </View>
-      )}
-
-      {camera.online && failed ? (
-        <View style={[styles.media, styles.placeholder, styles.overlay]}>
-          <Text style={styles.placeholderText}>Stream unavailable</Text>
+      {showStream ? (
+        <View style={StyleSheet.absoluteFill}>
+          {Platform.OS === "web" ? (
+            <iframe
+              key={attempt}
+              ref={iframe}
+              title={label}
+              srcDoc={source.html}
+              sandbox="allow-scripts"
+              style={{ width: "100%", height: "100%", border: 0 }}
+              onError={() => setStatus("error")}
+            />
+          ) : (
+            <WebView
+              key={attempt}
+              source={source}
+              style={styles.webview}
+              containerStyle={styles.webview}
+              originWhitelist={["*"]}
+              javaScriptEnabled
+              scrollEnabled={false}
+              bounces={false}
+              automaticallyAdjustContentInsets={false}
+              setBuiltInZoomControls={false}
+              cacheEnabled={false}
+              cacheMode="LOAD_NO_CACHE"
+              // The HTML has the same HTTP origin as the MJPEG endpoint.
+              mixedContentMode="never"
+              allowFileAccess={false}
+              onMessage={(event) => handleMessage(event.nativeEvent.data)}
+              onError={() => setStatus("error")}
+              onHttpError={() => setStatus("error")}
+              onRenderProcessGone={() => setStatus("error")}
+              onContentProcessDidTerminate={() => setStatus("error")}
+            />
+          )}
         </View>
       ) : null}
 
-      <View style={styles.label}>
+      {/* Never hide the stream behind an overlay waiting for page onLoadEnd:
+          a multipart image response can remain open indefinitely. */}
+      {message ? (
+        <View pointerEvents="none" style={styles.status}>
+          <Text style={styles.statusText}>{message}</Text>
+        </View>
+      ) : null}
+
+      <View pointerEvents="none" style={styles.label}>
         <View style={styles.labelRow}>
           <View
             style={[
               styles.labelDot,
-              { backgroundColor: isLive ? BrandColors.error : "#9CA3AF" },
+              { backgroundColor: isPlaying ? BrandColors.error : "#9CA3AF" },
             ]}
           />
           <Text style={[Typography.h3, styles.labelText]}>{label}</Text>
@@ -170,31 +174,23 @@ export function LiveCameraView({
 const styles = StyleSheet.create({
   container: {
     aspectRatio: 16 / 9,
-    borderRadius: 0,
     overflow: "hidden",
     position: "relative",
     width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#000000",
   },
-  media: {
-    backgroundColor: "#D9D9D9",
-    height: "100%",
-    width: "100%",
+  webview: {
+    flex: 1,
+    backgroundColor: "#000000",
   },
-  placeholder: {
-    alignItems: "center",
-    backgroundColor: "#1F2937",
-    justifyContent: "center",
-  },
-  overlay: {
+  status: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    bottom: Spacing.two,
+    alignSelf: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.65)",
+    padding: Spacing.two,
   },
-  placeholderText: {
+  statusText: {
     color: "#FFFFFF",
     ...Typography.h3,
   },
