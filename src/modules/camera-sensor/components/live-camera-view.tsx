@@ -12,6 +12,11 @@ import type { LiveCamera } from "../types/live-camera.types";
 const INFERENCE_BASE_URL =
   process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1";
 
+// The stream page is given this as its origin. Without a real http origin the
+// WebView treats the http <img> as mixed content and blocks it, leaving a blank
+// view. Matching the stream host makes the image same-origin, so it loads.
+const STREAM_ORIGIN = INFERENCE_BASE_URL.match(/^https?:\/\/[^/]+/)?.[0] ?? "";
+
 function streamUrl(deviceId: string): string {
   return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/live.mjpeg`;
 }
@@ -47,9 +52,13 @@ export function LiveCameraView({
         <WebView
           style={styles.media}
           originWhitelist={["*"]}
-          source={{ html: streamHtml(camera.deviceId) }}
+          // baseUrl gives the page a real http origin so the http <img> is not
+          // blocked as mixed content.
+          source={{ html: streamHtml(camera.deviceId), baseUrl: STREAM_ORIGIN }}
           // The stream is plain http, so allow it inside the WebView.
           mixedContentMode="always"
+          // Lets you inspect the WebView from chrome://inspect while debugging.
+          webviewDebuggingEnabled
           scrollEnabled={false}
           pointerEvents="none"
           onError={() => setFailed(true)}
