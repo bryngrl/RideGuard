@@ -5,31 +5,98 @@ import { WebView } from "react-native-webview";
 
 import type { LiveCamera } from "../types/live-camera.types";
 
-// The model API serves one held-open MJPEG stream per device. A WebView renders
-// multipart/x-mixed-replace as live video, so the frame arrives as it is pushed
-// instead of the client polling one JPEG at a time. Works from anywhere, since
-// the server is public (no shared network needed).
+// The model API serves one held-open MJPEG stream per device. Chromium (and so
+// the Android WebView) does not reliably paint a multipart/x-mixed-replace
+// stream in an <img> tag, so the page reads the stream itself: fetch the bytes,
+// split out each JPEG frame, and swap the <img> via blob URLs. Works from
+// anywhere, since the server is public (no shared network needed).
 const INFERENCE_BASE_URL =
   process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1";
 
-// The stream page is given this as its origin. Without a real http origin the
-// WebView treats the http <img> as mixed content and blocks it, leaving a blank
-// view. Matching the stream host makes the image same-origin, so it loads.
+// The stream page is given this as its origin so fetch() to the stream is
+// same-origin and the plain-http request is not blocked as mixed content.
 const STREAM_ORIGIN = INFERENCE_BASE_URL.match(/^https?:\/\/[^/]+/)?.[0] ?? "";
 
 function streamUrl(deviceId: string): string {
   return `${INFERENCE_BASE_URL}/stream/${encodeURIComponent(deviceId)}/live.mjpeg`;
 }
 
-// The stream is shown full-bleed inside the WebView. object-fit: cover matches
-// the old expo-image contentFit, and the black background fills letterboxing
-// before the first frame lands.
+// Reads the MJPEG stream and renders each frame by hand. It scans the byte
+// stream for JPEG start (FF D8) and end (FF D9) markers, so it does not depend
+// on the browser understanding multipart boundaries. Posts "frame" on the first
+// frame and "error:<msg>" if the stream fails, so React Native can update the
+// live/offline state.
 function streamHtml(deviceId: string): string {
+  const url = streamUrl(deviceId);
   return `<!DOCTYPE html>
 <html>
   <head><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" /></head>
   <body style="margin:0;background:#000;overflow:hidden">
-    <img src="${streamUrl(deviceId)}" style="width:100vw;height:100vh;object-fit:cover" />
+    <img id="view" style="width:100vw;height:100vh;object-fit:cover" />
+    <script>
+      (function () {
+        var img = document.getElementById("view");
+        var buf = new Uint8Array(0);
+        var current = null;
+        var sawFrame = false;
+
+        function post(msg) {
+          if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+        }
+
+        function append(chunk) {
+          var next = new Uint8Array(buf.length + chunk.length);
+          next.set(buf, 0);
+          next.set(chunk, buf.length);
+          buf = next;
+        }
+
+        function drainFrames() {
+          while (true) {
+            var start = -1;
+            for (var i = 0; i + 1 < buf.length; i++) {
+              if (buf[i] === 0xff && buf[i + 1] === 0xd8) { start = i; break; }
+            }
+            if (start < 0) return;
+
+            var end = -1;
+            for (var j = start + 2; j + 1 < buf.length; j++) {
+              if (buf[j] === 0xff && buf[j + 1] === 0xd9) { end = j + 1; break; }
+            }
+            if (end < 0) return;
+
+            var frame = buf.slice(start, end + 1);
+            buf = buf.slice(end + 1);
+
+            var blobUrl = URL.createObjectURL(new Blob([frame], { type: "image/jpeg" }));
+            img.src = blobUrl;
+            if (current) URL.revokeObjectURL(current);
+            current = blobUrl;
+
+            if (!sawFrame) { sawFrame = true; post("frame"); }
+          }
+        }
+
+        async function run() {
+          try {
+            var resp = await fetch("${url}");
+            if (!resp.ok || !resp.body) throw new Error("status " + resp.status);
+            var reader = resp.body.getReader();
+            while (true) {
+              var r = await reader.read();
+              if (r.done) break;
+              append(r.value);
+              drainFrames();
+            }
+            post("error:stream ended");
+          } catch (e) {
+            post("error:" + (e && e.message ? e.message : e));
+          }
+        }
+
+        run();
+      })();
+    </script>
   </body>
 </html>`;
 }
@@ -52,8 +119,8 @@ export function LiveCameraView({
         <WebView
           style={styles.media}
           originWhitelist={["*"]}
-          // baseUrl gives the page a real http origin so the http <img> is not
-          // blocked as mixed content.
+          // baseUrl gives the page a real http origin so the fetch() to the
+          // stream is same-origin and not blocked as mixed content.
           source={{ html: streamHtml(camera.deviceId), baseUrl: STREAM_ORIGIN }}
           // The stream is plain http, so allow it inside the WebView.
           mixedContentMode="always"
@@ -61,8 +128,17 @@ export function LiveCameraView({
           webviewDebuggingEnabled
           scrollEnabled={false}
           pointerEvents="none"
+          // The page posts "frame" once frames flow and "error:..." if the
+          // stream fails, so the live dot and overlay track the real state.
+          onMessage={(event) => {
+            const message = event.nativeEvent.data;
+            if (message === "frame") {
+              setFailed(false);
+            } else if (message.startsWith("error")) {
+              setFailed(true);
+            }
+          }}
           onError={() => setFailed(true)}
-          onLoadEnd={() => setFailed(false)}
         />
       ) : (
         <View style={[styles.media, styles.placeholder]}>
