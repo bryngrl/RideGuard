@@ -3,10 +3,9 @@
     "name": "RideGuard",
     "slug": "RideGuard",
     "version": "1.0.0",
+    "runtimeVersion": "1.0.0",
     "orientation": "portrait",
-
     "icon": "./assets/images/logos/official-logo.png",
-
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
@@ -25,7 +24,16 @@
         }
       ],
       "expo-web-browser",
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
+      "expo-notifications",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
     "ios": {
       "icon": "./assets/images/logos/official-logo.png"
@@ -36,15 +44,12 @@
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-
         "foregroundImage": "./assets/images/logos/official-logo.png",
-
         "monochromeImage": "./assets/images/logos/official-logo.png"
       }
     },
     "web": {
       "output": "static",
-
       "favicon": "./assets/images/logos/official-logo.png"
     },
     "experiments": {

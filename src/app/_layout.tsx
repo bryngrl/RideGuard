@@ -1,6 +1,8 @@
 import { useAuth } from "@/modules/auth";
+import { usePushRegistration } from "@/modules/notifications";
 import { useAbly } from "@/shared/hooks/use-ably";
 import { useFonts } from "expo-font";
+import * as Notifications from "expo-notifications";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -10,6 +12,16 @@ import { useSettingsStore } from "@/modules/settings/store/settings.store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
+
+// Show incoming push notifications while the app is foregrounded.
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -25,6 +37,7 @@ export default function RootLayout() {
   });
   useAuth();
   useAbly();
+  usePushRegistration();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -40,24 +53,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen
-            name="(app)/(tabs)/index"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/alerts"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/camera"
-            options={{ animation: "none" }}
-          />
-          <Stack.Screen
-            name="(app)/(tabs)/settings"
-            options={{ animation: "none" }}
-          />
-        </Stack>
+        <Stack screenOptions={{ headerShown: false }} />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

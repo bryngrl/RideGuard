@@ -5,22 +5,16 @@ import WhiteBase from "@/assets/icons/sensors/button/onboarding/white-button/whi
 import WhiteBodyDefault from "@/assets/icons/sensors/button/onboarding/white-button/white-body-default.svg";
 import WhiteBodyPressed from "@/assets/icons/sensors/button/onboarding/white-button/white-body-pressed.svg";
 import type { ButtonColor } from "../types/button-test";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 type ButtonTestVisualProps = {
   color: ButtonColor;
   isPressed: boolean;
-  onPressStart: () => void;
-  onPressEnd: () => void;
-  disabled: boolean;
 };
 
 export function ButtonTestVisual({
   color,
   isPressed,
-  onPressStart,
-  onPressEnd,
-  disabled,
 }: ButtonTestVisualProps) {
   const isWhite = color === "white";
 
@@ -52,15 +46,6 @@ export function ButtonTestVisual({
         )}
       </View>
 
-      <Pressable
-        style={styles.bodyTarget}
-        // BACKEND INTEGRATION:
-        // This Pressable is temporary mock input; real hardware events should
-        // drive the controller instead, allowing this touch target to be removed.
-        onPressIn={onPressStart}
-        onPressOut={onPressEnd}
-        disabled={disabled}
-      />
     </View>
   );
 }
@@ -91,12 +76,5 @@ const styles = StyleSheet.create({
     left: 5,
     width: 120,
     height: 90,
-  },
-  bodyTarget: {
-    position: "absolute",
-    top: 0,
-    left: 9,
-    right: 9,
-    height: 70,
   },
 });
