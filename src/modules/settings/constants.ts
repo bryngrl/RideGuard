@@ -1,5 +1,14 @@
-export type SettingTheme = "light" | "dark" | "system";
-export type Retention = 24 | 48 | 72;
+export { RETENTION_OPTIONS, SETTINGS_COPY } from "./config/settings-copy";
+export const NOTIFICATION_COPY = {
+  flags: "Flags",
+  alerts: "Alerts",
+  attackDetected: "Attack detected",
+  alwaysOn: "Always on",
+  delivery: "Delivery",
+  push: "Push notification",
+  sound: "Sound",
+  vibration: "Vibration",
+} as const;
 
 export const SETTINGS_SECTIONS = [
   {

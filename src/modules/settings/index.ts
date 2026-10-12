@@ -1,6 +1,14 @@
+export { AboutScreen } from "./screens/about/about-screen";
+export { AccountEditScreen } from "./screens/account-edit-screen";
+export { AccountScreen } from "./screens/account-screen";
+export { DigitalSafetyScreen } from "./screens/digital-safety/digital-safety-screen";
+export { DisplayScreen } from "./screens/display/display-screen";
 export * from "./screens/legal-screen.styles";
+export { LocationScreen } from "./screens/location/location-screen";
+export { NotificationsScreen } from "./screens/notifications/notifications-screen";
 export * from "./screens/privacy-screen";
-export * from "./screens/terms-screen";
+export { RetentionScreen } from "./screens/retention/retention-screen";
+export { SearchScreen } from "./screens/search-screen";
 export * from "./screens/settings-screen";
-export * from "./screens/settings-pages";
+export * from "./screens/terms-screen";
 export { useSettingsStore } from "./store/settings.store";
