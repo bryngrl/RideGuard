@@ -2,7 +2,12 @@ import SearchIcon from "@/assets/icons/actions/search.svg";
 import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { ConfirmationModal, KeyboardAvoidingWrapper } from "@/shared/ui";
+import {
+  ConfirmationModal,
+  KeyboardAvoidingWrapper,
+  ProfileAvatar,
+  getProfileDisplayName,
+} from "@/shared/ui";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SettingRow, SettingsSection } from "../../components/setting-row";
@@ -15,7 +20,7 @@ export function SettingsScreen() {
   const router = useRouter();
   const { profile } = useProfile();
   const logout = useLogout();
-  const name = `${profile.firstName} ${profile.lastName}`.trim() || "Jovilyn";
+  const name = getProfileDisplayName(profile.firstName, profile.lastName);
   const vehicle =
     `${profile.vehicleBrand} ${profile.vehicleModel}`.trim() ||
     "No vehicle added";
@@ -30,28 +35,23 @@ export function SettingsScreen() {
         >
           Settings
         </Text>
-
+        {/* SEARCH BAR */}
         <Pressable
           onPress={() => router.push("/settings/search" as never)}
-          style={[
-            styles.search,
-            { backgroundColor: colors.backgroundSelected },
-          ]}
+          style={[styles.search, { backgroundColor: "#F8F8F8" }]}
         >
           <SearchIcon width={18} height={18} />
           <Text style={[Typography.body, { color: colors.textMuted }]}>
             Search
           </Text>
         </Pressable>
+
+        {/* PROFILE */}
         <Pressable
           onPress={() => router.push("/settings/account" as never)}
           style={styles.profile}
         >
-          <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
-            <Text style={[Typography.h3, { color: colors.textInverse }]}>
-              {name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          <ProfileAvatar name={name} />
           <View style={styles.profileCopy}>
             <Text
               style={[
@@ -124,13 +124,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginVertical: Spacing.four,
-  },
-  avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
   },
   profileCopy: { flex: 1, marginLeft: Spacing.three },
 });

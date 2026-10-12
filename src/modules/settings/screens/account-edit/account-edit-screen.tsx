@@ -31,13 +31,13 @@ export function AccountEditScreen() {
             </Text>
           </Pressable>
           <Pressable
-            disabled={!edit.changed || !edit.valid || edit.saving}
+            disabled={!edit.canSave}
             onPress={save}
             style={[
               styles.save,
               {
                 backgroundColor:
-                  edit.changed && edit.valid ? colors.primary : colors.border,
+                  edit.canSave ? colors.primary : colors.border,
               },
             ]}
           >
@@ -72,11 +72,14 @@ export function AccountEditScreen() {
         required
         prefix="+63"
         keyboardType="number-pad"
-        maxLength={10}
+        maxLength={12}
+        placeholder="9123456789"
         value={edit.form.phone}
-        onChangeText={(value) => edit.setField("phone", value)}
+        onChangeText={(value) => {
+          edit.setField("phone", value);
+        }}
         error={
-          edit.form.phone && !edit.valid
+          edit.form.phone && !edit.phoneValid
             ? "Enter a valid 10-digit Philippine mobile number."
             : undefined
         }

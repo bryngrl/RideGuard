@@ -3,19 +3,47 @@ import {
     isValidPhoneNumber,
     normalizePhoneNumber,
 } from "@/shared/lib/phone-utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { updateProfile, updateVehicle } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
+
+function normalizeProfile(profile: SettingsProfile): SettingsProfile {
+  return {
+    firstName: profile.firstName.trim(),
+    lastName: profile.lastName.trim(),
+    phone: normalizePhoneNumber(profile.phone),
+    email: profile.email.trim(),
+    vehicleBrand: profile.vehicleBrand.trim(),
+    vehicleModel: profile.vehicleModel.trim(),
+    plateNumber: profile.plateNumber.trim(),
+  };
+}
+
 export function useAccountEdit(profile: SettingsProfile) {
   const updateDraft = useOnboardingStore((state) => state.updateDraft);
-  const [form, setForm] = useState(profile);
+  const [initialProfile, setInitialProfile] = useState(() =>
+    normalizeProfile(profile),
+  );
+  const [form, setForm] = useState(initialProfile);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const changed = JSON.stringify(form) !== JSON.stringify(profile);
+  useEffect(() => {
+    const normalizedProfile = normalizeProfile(profile);
+    setInitialProfile(normalizedProfile);
+    setForm(normalizedProfile);
+  }, [profile]);
+
+  const normalizedForm = normalizeProfile(form);
+  const changed = Object.keys(initialProfile).some(
+    (field) =>
+      normalizedForm[field as keyof SettingsProfile] !==
+      initialProfile[field as keyof SettingsProfile],
+  );
+  const phoneValid = isValidPhoneNumber(normalizedForm.phone);
   const valid = Boolean(
-    form.firstName.trim() &&
-    form.lastName.trim() &&
-    isValidPhoneNumber(form.phone),
+    normalizedForm.firstName &&
+      normalizedForm.lastName &&
+      phoneValid,
   );
   const setField = (field: keyof SettingsProfile, value: string) =>
     setForm((current) => ({
@@ -28,16 +56,16 @@ export function useAccountEdit(profile: SettingsProfile) {
     setError("");
     try {
       await updateProfile({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        phone: form.phone,
+        firstName: normalizedForm.firstName,
+        lastName: normalizedForm.lastName,
+        phone: normalizedForm.phone,
       });
       await updateVehicle({
-        vehicleBrand: form.vehicleBrand,
-        vehicleModel: form.vehicleModel,
-        plateNumber: form.plateNumber,
+        vehicleBrand: normalizedForm.vehicleBrand,
+        vehicleModel: normalizedForm.vehicleModel,
+        plateNumber: normalizedForm.plateNumber,
       });
-      updateDraft({ ...form });
+      updateDraft({ ...normalizedForm });
       return true;
     } catch (cause) {
       setError(
@@ -52,10 +80,12 @@ export function useAccountEdit(profile: SettingsProfile) {
     form,
     setField,
     changed,
+    phoneValid,
     valid,
+    canSave: changed && valid && !saving,
     saving,
     error,
     save,
-    reset: () => setForm(profile),
+    reset: () => setForm(initialProfile),
   };
 }
