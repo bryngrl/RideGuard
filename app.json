@@ -5,17 +5,22 @@
     "version": "1.0.0",
     "orientation": "portrait",
 
-    "icon": "./assets/images/Logo/official-logo.png",
+    "icon": "./assets/images/logos/official-logo.png",
 
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
-      "expo-router",
+      [
+        "expo-router",
+        {
+          "sitemap": false
+        }
+      ],
       [
         "expo-splash-screen",
         {
           "backgroundColor": "#208AEF",
-          "image": "./assets/images/Logo/official-logo.png",
+          "image": "./assets/images/logos/official-logo.png",
           "imageWidth": 76
         }
       ],
@@ -23,7 +28,7 @@
       "@react-native-google-signin/google-signin"
     ],
     "ios": {
-      "icon": "./assets/images/Logo/official-logo.png"
+      "icon": "./assets/images/logos/official-logo.png"
     },
     "android": {
       "package": "com.rideguard.app",
@@ -32,15 +37,15 @@
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
 
-        "foregroundImage": "./assets/images/Logo/official-logo.png",
+        "foregroundImage": "./assets/images/logos/official-logo.png",
 
-        "monochromeImage": "./assets/images/Logo/official-logo.png"
+        "monochromeImage": "./assets/images/logos/official-logo.png"
       }
     },
     "web": {
       "output": "static",
 
-      "favicon": "./assets/images/Logo/official-logo.png"
+      "favicon": "./assets/images/logos/official-logo.png"
     },
     "experiments": {
       "typedRoutes": true,
@@ -51,6 +56,9 @@
       "eas": {
         "projectId": "f9a4ebad-effb-4360-b2a0-556cc956ff63"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/f9a4ebad-effb-4360-b2a0-556cc956ff63"
     }
   }
 }
