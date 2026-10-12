@@ -1,6 +1,6 @@
 import SearchIcon from "@/assets/icons/actions/search.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { CustomTextInput, KeyboardAvoidingWrapper } from "@/shared/ui";
 import { useRouter } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -30,18 +30,24 @@ export function SearchScreen() {
         safeAreaEdges={["top", "bottom"]}
         contentContainerStyle={styles.content}
       >
-        <Pressable onPress={() => router.back()} style={styles.back}>
-          <Text style={[Typography.h2, { color: colors.text }]}>‹</Text>
-        </Pressable>
         <CustomTextInput
           ref={inputRef}
           value={query}
           onChangeText={setQuery}
           placeholder="Search"
+          placeholderTextColor={colors.textMuted}
+          style={[Typography.body, { color: colors.text }]}
+          inputStyle={{
+            paddingVertical: 0,
+          }}
           leftIcon={<SearchIcon width={18} height={18} />}
           inputWrapperStyle={{
-            backgroundColor: colors.backgroundSelected,
+            backgroundColor: "#F8F8F8",
             borderWidth: 0,
+            height: 40,
+            minHeight: 40,
+            borderRadius: BorderRadius.full,
+            paddingHorizontal: Spacing.three,
           }}
         />
         <View style={styles.body}>
@@ -50,6 +56,7 @@ export function SearchScreen() {
               <SearchResultItem
                 key={row.id}
                 row={row}
+                query={query}
                 onPress={() => open(row.title, row.route)}
               />
             ))
@@ -75,7 +82,7 @@ export function SearchScreen() {
               <Pressable onPress={clear}>
                 <Text
                   style={[
-                    Typography.button,
+                    Typography.medium,
                     { color: colors.accent, textAlign: "center" },
                   ]}
                 >
