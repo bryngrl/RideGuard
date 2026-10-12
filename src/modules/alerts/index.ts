@@ -11,6 +11,7 @@ export { useAlerts } from "./hooks/use-alerts";
 
 // Types
 export type {
+  AlertDetectionType,
   AlertFields,
   AlertItem as AlertItemType,
   AlertSeverity
@@ -29,6 +30,8 @@ export {
 export {
   formatAlertTime,
   formatClockTime,
-  formatRelativeDay, mapAlertFieldsToItem
+  formatRelativeDay,
+  getAlertDetectionType,
+  getSnapshotUris,
+  mapAlertFieldsToItem
 } from "./services/alerts.mapper";
-

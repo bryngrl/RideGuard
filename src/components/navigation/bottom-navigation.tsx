@@ -64,7 +64,7 @@ export function BottomNavigation() {
   const colors = useTheme();
 
   const handleNavigation = (route: string) => {
-    router.push(route as never);
+    router.navigate(route as never);
   };
 
   return (

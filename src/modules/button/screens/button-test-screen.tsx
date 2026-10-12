@@ -18,10 +18,11 @@ export function ButtonTestScreen({
   test?: ButtonTestType;
 }) {
   const router = useRouter();
-  const params = useLocalSearchParams<{ test?: string }>();
+  const params = useLocalSearchParams<{ test?: string; source?: string }>();
   const testType: ButtonTestType =
     params.test === "long" || test === "long" ? "long" : "short";
   const theme = useTheme();
+  const fromSettings = params.source === "settings";
   const {
     state,
     recognizedButtons,
@@ -31,12 +32,10 @@ export function ButtonTestScreen({
     handleButtonPressStart,
     handleButtonPressEnd,
     handleRetry,
-  } = useButtonTest(testType, () =>
-    router.replace("/devices/button/test-page"),
-  );
+  } = useButtonTest(testType, () => router.replace(fromSettings ? "/devices" : "/devices/button/test-page"));
 
   const handleSkip = () => {
-    router.replace("/(onboarding)/register/complete-setup");
+    router.replace(fromSettings ? "/devices" : "/(onboarding)/register/complete-setup");
   };
 
   const renderButton = (color: ButtonColor) => (
@@ -124,7 +123,7 @@ export function ButtonTestScreen({
           <Button
             title="Continue"
             onPress={() =>
-              router.replace("/(onboarding)/register/complete-setup")
+              router.replace(fromSettings ? "/devices" : "/(onboarding)/register/complete-setup")
             }
             style={styles.continueButton}
           />
@@ -146,11 +145,11 @@ export function ButtonTestScreen({
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View>
-          <Stepper
+          {!fromSettings && <Stepper
             currentStep={testType === "short" ? 7 : 8}
             steps={10}
             size={6}
-          />
+          />}
 
           <View style={styles.logoContainer}>
             {state === "timeout" ? (

@@ -1,0 +1,82 @@
+import type { SettingsRowDefinition } from "../types/settings.types";
+
+export const settingsRows: SettingsRowDefinition[] = [
+  {
+    id: "camera",
+    title: "Camera and quick button",
+    section: "Safety and hardware",
+    iconKey: "camera",
+    route: "/devices",
+    searchKeywords: ["camera", "quick button", "hardware"],
+  },
+  {
+    id: "location",
+    title: "Location sharing",
+    section: "Safety and hardware",
+    iconKey: "location",
+    route: "/settings/location",
+    searchKeywords: ["location", "sharing"],
+  },
+  {
+    id: "retention",
+    title: "Data and footage retention",
+    section: "Safety and hardware",
+    iconKey: "filmstrip",
+    route: "/settings/retention",
+    searchKeywords: ["data", "footage", "retention", "storage"],
+  },
+  {
+    id: "display",
+    title: "Display",
+    section: "Preferences",
+    iconKey: "display",
+    route: "/settings/display",
+    searchKeywords: ["display", "appearance", "theme"],
+  },
+  {
+    id: "notifications",
+    title: "Notifications",
+    section: "Preferences",
+    iconKey: "notification",
+    route: "/settings/notifications",
+    searchKeywords: ["notification", "alerts", "sound", "vibration"],
+  },
+  {
+    id: "contacts",
+    title: "Emergency contacts",
+    section: "Preferences",
+    iconKey: "contact",
+    route: "/contact",
+    searchKeywords: ["emergency", "contacts"],
+  },
+  {
+    id: "privacy",
+    title: "Privacy policy",
+    section: "General",
+    iconKey: "check",
+    route: "/privacy/privacy",
+    searchKeywords: ["privacy", "policy"],
+  },
+  {
+    id: "digital-safety",
+    title: "Digital safety",
+    section: "General",
+    iconKey: "check",
+    route: "/settings/digital-safety",
+    searchKeywords: ["digital", "safety"],
+  },
+  {
+    id: "about",
+    title: "About",
+    section: "General",
+    iconKey: "about",
+    route: "/settings/about",
+    searchKeywords: ["about", "information"],
+  },
+];
+
+export const settingsSections = [
+  "Safety and hardware",
+  "Preferences",
+  "General",
+];

@@ -1,7 +1,6 @@
 import { Typography } from "@/constants/theme";
 import {
   BorderRadius,
-  BrandColors,
   Colors,
   FontFamily,
   Spacing,
@@ -9,10 +8,6 @@ import {
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-  actionPressed: {
-    opacity: 0.75,
-  },
-
   brand: {
     alignItems: "center",
     flexDirection: "row",
@@ -24,17 +19,6 @@ export const styles = StyleSheet.create({
     fontSize: 20,
     letterSpacing: -0.8,
     lineHeight: 24,
-  },
-
-  contactsButton: {
-    alignItems: "center",
-    borderRadius: BorderRadius.full,
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: Spacing.one,
-    justifyContent: "center",
-    minHeight: 40,
-    paddingHorizontal: Spacing.three,
   },
 
   container: {
@@ -120,36 +104,9 @@ export const styles = StyleSheet.create({
     zIndex: 10,
   },
 
-  quickActions: {
-    alignItems: "center",
-    backgroundColor: "transparent",
-    flexDirection: "row",
-    gap: Spacing.one,
-  },
-
-  quickActionsContainer: {
-    paddingHorizontal: Spacing.four,
-    paddingVertical: Spacing.two,
-  },
-
   rideButton: {
     borderRadius: BorderRadius.full,
     marginTop: Spacing.three,
-  },
-
-  sosButton: {
-    alignItems: "center",
-    backgroundColor: BrandColors.error,
-    borderRadius: BorderRadius.full,
-    flexDirection: "row",
-    gap: Spacing.one,
-    justifyContent: "center",
-    minHeight: 40,
-    paddingHorizontal: Spacing.three,
-  },
-
-  sosButtonText: {
-    color: BrandColors.secondary,
   },
 
   statusGradient: {

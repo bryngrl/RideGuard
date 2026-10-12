@@ -63,9 +63,7 @@ export async function getSavedAlerts(
     firebaseToken,
   );
 
-  const rawList = Array.isArray(envelope?.data?.data)
-    ? envelope.data.data
-    : [];
+  const rawList = Array.isArray(envelope?.data?.data) ? envelope.data.data : [];
 
   const nextCursor =
     typeof envelope?.data?.nextCursor === "string"

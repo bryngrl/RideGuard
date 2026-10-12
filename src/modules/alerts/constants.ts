@@ -20,10 +20,10 @@ export const ALERT_CREATED_EVENT = "alert.created";
 
 // The title shown for each alert, based on whether it is a real threat.
 export const ALERT_TITLE = {
-  // Real threat (isFalseAlarm is false).
-  THREAT: "Threat detected",
-  // Marked as a false alarm (isFalseAlarm is true).
-  CLEAR: "All clear",
+  NO_DETECTIONS: "No detections",
+  WEAPON: "Weapon detected",
+  VIOLENCE: "Violence detected",
+  BOTH: "Violence and Weapon detected",
 } as const;
 
 // Ionicons icon names used across the alerts UI.

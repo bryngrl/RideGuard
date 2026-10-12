@@ -1,4 +1,9 @@
 export type AlertSeverity = "clear" | "threat";
+export type AlertDetectionType =
+  | "none"
+  | "weapon"
+  | "violence"
+  | "both";
 
 /**
  * UI shape rendered by the alert list/row.
@@ -22,7 +27,7 @@ export interface AlertFields {
   alertId?: string;
   deviceId: string;
   message: string;
-  imageUrl?: string | null;
+  imageUrl?: string | string[] | null;
   timeStamp: string;
   isFalseAlarm: boolean;
   isSeen: boolean;

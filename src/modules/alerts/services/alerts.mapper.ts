@@ -1,4 +1,8 @@
-import type { AlertFields, AlertItem } from "../types/alert.types";
+import type {
+  AlertDetectionType,
+  AlertFields,
+  AlertItem,
+} from "../types/alert.types";
 
 /**
  * Normalize a timestamp coming from either the realtime channel (a JSON date
@@ -27,8 +31,22 @@ function normalizeTimeStamp(input: unknown): string {
   return "";
 }
 
-function normalizeImageUrl(input: unknown): string | null {
-  return typeof input === "string" && input.length > 0 ? input : null;
+function normalizeImageUrl(input: unknown): string | string[] | null {
+  if (typeof input === "string" && input.length > 0) return input;
+  if (Array.isArray(input)) {
+    const urls = input.filter(
+      (value): value is string => typeof value === "string" && value.length > 0,
+    );
+    return urls.length > 0 ? urls : null;
+  }
+  return null;
+}
+
+export function getSnapshotUris(
+  imageUrl: string | string[] | null | undefined,
+): string[] {
+  if (typeof imageUrl === "string") return [imageUrl];
+  return imageUrl ?? [];
 }
 
 /**
@@ -128,9 +146,32 @@ export function formatRelativeDay(timeStamp: string): string {
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+export function getAlertDetectionType(message: string): AlertDetectionType {
+  const title = message.trim().toLowerCase().replace(/[_-]+/g, " ");
+
+  if (
+    title.includes("all clear") ||
+    title.includes("no detection") ||
+    title.includes("nothing detected")
+  ) {
+    return "none";
+  }
+
+  const hasViolence =
+    title.includes("violence") && !title.includes("no violence");
+  const hasWeapon = title.includes("weapon") && !title.includes("no weapon");
+
+  if (hasViolence && hasWeapon) {
+    return "both";
+  }
+  if (hasViolence) return "violence";
+  if (hasWeapon) return "weapon";
+  return "none";
+}
+
 /**
- * Map a backend payload to the UI item. The title and severity are derived
- * from `isFalseAlarm` only — never from the original message text.
+ * Map a backend payload to the UI item. The displayed title remains the
+ * original backend message; detection type and severity are derived from it.
  * Returns null when the payload lacks a usable alertId.
  */
 export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
@@ -139,11 +180,13 @@ export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
 
   if (!alertId) return null;
 
+  const detectionType = getAlertDetectionType(fields.message);
+
   return {
     alertId,
-    title: "Threat detected",
-    severity: "threat",
-    time: formatAlertTime(fields.timeStamp),
+    title: fields.message,
+    severity: detectionType === "none" ? "clear" : "threat",
+    time: formatClockTime(fields.timeStamp),
     read: fields.isSeen === true,
     subLabel: fields.isFalseAlarm ? "Marked as false alarm" : undefined,
   };

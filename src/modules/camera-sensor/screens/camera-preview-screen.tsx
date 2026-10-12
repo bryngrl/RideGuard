@@ -12,7 +12,8 @@ const screenWidth = Dimensions.get("window").width;
 
 export function CameraPreviewScreen() {
   const router = useRouter();
-  const { camera } = useLocalSearchParams<{ camera?: string }>();
+  const { camera, source } = useLocalSearchParams<{ camera?: string; source?: string }>();
+  const fromSettings = source === "settings";
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const isSecondCamera = camera === "2";
@@ -21,11 +22,7 @@ export function CameraPreviewScreen() {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.replace(
-        isSecondCamera
-          ? "/devices/button"
-          : "/devices/camera?camera=2",
-      );
+      router.replace(fromSettings ? "/devices" : (isSecondCamera ? "/devices/button" : "/devices/camera?camera=2"));
     } finally {
       setIsLoading(false);
     }
@@ -34,9 +31,9 @@ export function CameraPreviewScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
-        <View style={styles.stepperContainer}>
+        {!fromSettings && <View style={styles.stepperContainer}>
           <Stepper currentStep={isSecondCamera ? 6 : 5} steps={8} size={6} />
-        </View>
+        </View>}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />

@@ -13,6 +13,7 @@ export const styles = StyleSheet.create({
     minHeight: 64,
     paddingHorizontal: Spacing.three,
     width: "100%",
+    paddingLeft: Spacing.five,
   },
 
   // Left icon
@@ -51,7 +52,6 @@ export const styles = StyleSheet.create({
   },
   subLabel: {
     marginTop: 2,
-    fontStyle: "italic",
   },
 
   // Center text

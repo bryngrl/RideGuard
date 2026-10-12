@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { Edge, SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
 import { MaxContentWidth, Spacing } from "@/shared/theme";
@@ -20,6 +20,7 @@ export interface KeyboardAvoidingWrapperProps {
   contentContainerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   enableScrollView?: boolean;
+  safeAreaEdges?: Edge[];
 }
 
 export function KeyboardAvoidingWrapper({
@@ -27,6 +28,7 @@ export function KeyboardAvoidingWrapper({
   contentContainerStyle,
   style,
   enableScrollView = true,
+  safeAreaEdges = ["top", "bottom"],
 }: KeyboardAvoidingWrapperProps) {
   const theme = useTheme();
 
@@ -39,6 +41,7 @@ export function KeyboardAvoidingWrapper({
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }, style]}
+      edges={safeAreaEdges}
     >
       <KeyboardAvoidingView
         style={styles.flex}
