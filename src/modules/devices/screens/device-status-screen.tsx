@@ -1,15 +1,19 @@
+import { useRouter } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
+
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
-import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+
 import { useDeviceStore } from "../store/devices.store";
 
 type DeviceStatus = {
   name: string;
   deviceId: string;
   batteryLevel: number | null;
+  type: "camera" | "button";
+  cameraNumber?: 1 | 2;
 };
 
 export function DeviceStatusScreen() {
@@ -18,16 +22,61 @@ export function DeviceStatusScreen() {
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
 
   const devices: DeviceStatus[] = [
-    { name: "Camera 1", deviceId: camera1DeviceId, batteryLevel: null },
-    { name: "Camera 2", deviceId: camera2DeviceId, batteryLevel: null },
-    { name: "Quick Button", deviceId: buttonDeviceId, batteryLevel: null },
+    {
+      name: "Camera 1",
+      deviceId: camera1DeviceId,
+      batteryLevel: null,
+      type: "camera",
+      cameraNumber: 1,
+    },
+    {
+      name: "Camera 2",
+      deviceId: camera2DeviceId,
+      batteryLevel: null,
+      type: "camera",
+      cameraNumber: 2,
+    },
+    {
+      name: "Quick Button",
+      deviceId: buttonDeviceId,
+      batteryLevel: null,
+      type: "button",
+    },
   ];
+
+  const handleDeviceAction = (device: DeviceStatus) => {
+    const isConnected = Boolean(device.deviceId);
+
+    if (device.type === "button") {
+      router.push(
+        (isConnected
+          ? "/(onboarding)/devices/button"
+          : "/(onboarding)/register/provision") as never,
+      );
+      return;
+    }
+
+    const cameraNumber = device.cameraNumber ?? 1;
+    router.push(
+      (isConnected
+        ? `/(onboarding)/devices/camera/camera-preview?camera=${cameraNumber}`
+        : `/(onboarding)/devices/camera?camera=${cameraNumber}`) as never,
+    );
+  };
 
   return (
     <PageLayout title="Camera and quick button">
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
+          const actionTitle =
+            device.type === "button"
+              ? isConnected
+                ? "Test Quick Button"
+                : "Connect Quick Button"
+              : isConnected
+                ? "Preview camera angle"
+                : "Connect camera";
 
           return (
             <View key={device.name} style={styles.deviceSection}>
@@ -68,18 +117,10 @@ export function DeviceStatusScreen() {
               </View>
 
               <Button
-                title={isConnected ? "Preview camera angle" : "Connect"}
+                title={actionTitle}
                 variant={isConnected ? "primary" : "outline"}
                 fullWidth
-                onPress={() => {
-                  if (device.name.startsWith("Camera")) {
-                    router.push(
-                      `/devices/camera?camera=${device.name.endsWith("2") ? "2" : "1"}&source=settings` as never,
-                    );
-                  } else {
-                    router.push("/devices/button?source=settings" as never);
-                  }
-                }}
+                onPress={() => handleDeviceAction(device)}
               />
             </View>
           );
