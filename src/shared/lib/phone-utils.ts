@@ -2,14 +2,14 @@ export function normalizePhoneNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
 
   if (digits.startsWith("63")) {
-    return digits.slice(2).slice(-10);
+    return digits.slice(2);
   }
 
   if (digits.startsWith("0")) {
-    return digits.slice(1).slice(-10);
+    return digits.slice(1);
   }
 
-  return digits.slice(-10);
+  return digits;
 }
 
 export function isValidPhoneNumber(phone: string): boolean {

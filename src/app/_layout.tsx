@@ -7,7 +7,8 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
-import { useColorScheme } from "react-native";
+import { useColorScheme } from "@/shared/hooks/use-color-scheme";
+import { useSettingsStore } from "@/modules/settings/store/settings.store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 SplashScreen.preventAutoHideAsync();
@@ -24,6 +25,7 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const settingsHydrated = useSettingsStore((state) => state.isHydrated);
 
   const [fontsLoaded, fontError] = useFonts({
     "EloquiaDisplay-ExtraBold": require("../../assets/fonts/EloquiaDisplay-ExtraBold.otf"),
@@ -43,7 +45,7 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) {
+  if ((!fontsLoaded && !fontError) || !settingsHydrated) {
     return null;
   }
 
