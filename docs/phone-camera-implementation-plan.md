@@ -1,6 +1,6 @@
 # Phone camera capture implementation plan
 
-Status: requirements confirmed; implementation and device validation pending. No application code has been changed.
+Status: code implemented across node, model-api, and mobile (see `docs/livestream-and-detection-changes.md` section 4). Automated tests pass. Physical-device, background, and locked-screen validation on the Infinix GT 50 Pro has not been done yet.
 
 ## Objective
 

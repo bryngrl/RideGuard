@@ -1,14 +1,18 @@
+import { PhoneCapturePanel } from "@/modules/phone-camera";
+import { PHONE_CAPTURE_ENABLED } from "@/shared/constants/phone-capture";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { QuickActions } from "@/shared/ui/quick-actions";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from "react-native";
 import { LiveCameraView } from "../components/live-camera-view";
 import { useCameras } from "../hooks/use-cameras";
 
 export function CameraTabScreen() {
   const colors = useTheme();
-  const { cameras, isLoading, error } = useCameras();
+  const { cameras: allCameras, isLoading, error } = useCameras();
+  // Phone cameras are shown in the phone panel, not as hardware feeds.
+  const cameras = allCameras.filter((camera) => camera.source !== "phone");
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -44,6 +48,10 @@ export function CameraTabScreen() {
             ))}
           </View>
         )}
+
+        {PHONE_CAPTURE_ENABLED && Platform.OS === "android" ? (
+          <PhoneCapturePanel />
+        ) : null}
       </KeyboardAvoidingWrapper>
 
       <QuickActions />

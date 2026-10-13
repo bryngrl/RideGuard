@@ -21,6 +21,8 @@ interface CameraDto {
   stream_url: string | null;
   online: boolean;
   last_seen_at: string | null;
+  // Older servers do not send it; those cameras are all ESP32.
+  source?: "esp32" | "phone";
 }
 
 function mapCamera(dto: CameraDto): LiveCamera {
@@ -29,6 +31,7 @@ function mapCamera(dto: CameraDto): LiveCamera {
     streamUrl: dto.stream_url ?? null,
     online: Boolean(dto.online),
     lastSeenAt: dto.last_seen_at ?? null,
+    source: dto.source === "phone" ? "phone" : "esp32",
   };
 }
 

@@ -1,3 +1,4 @@
+import { INFERENCE_BASE_URL } from "@/shared/constants/inference";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -7,9 +8,6 @@ import { WebView } from "react-native-webview";
 import type { LiveCamera } from "../types/live-camera.types";
 import { createMjpegDocument } from "../utils/mjpeg-document";
 
-const INFERENCE_BASE_URL = (
-  process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1"
-).replace(/\/+$/, "");
 const RETRY_DELAY_MS = 3000;
 
 type StreamStatus = "connecting" | "playing" | "error";

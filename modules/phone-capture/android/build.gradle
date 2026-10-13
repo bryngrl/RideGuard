@@ -1,0 +1,30 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'com.rideguard.phonecapture'
+version = '1.0.0'
+
+android {
+  namespace "expo.modules.phonecapture"
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  def camerax = '1.4.2'
+  implementation "androidx.camera:camera-core:${camerax}"
+  implementation "androidx.camera:camera-camera2:${camerax}"
+  implementation "androidx.camera:camera-lifecycle:${camerax}"
+  // The app already resolves core 1.18.0; the module needs at least 1.6.0 for
+  // the notification countdown.
+  implementation 'androidx.core:core:1.18.0'
+  implementation 'androidx.lifecycle:lifecycle-service:2.9.4'
+  // Same version React Native ships, so the app keeps one OkHttp.
+  implementation 'com.squareup.okhttp3:okhttp:4.9.2'
+
+  testImplementation 'junit:junit:4.13.2'
+}
