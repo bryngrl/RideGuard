@@ -200,3 +200,5 @@ export function usePhoneCapture() {
     stop,
   };
 }
+
+export type PhoneCapture = ReturnType<typeof usePhoneCapture>;

@@ -11,8 +11,10 @@
     },
     "preview": {
       "distribution": "internal",
+      "environment": "preview",
       "channel": "preview",
       "env": {
+        "EXPO_PUBLIC_PHONE_CAPTURE_ENABLED": "true",
         "EAS_USE_CACHE": "1",
         "ORG_GRADLE_PROJECT_reactNativeArchitectures": "arm64-v8a"
       },

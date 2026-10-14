@@ -1,116 +1,57 @@
+import { Ionicons } from "@expo/vector-icons";
 import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { LiveCameraView } from "@/modules/camera-sensor/components/live-camera-view";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 
 import type { PhoneCaptureStatus } from "../../../../modules/phone-capture";
-import { usePhoneCapture } from "../hooks/use-phone-capture";
+import type { PhoneCapture } from "../hooks/use-phone-capture";
 
-function formatRemaining(ms: number): string {
+export function formatRemaining(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
-function statusText(status: PhoneCaptureStatus | null): string {
+/**
+ * Only messages the preview frame cannot show. Progress (starting, connecting,
+ * capturing, uploading) is shown in the frame, and a plain Stop needs none.
+ */
+function phoneStatusText(status: PhoneCaptureStatus | null): string | null {
   switch (status?.state) {
-    case "starting":
-      return "Starting…";
-    case "connecting":
-      return "Connecting to the server…";
-    case "capturing":
-      return "Camera on. Waiting for the server to confirm frames.";
-    case "uploading":
-      return `Uploading. Server received ${status.serverReceived} frames.`;
     case "interrupted":
       return status.reason ?? "Camera interrupted.";
     case "completed":
       return "Session completed";
     case "stopped":
-      return status.reason ?? "Stopped";
+      return status.reason;
     case "error":
       return status.reason ?? "Phone camera stopped because of an error.";
     default:
-      return "Not capturing";
+      return null;
   }
 }
 
-export function PhoneCapturePanel() {
-  const colors = useTheme();
-  const capture = usePhoneCapture();
-  const { status } = capture;
-  const active = status?.active === true || status?.state === "starting";
+export function isPhoneActive(capture: PhoneCapture): boolean {
+  return capture.status?.active === true || capture.status?.state === "starting";
+}
 
-  if (!capture.supported) {
-    return (
-      <View style={styles.container}>
-        <Text style={[Typography.h3, { color: colors.text }]}>Phone camera</Text>
-        <Text style={[Typography.body, { color: colors.textMuted }]}>
-          Install the latest app build to use your phone as a camera.
-        </Text>
-      </View>
-    );
-  }
+/** Capture status, lens flip and Start/Stop for the phone source. */
+export function PhoneCapturePanel({ capture }: { capture: PhoneCapture }) {
+  const colors = useTheme();
+  const { status } = capture;
+  const active = isPhoneActive(capture);
+  const canStart = Boolean(capture.deviceId) && capture.lenses.length > 0;
+  const otherLens = capture.lenses.find((option) => option !== capture.lens);
+  const message = phoneStatusText(status);
 
   return (
     <View style={styles.container}>
-      <Text style={[Typography.h3, { color: colors.text }]}>Phone camera</Text>
-
-      {active && capture.deviceId ? (
-        <View style={styles.preview}>
-          {/* The server's view of this phone. It can close while capture
-              keeps running in the background. */}
-          <LiveCameraView
-            camera={{
-              deviceId: capture.deviceId,
-              streamUrl: null,
-              online: status?.connected === true,
-              lastSeenAt: null,
-              source: "phone",
-            }}
-            label="Phone"
-          />
-        </View>
-      ) : null}
-
-      <View style={styles.lensRow}>
-        {capture.lenses.map((option) => {
-          const selected = capture.lens === option;
-          return (
-            <Pressable
-              key={option}
-              accessibilityRole="radio"
-              accessibilityState={{ selected, disabled: active }}
-              disabled={active}
-              onPress={() => capture.setLens(option)}
-              style={[
-                styles.lensOption,
-                {
-                  borderColor: selected ? colors.accent : colors.border,
-                  backgroundColor: selected ? colors.backgroundSelected : colors.card,
-                  opacity: active && !selected ? 0.5 : 1,
-                },
-              ]}
-            >
-              <Text style={[Typography.button, { color: colors.text }]}>
-                {option === "front" ? "Front" : "Rear"}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      <Text style={[Typography.body, { color: colors.text }]}>
-        {statusText(status)}
-      </Text>
-
-      {status?.active ? (
-        <Text style={[Typography.bodySmall, { color: colors.textMuted }]}>
-          {formatRemaining(capture.remainingMs)} left · {status.framesSent} sent
-          {status.framesDropped > 0 ? ` · ${status.framesDropped} skipped` : ""}
+      {message ? (
+        <Text style={[Typography.body, { color: colors.textMuted }]}>
+          {message}
         </Text>
       ) : null}
 
@@ -135,37 +76,63 @@ export function PhoneCapturePanel() {
         />
       ) : null}
 
-      {active ? (
-        <Button title="Stop" variant="danger" onPress={capture.stop} />
-      ) : (
+      <View style={styles.actions}>
+        {otherLens ? (
+          // The lens is fixed for a running session.
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Switch to ${otherLens === "front" ? "front" : "back"} camera`}
+            disabled={active}
+            onPress={() => capture.setLens(otherLens)}
+            style={({ pressed }) => [
+              styles.flipButton,
+              {
+                backgroundColor: colors.backgroundElement,
+                borderColor: colors.border,
+                opacity: active ? 0.5 : pressed ? 0.8 : 1,
+              },
+            ]}
+          >
+            <Ionicons
+              name="camera-reverse-outline"
+              size={20}
+              color={colors.text}
+            />
+          </Pressable>
+        ) : null}
+
         <Button
-          title="Start phone camera"
-          onPress={capture.start}
+          title={active ? "Stop camera" : "Start camera"}
+          size="md"
+          variant={active ? "danger" : "primary"}
+          fullWidth={false}
+          style={styles.startButton}
           isLoading={capture.isBusy}
-          disabled={!capture.deviceId || capture.lenses.length === 0}
+          disabled={!active && !canStart}
+          onPress={active ? capture.stop : capture.start}
         />
-      )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    gap: Spacing.three,
-    marginTop: Spacing.six,
+    gap: Spacing.two,
   },
-  preview: {
-    marginHorizontal: -Spacing.five,
-  },
-  lensRow: {
+  actions: {
     flexDirection: "row",
     gap: Spacing.two,
   },
-  lensOption: {
-    borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    flex: 1,
+  flipButton: {
     alignItems: "center",
-    paddingVertical: Spacing.two,
+    borderRadius: BorderRadius.full,
+    borderWidth: 1,
+    height: 40,
+    justifyContent: "center",
+    width: 40,
+  },
+  startButton: {
+    flex: 1,
   },
 });
