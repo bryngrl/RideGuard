@@ -1,6 +1,7 @@
 import { usePathname, useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
@@ -62,13 +63,25 @@ export function BottomNavigation() {
   const pathname = usePathname();
 
   const colors = useTheme();
+  // Android is edge-to-edge: keep the bar above the system navigation.
+  const { bottom } = useSafeAreaInsets();
 
   const handleNavigation = (route: string) => {
     router.navigate(route as never);
   };
 
   return (
-    <View style={styles.wrapper}>
+    // The padding around the pill would otherwise show the navigator's grey
+    // DefaultTheme background.
+    <View
+      style={[
+        styles.wrapper,
+        {
+          backgroundColor: colors.background,
+          paddingBottom: bottom + Spacing.two,
+        },
+      ]}
+    >
       <View
         style={[
           styles.container,
@@ -121,7 +134,6 @@ const styles = StyleSheet.create({
   wrapper: {
     width: "100%",
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.three,
   },
 
   container: {

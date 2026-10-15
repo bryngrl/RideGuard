@@ -7,6 +7,22 @@ import { useState } from "react";
 
 import { auth } from "@/lib/firebase";
 
+function configureGoogleSignin() {
+  GoogleSignin.configure({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  });
+}
+
+/**
+ * Forget the cached Google account so the next sign-in shows the account
+ * picker. Firebase signOut alone leaves it cached. Android needs configure
+ * first, even after an app restart.
+ */
+export async function signOutGoogle(): Promise<void> {
+  configureGoogleSignin();
+  await GoogleSignin.signOut();
+}
+
 export function useGoogleSignin() {
   const [isLoading, setIsLoading] = useState(false);
 
@@ -14,9 +30,7 @@ export function useGoogleSignin() {
     try {
       setIsLoading(true);
 
-      GoogleSignin.configure({
-        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      });
+      configureGoogleSignin();
 
       await GoogleSignin.hasPlayServices({
         showPlayServicesUpdateDialog: true,
