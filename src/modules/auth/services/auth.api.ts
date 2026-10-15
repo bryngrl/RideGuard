@@ -27,6 +27,8 @@ export interface CurrentUser {
   firstName?: string | null;
   lastName?: string | null;
   email?: string | null;
+  // Google's profile photo, from the Firebase token's "picture" claim.
+  picture?: string | null;
 }
 
 /**

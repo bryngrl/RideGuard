@@ -9,6 +9,9 @@ export interface SettingsProfile {
   vehicleBrand: string;
   vehicleModel: string;
   plateNumber: string;
+  // The signed-in account's profile photo (GET /auth/me, or Firebase for
+  // Google sign-in). Null when there isn't one.
+  photoUrl: string | null;
 }
 
 export interface SettingsSnapshot {

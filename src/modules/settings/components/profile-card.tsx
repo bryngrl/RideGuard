@@ -77,6 +77,7 @@ function CardContent({ profile }: { profile: SettingsProfile }) {
         {/*  Avatar   */}
         <ProfileAvatar
           name={getProfileDisplayName(profile.firstName, profile.lastName)}
+          photoUrl={profile.photoUrl}
           size={88}
           textStyle={Typography.h1}
         />
