@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import {
   Image,
   Modal,
@@ -19,6 +20,7 @@ import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
 
+import { ClipPlayerModal } from "../components/clip-player-modal";
 import { useAlertDetails } from "../hooks/use-alert-details";
 import {
   formatClockTime,
@@ -28,6 +30,7 @@ import {
 } from "../services/alerts.mapper";
 import {
   bannerStyles,
+  clipStyles,
   contentStyles,
   footerStyles,
   gridStyles,
@@ -117,110 +120,104 @@ function SnapshotViewer({
 interface SnapshotGridProps {
   uris?: string[];
   onSnapshotPress: (index: number) => void;
+  /** A clip exists for this alert. The first cell becomes a "Play clip" tile
+   * instead of a snapshot, even with no thumbnail image. */
+  hasVideo?: boolean;
+  onPlayClip?: () => void;
 }
 
-function SnapshotGrid({ uris = [], onSnapshotPress }: SnapshotGridProps) {
+function PlaceholderCell({ label }: { label: string }) {
   const theme = useTheme();
+  return (
+    <View
+      style={[gridStyles.cell, { backgroundColor: theme.backgroundElement }]}
+    >
+      <View style={gridStyles.placeholder}>
+        <Text
+          style={{
+            color: theme.textInactive,
+            fontSize: 11,
+            textAlign: "center",
+          }}
+        >
+          {label}
+        </Text>
+      </View>
+    </View>
+  );
+}
 
-  // Show placeholder if no URIs
-  if (uris.length === 0) {
+function PlayClipCell({
+  uri,
+  onPress,
+}: {
+  uri: string | null;
+  onPress: () => void;
+}) {
+  const theme = useTheme();
+  return (
+    <View
+      style={[gridStyles.cell, { backgroundColor: theme.backgroundElement }]}
+    >
+      <Pressable
+        onPress={onPress}
+        style={gridStyles.snapshotButton}
+        accessibilityRole="button"
+        accessibilityLabel="Play clip"
+      >
+        {uri ? (
+          <Image source={{ uri }} style={gridStyles.image} resizeMode="cover" />
+        ) : null}
+        <View style={gridStyles.playOverlay} pointerEvents="none">
+          <Ionicons name="play-circle" size={36} color="#FFFFFF" />
+        </View>
+      </Pressable>
+    </View>
+  );
+}
+
+function SnapshotGrid({
+  uris = [],
+  onSnapshotPress,
+  hasVideo = false,
+  onPlayClip,
+}: SnapshotGridProps) {
+  // The clip's thumbnail is the same image as snapshot 0. Playing it still
+  // works with no thumbnail: PlayClipCell falls back to a plain placeholder.
+  const restUris = hasVideo ? uris.slice(1) : uris;
+  const cellCount = 4 - (hasVideo ? 1 : 0);
+  const cells = Array.from(
+    { length: cellCount },
+    (_, i) => restUris[i] ?? null,
+  );
+  const snapshotOffset = hasVideo ? 1 : 0;
+
+  if (!hasVideo && uris.length === 0) {
     return (
       <View style={gridStyles.container}>
-        <View
-          style={[
-            gridStyles.cell,
-            { backgroundColor: theme.backgroundElement },
-          ]}
-        >
-          <View style={gridStyles.placeholder}>
-            <Text
-              style={{
-                color: theme.textInactive,
-                fontSize: 11,
-                textAlign: "center",
-              }}
-            >
-              Snapshots coming soon
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            gridStyles.cell,
-            { backgroundColor: theme.backgroundElement },
-          ]}
-        >
-          <View style={gridStyles.placeholder}>
-            <Text
-              style={{
-                color: theme.textInactive,
-                fontSize: 11,
-                textAlign: "center",
-              }}
-            >
-              Snapshots coming soon
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            gridStyles.cell,
-            { backgroundColor: theme.backgroundElement },
-          ]}
-        >
-          <View style={gridStyles.placeholder}>
-            <Text
-              style={{
-                color: theme.textInactive,
-                fontSize: 11,
-                textAlign: "center",
-              }}
-            >
-              Snapshots coming soon
-            </Text>
-          </View>
-        </View>
-        <View
-          style={[
-            gridStyles.cell,
-            { backgroundColor: theme.backgroundElement },
-          ]}
-        >
-          <View style={gridStyles.placeholder}>
-            <Text
-              style={{
-                color: theme.textInactive,
-                fontSize: 11,
-                textAlign: "center",
-              }}
-            >
-              Snapshots coming soon
-            </Text>
-          </View>
-        </View>
+        {Array.from({ length: 4 }, (_, i) => (
+          <PlaceholderCell key={i} label="Snapshots coming soon" />
+        ))}
       </View>
     );
   }
 
-  // Show actual snapshots if available
-  const cells = Array.from({ length: 4 }, (_, i) => uris[i] ?? null);
-
   return (
     <View style={gridStyles.container}>
-      {cells.map((uri, idx) => (
-        <View
-          key={idx}
-          style={[
-            gridStyles.cell,
-            { backgroundColor: theme.backgroundElement },
-          ]}
-        >
-          {uri ? (
+      {hasVideo ? (
+        <PlayClipCell uri={uris[0] ?? null} onPress={() => onPlayClip?.()} />
+      ) : null}
+      {cells.map((uri, idx) =>
+        uri ? (
+          <View
+            key={idx}
+            style={[gridStyles.cell, { backgroundColor: "transparent" }]}
+          >
             <Pressable
-              onPress={() => onSnapshotPress(idx)}
+              onPress={() => onSnapshotPress(idx + snapshotOffset)}
               style={gridStyles.snapshotButton}
               accessibilityRole="button"
-              accessibilityLabel={`Open snapshot ${idx + 1}`}
+              accessibilityLabel={`Open snapshot ${idx + snapshotOffset + 1}`}
             >
               <Image
                 source={{ uri }}
@@ -228,20 +225,11 @@ function SnapshotGrid({ uris = [], onSnapshotPress }: SnapshotGridProps) {
                 resizeMode="cover"
               />
             </Pressable>
-          ) : (
-            <View style={gridStyles.placeholder}>
-              <Text
-                style={{
-                  color: theme.textInactive,
-                  fontSize: 11,
-                }}
-              >
-                No snapshot
-              </Text>
-            </View>
-          )}
-        </View>
-      ))}
+          </View>
+        ) : (
+          <PlaceholderCell key={idx} label="No snapshot" />
+        ),
+      )}
     </View>
   );
 }
@@ -358,6 +346,7 @@ export function AlertDetailScreen() {
   const theme = useTheme();
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerIndex, setViewerIndex] = useState(0);
+  const [clipOpen, setClipOpen] = useState(false);
 
   // Get alert data from hook
   const { alert, isSubmitting, markAsFalseAlarm } = useAlertDetails();
@@ -375,6 +364,9 @@ export function AlertDetailScreen() {
   const isFalseAlarm = alert.isFalseAlarm === true;
   const detectionType = getAlertDetectionType(alert.message);
   const snapshotUris = getSnapshotUris(alert.imageUrl);
+  const hasVideo = Boolean(alert.videoUrl);
+  const isViolenceType =
+    detectionType === "violence" || detectionType === "both";
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
@@ -461,6 +453,8 @@ export function AlertDetailScreen() {
         {/* Image or Placeholder */}
         <SnapshotGrid
           uris={snapshotUris}
+          hasVideo={hasVideo}
+          onPlayClip={() => setClipOpen(true)}
           onSnapshotPress={(index) => {
             setViewerIndex(index);
             setViewerVisible(true);
@@ -474,8 +468,28 @@ export function AlertDetailScreen() {
         />
         {/* 2×2 Snapshot grid - shows placeholder if no data */}
 
-        {/* Auto-delete notice */}
-        <AutoDeleteBanner label="Auto-deletes in 47h 12m" />
+        {isViolenceType && !hasVideo ? (
+          <Text
+            style={[
+              Typography.bodySmall,
+              clipStyles.unavailableText,
+              { color: theme.textInactive },
+            ]}
+          >
+            Video unavailable
+          </Text>
+        ) : null}
+
+        {clipOpen && alert.videoUrl ? (
+          <ClipPlayerModal
+            uri={alert.videoUrl}
+            onClose={() => setClipOpen(false)}
+          />
+        ) : null}
+
+        {/* Auto-delete notice. Clip evidence has no deletion schedule yet, so
+            the claim below would be false for it. */}
+        {hasVideo ? null : <AutoDeleteBanner label="Auto-deletes in 47h 12m" />}
 
         {/* Response */}
         <Response contactsNotified={true} />
