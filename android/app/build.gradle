@@ -99,7 +99,10 @@ android {
     }
     signingConfigs {
         debug {
-            storeFile file('debug.keystore')
+            // The stock RN debug key's SHA-1 is already claimed by another Google
+            // Cloud project for com.rideguard.app, so Google Sign-In rejects it.
+            // Use a local unique key when present; fall back for everyone else.
+            storeFile file('rideguard-debug.keystore').exists() ? file('rideguard-debug.keystore') : file('debug.keystore')
             storePassword 'android'
             keyAlias 'androiddebugkey'
             keyPassword 'android'
