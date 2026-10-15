@@ -23,3 +23,10 @@ allprojects {
 
 apply plugin: "expo-root-project"
 apply plugin: "com.facebook.react.rootproject"
+
+// Use the installed NDK for Expo libraries as well as the app.
+subprojects { subproject ->
+  subproject.plugins.withId('com.android.library') {
+    subproject.android.ndkVersion = rootProject.ext.ndkVersion
+  }
+}

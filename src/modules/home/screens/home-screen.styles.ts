@@ -11,14 +11,15 @@ export const styles = StyleSheet.create({
   brand: {
     alignItems: "center",
     flexDirection: "row",
-    gap: Spacing.half,
   },
 
   brandName: {
     fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 20,
+    fontSize: 24,
     letterSpacing: -0.8,
-    lineHeight: 24,
+    lineHeight: 26,
+    marginLeft: -2,
+    transform: [{ translateY: 7 }],
   },
 
   container: {
@@ -99,7 +100,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: Spacing.half,
-    paddingHorizontal: Spacing.two,
+    paddingRight: Spacing.two,
     position: "relative",
     zIndex: 10,
   },

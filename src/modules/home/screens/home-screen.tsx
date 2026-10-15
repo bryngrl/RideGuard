@@ -1,4 +1,4 @@
-import MainLogo from "@/assets/icons//logos/main.svg";
+import MainLogo from "@/assets/icons/logos/main.svg";
 import {
   default as ActiveCameraIcon,
   default as InactiveCameraIcon,
@@ -155,7 +155,7 @@ export function HomeScreen() {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.brand}>
-            <MainLogo width={30} height={40} />
+            <MainLogo width={32} height={42} />
             <Text style={[styles.brandName, { color: colors.primary }]}>
               ideguard
             </Text>
