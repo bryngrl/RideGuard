@@ -1,15 +1,20 @@
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { INFERENCE_BASE_URL } from "@/shared/constants/inference";
+import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AppState, Platform, StyleSheet, Text, View } from "react-native";
 import { WebView } from "react-native-webview";
 
 import type { LiveCamera } from "../types/live-camera.types";
 import { createMjpegDocument } from "../utils/mjpeg-document";
 
-const INFERENCE_BASE_URL = (
-  process.env.EXPO_PUBLIC_INFERENCE_BASE_URL || "http://3.26.225.222:8000/v1"
-).replace(/\/+$/, "");
 const RETRY_DELAY_MS = 3000;
 
 type StreamStatus = "connecting" | "playing" | "error";
@@ -17,9 +22,12 @@ type StreamStatus = "connecting" | "playing" | "error";
 export function LiveCameraView({
   camera,
   label,
+  labelIcon,
 }: {
   camera: LiveCamera;
   label: string;
+  /** Shown before the label, e.g. the phone's lens. */
+  labelIcon?: ReactNode;
 }) {
   const [focused, setFocused] = useState(false);
   const [appState, setAppState] = useState(AppState.currentState);
@@ -47,6 +55,7 @@ export function LiveCameraView({
       online={camera.online}
       active={active}
       label={label}
+      labelIcon={labelIcon}
     />
   );
 }
@@ -56,11 +65,13 @@ function CameraStream({
   online,
   active,
   label,
+  labelIcon,
 }: {
   streamUrl: string;
   online: boolean;
   active: boolean;
   label: string;
+  labelIcon?: ReactNode;
 }) {
   const [status, setStatus] = useState<StreamStatus>("connecting");
   const [attempt, setAttempt] = useState(0);
@@ -157,26 +168,25 @@ function CameraStream({
       ) : null}
 
       <View pointerEvents="none" style={styles.label}>
-        <View style={styles.labelRow}>
-          <View
-            style={[
-              styles.labelDot,
-              { backgroundColor: isPlaying ? BrandColors.error : "#9CA3AF" },
-            ]}
-          />
-          <Text style={[Typography.h3, styles.labelText]}>{label}</Text>
-        </View>
+        <View
+          style={[
+            styles.labelDot,
+            { backgroundColor: isPlaying ? BrandColors.success : "#9CA3AF" },
+          ]}
+        />
+        {labelIcon}
+        <Text style={[Typography.caption, styles.labelText]}>{label}</Text>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Fills its parent; the screen sizes the preview frame.
   container: {
-    aspectRatio: 16 / 9,
+    alignSelf: "stretch",
+    flex: 1,
     overflow: "hidden",
-    position: "relative",
-    width: "100%",
     backgroundColor: "#000000",
   },
   webview: {
@@ -188,21 +198,24 @@ const styles = StyleSheet.create({
     bottom: Spacing.two,
     alignSelf: "center",
     backgroundColor: "rgba(0, 0, 0, 0.65)",
+    borderRadius: BorderRadius.md,
     padding: Spacing.two,
   },
   statusText: {
     color: "#FFFFFF",
-    ...Typography.h3,
+    ...Typography.medium,
   },
   label: {
-    left: Spacing.two,
-    position: "absolute",
-    top: Spacing.two,
-  },
-  labelRow: {
     alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.55)",
+    borderRadius: BorderRadius.full,
     flexDirection: "row",
-    gap: Spacing.one,
+    gap: Spacing.one + Spacing.half,
+    left: Spacing.three,
+    paddingHorizontal: Spacing.two + Spacing.half,
+    paddingVertical: Spacing.one + Spacing.half,
+    position: "absolute",
+    top: Spacing.three,
   },
   labelDot: {
     borderRadius: 4,
@@ -210,10 +223,6 @@ const styles = StyleSheet.create({
     width: 8,
   },
   labelText: {
-    padding: Spacing.two,
     color: "#FFFFFF",
-    textShadowColor: "rgba(0, 0, 0, 0.45)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
 });

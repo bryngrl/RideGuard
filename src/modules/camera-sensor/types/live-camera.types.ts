@@ -8,4 +8,6 @@ export interface LiveCamera {
   streamUrl: string | null;
   online: boolean;
   lastSeenAt: string | null;
+  /** "phone" for this app's phone camera, "esp32" for hardware. */
+  source: "esp32" | "phone";
 }
