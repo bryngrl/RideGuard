@@ -1,105 +1,142 @@
 import { StyleSheet } from "react-native";
 
-import {
-  BrandColors,
-  FontFamily,
-  MaxContentWidth,
-  Spacing,
-  Typography,
-} from "@/shared/theme";
+import { BrandColors, FontFamily, Spacing, Typography } from "@/shared/theme";
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   content: {
-    flex: 1,
+    flexGrow: 1,
     width: "100%",
-    maxWidth: MaxContentWidth,
+    maxWidth: 440,
     alignSelf: "center",
-    justifyContent: "space-between",
     paddingTop: Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.five,
+    paddingHorizontal: Spacing.five,
+    paddingBottom: Spacing.four,
   },
-
+  topSection: {
+    flexGrow: 1,
+    justifyContent: "flex-end",
+  },
   heroWrapper: {
-    flex: 1,
+    height: 168,
     alignItems: "center",
     justifyContent: "center",
   },
-
   heroRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 0,
   },
-
   brandNameContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
     marginLeft: -15,
     marginTop: 25,
-    marginRight: 15,
-    zIndex: 1,
   },
-
-  brandNameText: {
-    fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 34,
-    lineHeight: 40,
-    color: BrandColors.primary,
-    letterSpacing: -0.5,
-  },
-
-  cursor: {
-    fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 32,
-    color: BrandColors.accent,
-  },
-
-  bottomSection: {
+  introSection: {
     width: "100%",
-    gap: Spacing.four,
+    marginTop: Spacing.four,
+    marginBottom: Spacing.three,
   },
-
+  formSection: {
+    width: "100%",
+  },
   textGroup: {
-    gap: Spacing.one,
     alignItems: "center",
+    gap: Spacing.one,
   },
-
-  subtitle: {
-    ...Typography.body,
-    fontSize: 15,
-    lineHeight: 22,
+  title: {
+    fontFamily: FontFamily.geistSemiBold,
+    fontSize: 18,
+    lineHeight: 24,
+    color: BrandColors.primary,
     textAlign: "center",
   },
-
-  buttonGroup: {
-    width: "100%",
-    paddingTop: Spacing.half,
+  subtitle: {
+    ...Typography.bodySmall,
+    textAlign: "center",
   },
-
+  fields: {
+    gap: Spacing.three,
+  },
+  field: {
+    marginBottom: 0,
+  },
+  inputWrapper: {
+    minHeight: 44,
+  },
+  input: {
+    paddingVertical: Spacing.two,
+    fontSize: 14,
+  },
+  forgotButton: {
+    alignSelf: "flex-end",
+    paddingVertical: Spacing.one,
+  },
+  forgotText: {
+    ...Typography.bodySmall,
+    fontFamily: FontFamily.geistMedium,
+    color: BrandColors.accent,
+    textDecorationLine: "underline",
+  },
+  loginButton: {
+    height: 42,
+    marginTop: Spacing.four,
+  },
+  messageBox: {
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    borderRadius: 10,
+    marginTop: Spacing.three,
+  },
+  messageText: {
+    ...Typography.bodySmall,
+    textAlign: "center",
+  },
+  createButton: {
+    alignSelf: "center",
+    paddingVertical: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  createText: {
+    ...Typography.button,
+    fontSize: 14,
+    color: BrandColors.primary,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.three,
+    marginTop: Spacing.three,
+    marginBottom: Spacing.four,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...Typography.bodySmall,
+    fontFamily: FontFamily.geistMedium,
+  },
+  googleButton: {
+    height: 44,
+  },
   legalContainer: {
     alignItems: "center",
     paddingHorizontal: Spacing.two,
+    marginTop: Spacing.three,
   },
-
   legalText: {
     ...Typography.bodySmall,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
     textAlign: "center",
   },
-
   legalLink: {
     ...Typography.bodySmall,
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: "600",
+    fontSize: 11,
+    lineHeight: 16,
+    color: BrandColors.accent,
     textDecorationLine: "underline",
   },
 });

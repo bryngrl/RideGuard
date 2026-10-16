@@ -40,10 +40,10 @@ export default function RootLayout() {
   usePushRegistration();
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && settingsHydrated) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, settingsHydrated]);
 
   if ((!fontsLoaded && !fontError) || !settingsHydrated) {
     return null;
@@ -53,7 +53,11 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(public)/sign-in" options={{ animation: "none" }} />
+          <Stack.Screen name="(app)/(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(onboarding)/register" options={{ animation: "fade" }} />
+        </Stack>
       </ThemeProvider>
     </GestureHandlerRootView>
   );

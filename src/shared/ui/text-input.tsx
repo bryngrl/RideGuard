@@ -1,4 +1,3 @@
-// TODO: SVG ICON FOR EYE
 import { Ionicons } from "@expo/vector-icons";
 import React, { forwardRef, useState } from "react";
 import {
@@ -98,13 +97,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             styles.inputWrapper,
             {
               backgroundColor: "#F6F6F6",
-              borderColor: hasError
-                ? theme.error
-                : isFocused
-                  ? theme.borderFocus
-                  : theme.border,
+              borderColor: isFocused ? theme.borderFocus : theme.border,
             },
             inputWrapperStyle,
+            hasError && {
+              backgroundColor: theme.inputErrorBackground,
+              borderColor: theme.error,
+            },
           ]}
         >
           {prefix && (
@@ -163,9 +162,14 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               onPress={() => setIsPasswordVisible((prev) => !prev)}
               style={styles.eyeButton}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPasswordVisible ? "Hide password" : "Show password"
+              }
+              accessibilityState={{ selected: isPasswordVisible }}
             >
               <Ionicons
-                name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
                 size={20}
                 color="#767676"
               />
@@ -221,6 +225,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.bodySmall,
+    fontSize: 13,
+    lineHeight: 18,
     marginBottom: Spacing.two,
     marginLeft: Spacing.half,
   },
@@ -257,12 +263,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.bodySmall,
-    fontSize: 12,
+    fontSize: 13,
     flex: 1,
   },
   hintText: {
     ...Typography.bodySmall,
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 18,
     marginTop: Spacing.half,
     marginLeft: Spacing.half,
   },

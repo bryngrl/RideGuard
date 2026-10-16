@@ -1,34 +1,48 @@
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Dimensions, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Dimensions,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  TextInput,
+  View,
+} from "react-native";
 import Animated, {
   Easing,
-  FadeIn,
   FadeInDown,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MainLogo from "@/assets/icons/logos/main.svg";
+import { BrandNameReveal } from "@/components/brand-name-reveal";
 import { ThemedText } from "@/components/themed-text";
 
 import { useGoogleSignin } from "../hooks/use-google-signin";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { Button } from "@/shared/ui/button";
 import { GoogleButton } from "@/shared/ui/google-button";
+import { CustomTextInput } from "@/shared/ui/text-input";
 
-import { BrandColors, Typography } from "@/shared/theme";
+import { BrandColors } from "@/shared/theme";
 
 import { checkIsOldUser } from "../services/auth.api";
 
 import { styles } from "./login-screen.styles";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
+const DEMO_USERNAME = "rideguard.demo";
+const DEMO_PASSWORD = "RideGuard123!";
 
-const FULL_BRAND_NAME = "ideguard";
+type DemoFieldErrors = {
+  username?: string;
+  password?: string;
+};
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -36,12 +50,55 @@ export default function LoginScreen() {
 
   const { signIn } = useGoogleSignin();
 
-  const logoScale = useSharedValue(2.2);
-  const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.28);
+  const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.27);
 
-  const [typedText, setTypedText] = useState("");
+  const passwordRef = useRef<TextInput>(null);
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [demoErrors, setDemoErrors] = useState<DemoFieldErrors>({});
+  const [formMessage, setFormMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
+
+  const usernameError =
+    (submitted || usernameTouched) && !username.trim()
+      ? "Enter your username."
+      : demoErrors.username;
+  const passwordError =
+    (submitted || passwordTouched) && !password.trim()
+      ? "Enter your password."
+      : demoErrors.password;
+
+  const handleCredentialSignIn = () => {
+    setSubmitted(true);
+    setFormMessage(null);
+
+    if (!username.trim() || !password.trim()) {
+      setDemoErrors({});
+      return;
+    }
+
+    const nextErrors: DemoFieldErrors = {
+      username:
+        username.trim() === DEMO_USERNAME
+          ? undefined
+          : "Username not found.",
+      password:
+        password === DEMO_PASSWORD
+          ? undefined
+          : "Incorrect password.",
+    };
+    setDemoErrors(nextErrors);
+
+    if (nextErrors.username || nextErrors.password) return;
+
+    // This only validates the local demo pair; it never creates an auth session.
+    setFormMessage(
+      "Demo credentials accepted. Account login will be available when the backend is connected.",
+    );
+  };
 
   const handleGoogleSignIn = async () => {
     try {
@@ -72,163 +129,190 @@ export default function LoginScreen() {
     }
   };
 
-  // Intro animation and typewriter effect
+  // Continue the splash at its final size while the login controls appear.
   useEffect(() => {
-    logoScale.value = withDelay(
-      700,
-      withSpring(1.0, {
-        damping: 15,
-        stiffness: 75,
-      }),
-    );
-
-    heroTranslateY.value = withDelay(
-      700,
-      withSpring(0, {
-        damping: 15,
-        stiffness: 75,
-      }),
-    );
-
-    let currentIndex = 0;
-
-    const typingTimeout = setTimeout(() => {
-      const interval = setInterval(() => {
-        if (currentIndex < FULL_BRAND_NAME.length) {
-          setTypedText(FULL_BRAND_NAME.slice(0, currentIndex + 1));
-
-          currentIndex++;
-        } else {
-          clearInterval(interval);
-          setShowCursor(false);
-        }
-      }, 70);
-
-      return () => clearInterval(interval);
-    }, 1300);
-
-    return () => {
-      clearTimeout(typingTimeout);
-    };
+    heroTranslateY.value = withTiming(0, {
+      duration: 650,
+      easing: Easing.out(Easing.cubic),
+    });
   }, []);
 
   const animatedHeroStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: logoScale.value },
-      { translateY: heroTranslateY.value },
-    ],
+    transform: [{ translateY: heroTranslateY.value }],
   }));
 
   return (
-    <SafeAreaView
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.background,
-        },
-      ]}
-    >
-      <View style={styles.content}>
-        <View style={styles.heroWrapper}>
-          <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
-            <MainLogo width={64} height={64} />
-
-            {typedText.length > 0 && (
-              <Animated.View
-                entering={FadeIn.duration(150)}
-                style={styles.brandNameContainer}
-              >
-                <ThemedText style={styles.brandNameText}>
-                  {typedText}
-
-                  {showCursor && (
-                    <ThemedText style={styles.cursor}>|</ThemedText>
-                  )}
-                </ThemedText>
-              </Animated.View>
-            )}
-          </Animated.View>
-        </View>
-
-        <Animated.View
-          entering={FadeInDown.duration(650)
-            .delay(1600)
-            .easing(Easing.out(Easing.cubic))}
-          style={styles.bottomSection}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={styles.textGroup}>
-            <ThemedText
-              style={[
-                styles.subtitle,
-                Typography.h2,
-                {
-                  color: BrandColors.primary,
-                },
-              ]}
-            >
-              Log in to your account
-            </ThemedText>
+          <View style={styles.topSection}>
+            <View style={styles.heroWrapper}>
+              <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
+                <MainLogo width={64} height={64} />
+                <BrandNameReveal
+                  reveal={false}
+                  style={styles.brandNameContainer}
+                />
+              </Animated.View>
+            </View>
 
-            <ThemedText
-              style={[
-                styles.subtitle,
-                Typography.caption,
-                {
-                  color: theme.textMuted,
-                },
-              ]}
+            <Animated.View
+              entering={FadeInDown.duration(650)
+                .delay(350)
+                .easing(Easing.out(Easing.cubic))}
+              style={styles.introSection}
             >
-              Real-time threat detection for every ride.
-            </ThemedText>
+              <View style={styles.textGroup}>
+                <ThemedText style={styles.title}>Log in to your account</ThemedText>
+                <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>
+                  Real-time threat detection for every ride.
+                </ThemedText>
+              </View>
+
+              {formMessage && (
+                <View
+                  style={[
+                    styles.messageBox,
+                    { backgroundColor: theme.infoBackground },
+                  ]}
+                  accessibilityRole="alert"
+                >
+                  <ThemedText style={[styles.messageText, { color: theme.text }]}>
+                    {formMessage}
+                  </ThemedText>
+                </View>
+              )}
+            </Animated.View>
           </View>
 
-          <View style={styles.buttonGroup}>
+          <Animated.View
+            entering={FadeInDown.duration(650)
+              .delay(350)
+              .easing(Easing.out(Easing.cubic))}
+            style={styles.formSection}
+          >
+            <View style={styles.fields}>
+              <CustomTextInput
+                label="Username"
+                value={username}
+                onChangeText={(value) => {
+                  setUsername(value);
+                  setDemoErrors((errors) => ({ ...errors, username: undefined }));
+                  setFormMessage(null);
+                }}
+                onBlur={() => setUsernameTouched(true)}
+                error={usernameError}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="username"
+                textContentType="username"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                inputWrapperStyle={styles.inputWrapper}
+                inputStyle={styles.input}
+                containerStyle={styles.field}
+              />
+              <CustomTextInput
+                ref={passwordRef}
+                label="Password"
+                value={password}
+                onChangeText={(value) => {
+                  setPassword(value);
+                  setDemoErrors((errors) => ({ ...errors, password: undefined }));
+                  setFormMessage(null);
+                }}
+                onBlur={() => setPasswordTouched(true)}
+                error={passwordError}
+                isPassword
+                autoComplete="current-password"
+                textContentType="password"
+                returnKeyType="done"
+                onSubmitEditing={handleCredentialSignIn}
+                inputWrapperStyle={styles.inputWrapper}
+                inputStyle={styles.input}
+                containerStyle={styles.field}
+              />
+              <Pressable
+                onPress={() =>
+                  setFormMessage(
+                    "Password reset is not available yet. Please continue with Google.",
+                  )
+                }
+                style={styles.forgotButton}
+                accessibilityRole="button"
+              >
+                <ThemedText style={styles.forgotText}>Forgot password?</ThemedText>
+              </Pressable>
+            </View>
+
+            <Button
+              title="Log in"
+              onPress={handleCredentialSignIn}
+              style={styles.loginButton}
+            />
+            <Pressable
+              onPress={() =>
+                setFormMessage(
+                  "Account creation is not available here yet. Choose Continue with Google to get started.",
+                )
+              }
+              style={styles.createButton}
+              accessibilityRole="button"
+            >
+              <ThemedText style={styles.createText}>Create account</ThemedText>
+            </Pressable>
+
+            <View style={styles.divider}>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+              <ThemedText style={[styles.dividerText, { color: theme.textMuted }]}>
+                OR
+              </ThemedText>
+              <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
+            </View>
             <GoogleButton
               title="Continue with Google"
               isLoading={isGoogleLoading}
               onPress={handleGoogleSignIn}
               disabled={isGoogleLoading}
+              style={styles.googleButton}
             />
-          </View>
 
-          <View style={styles.legalContainer}>
-            <ThemedText
-              style={[
-                styles.legalText,
-                {
-                  color: theme.textMuted,
-                },
-              ]}
-            >
-              By continuing, you agree to our{" "}
+            <View style={styles.legalContainer}>
               <ThemedText
-                onPress={() => router.push("/terms/terms")}
                 style={[
-                  styles.legalLink,
+                  styles.legalText,
                   {
-                    color: BrandColors.accent,
+                    color: theme.textMuted,
                   },
                 ]}
               >
-                Terms of service
+                By continuing, you agree to our{" "}
+                <ThemedText
+                  onPress={() => router.push("/terms/terms")}
+                  style={styles.legalLink}
+                >
+                  Terms of service
+                </ThemedText>
+                {"\n and "}
+                <ThemedText
+                  onPress={() => router.push("/privacy/privacy")}
+                  style={styles.legalLink}
+                >
+                  Privacy Policy
+                </ThemedText>
+                .
               </ThemedText>
-              {"\n and "}
-              <ThemedText
-                onPress={() => router.push("/privacy/privacy")}
-                style={[
-                  styles.legalLink,
-                  {
-                    color: BrandColors.accent,
-                  },
-                ]}
-              >
-                Privacy Policy
-              </ThemedText>
-              .
-            </ThemedText>
-          </View>
-        </Animated.View>
-      </View>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
