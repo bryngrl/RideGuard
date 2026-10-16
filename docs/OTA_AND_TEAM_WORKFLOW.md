@@ -2,6 +2,12 @@
 
 This guide explains how the team should change, test, and release RideGuard.
 
+## Android only
+
+RideGuard ships on Android only. Every `development`, `preview`, and `production` build and every OTA update must pass `--platform android`. Never use `--platform ios` or `--platform all`, and never leave `--platform` out.
+
+Without `--platform android`, `eas update` also exports the web bundle. The web export fails during static rendering with `ReferenceError: window is not defined` (a persisted store writes to AsyncStorage while rendering in Node), and the whole update is aborted.
+
 ## Two separate services
 
 The team needs access to both services:
@@ -122,7 +128,7 @@ An OTA update sends new JavaScript, TypeScript, and bundled assets to an already
 
 The installed app receives an OTA update only when all of these match:
 
-- Platform: Android or iOS.
+- Platform: Android.
 - Channel: `development`, `preview`, or `production`.
 - Runtime version: the native app version that can run the update.
 
@@ -190,7 +196,7 @@ git rev-parse --short HEAD
 ### 2. Publish to preview
 
 ```powershell
-npx.cmd eas-cli@latest update --channel preview --environment preview --message "fix: prevent login crash"
+npx.cmd eas-cli@latest update --channel preview --environment preview --platform android --message "fix: prevent login crash"
 ```
 
 This update goes to installed builds that use the `preview` channel and the same runtime version.
@@ -213,7 +219,7 @@ Do not edit files after preview testing. Confirm the working tree is still clean
 
 ```powershell
 git status
-npx.cmd eas-cli@latest update --channel production --environment production --message "fix: prevent login crash"
+npx.cmd eas-cli@latest update --channel production --environment production --platform android --message "fix: prevent login crash"
 ```
 
 This sends the update to compatible production builds.
@@ -233,13 +239,9 @@ Before the next native release, update these values in `app.json` to the same ne
 - `expo.version`
 - `expo.android.runtimeVersion`
 
-iOS uses the `appVersion` runtime policy, so its runtime version follows `expo.version`.
-
 Commit the version change with the native change.
 
 ### 2. Create and test a preview build
-
-For Android:
 
 ```powershell
 npx.cmd eas-cli@latest build --profile preview --platform android
@@ -247,7 +249,11 @@ npx.cmd eas-cli@latest build --profile preview --platform android
 
 Install the result from its QR code and test it. This build listens to the `preview` OTA channel.
 
-For iOS, replace `android` with `ios`.
+For a developer build, use the `development` profile:
+
+```powershell
+npx.cmd eas-cli@latest build --profile development --platform android
+```
 
 ### 3. Create the production build
 
@@ -255,12 +261,6 @@ After the preview build passes testing:
 
 ```powershell
 npx.cmd eas-cli@latest build --profile production --platform android
-```
-
-To build both platforms:
-
-```powershell
-npx.cmd eas-cli@latest build --profile production --platform all
 ```
 
 A production build still needs to be submitted to the app store:
@@ -296,13 +296,14 @@ Before any OTA update:
 - The change does not require native code.
 - The preview OTA was tested on a real device.
 - The channel name is correct.
+- The command uses `--platform android`.
 - The update message explains the change.
 
 Before any new build:
 
 - The new version and runtime version are correct.
 - A preview build was installed and tested.
-- Android and iOS were both considered.
+- The command uses `--platform android`.
 - Production credentials and environment variables are correct.
 - The release was approved by the team.
 
@@ -315,6 +316,7 @@ Before any new build:
 - Forgetting to increase the app/runtime version for a native release.
 - Testing only in Expo Go instead of the installed preview build.
 - Sharing one Expo or GitHub login between developers.
+- Leaving out `--platform android`, which also exports web and fails with `window is not defined`.
 
 ## Official references
 

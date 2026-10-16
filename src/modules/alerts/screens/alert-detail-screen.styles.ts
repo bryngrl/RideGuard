@@ -23,8 +23,21 @@ export const gridStyles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
   },
+  playOverlay: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.25)",
+    justifyContent: "center",
+  },
   snapshotButton: {
     flex: 1,
+  },
+});
+
+export const clipStyles = StyleSheet.create({
+  unavailableText: {
+    marginBottom: Spacing.four,
+    marginTop: -Spacing.two,
   },
 });
 

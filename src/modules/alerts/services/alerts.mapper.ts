@@ -42,6 +42,10 @@ function normalizeImageUrl(input: unknown): string | string[] | null {
   return null;
 }
 
+function normalizeVideoUrl(input: unknown): string | null {
+  return typeof input === "string" && input.length > 0 ? input : null;
+}
+
 export function getSnapshotUris(
   imageUrl: string | string[] | null | undefined,
 ): string[] {
@@ -72,6 +76,7 @@ export function parseAlertFields(input: unknown): AlertFields | null {
     deviceId: data.deviceId,
     message: data.message,
     imageUrl: normalizeImageUrl(data.imageUrl),
+    videoUrl: normalizeVideoUrl(data.videoUrl),
     timeStamp: normalizeTimeStamp(data.timeStamp),
     isFalseAlarm: data.isFalseAlarm === true,
     isSeen: data.isSeen === true,

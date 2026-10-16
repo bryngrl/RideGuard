@@ -1,13 +1,16 @@
 import { useOnboardingStore } from "@/modules/onboarding";
 import {
-    isValidPhoneNumber,
-    normalizePhoneNumber,
+  isValidPhoneNumber,
+  normalizePhoneNumber,
 } from "@/shared/lib/phone-utils";
 import { useEffect, useState } from "react";
 import { updateProfile, updateVehicle } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
 
-function normalizeProfile(profile: SettingsProfile): SettingsProfile {
+// The photo isn't editable here, so the draft form omits it.
+type EditableProfile = Omit<SettingsProfile, "photoUrl">;
+
+function normalizeProfile(profile: EditableProfile): EditableProfile {
   return {
     firstName: profile.firstName.trim(),
     lastName: profile.lastName.trim(),
@@ -36,16 +39,14 @@ export function useAccountEdit(profile: SettingsProfile) {
   const normalizedForm = normalizeProfile(form);
   const changed = Object.keys(initialProfile).some(
     (field) =>
-      normalizedForm[field as keyof SettingsProfile] !==
-      initialProfile[field as keyof SettingsProfile],
+      normalizedForm[field as keyof EditableProfile] !==
+      initialProfile[field as keyof EditableProfile],
   );
   const phoneValid = isValidPhoneNumber(normalizedForm.phone);
   const valid = Boolean(
-    normalizedForm.firstName &&
-      normalizedForm.lastName &&
-      phoneValid,
+    normalizedForm.firstName && normalizedForm.lastName && phoneValid,
   );
-  const setField = (field: keyof SettingsProfile, value: string) =>
+  const setField = (field: keyof EditableProfile, value: string) =>
     setForm((current) => ({
       ...current,
       [field]: field === "phone" ? normalizePhoneNumber(value) : value,

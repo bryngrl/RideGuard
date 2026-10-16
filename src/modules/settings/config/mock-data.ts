@@ -13,6 +13,7 @@ export const mockProfile: SettingsProfile = {
   vehicleBrand: "",
   vehicleModel: "",
   plateNumber: "",
+  photoUrl: null,
 };
 
 // BACKEND: replace with GET /settings response defaults.

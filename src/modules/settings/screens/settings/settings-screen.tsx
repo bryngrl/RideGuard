@@ -1,5 +1,4 @@
 import SearchIcon from "@/assets/icons/actions/search.svg";
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import {
@@ -51,7 +50,7 @@ export function SettingsScreen() {
           onPress={() => router.push("/settings/account" as never)}
           style={styles.profile}
         >
-          <ProfileAvatar name={name} />
+          <ProfileAvatar name={name} photoUrl={profile.photoUrl} />
           <View style={styles.profileCopy}>
             <Text
               style={[
@@ -94,7 +93,6 @@ export function SettingsScreen() {
           </SettingsSection>
         ))}
       </KeyboardAvoidingWrapper>
-      <BottomNavigation />
       <ConfirmationModal
         visible={logout.visible}
         title="Log out?"
