@@ -1,9 +1,5 @@
 export type AlertSeverity = "clear" | "threat";
-export type AlertDetectionType =
-  | "none"
-  | "weapon"
-  | "violence"
-  | "both";
+export type AlertDetectionType = "none" | "weapon" | "violence" | "both";
 
 /**
  * UI shape rendered by the alert list/row.
@@ -28,6 +24,9 @@ export interface AlertFields {
   deviceId: string;
   message: string;
   imageUrl?: string | string[] | null;
+  // The violence-clip URL. Absent/null means no clip, including old alerts
+  // and weapon-only alerts (media never implies a violence threat).
+  videoUrl?: string | null;
   timeStamp: string;
   isFalseAlarm: boolean;
   isSeen: boolean;

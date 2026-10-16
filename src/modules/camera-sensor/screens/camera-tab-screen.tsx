@@ -201,9 +201,6 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
               <Text style={[Typography.caption, styles.overlayText]}>
                 {formatRemaining(phone.remainingMs)} left ·{" "}
                 {phone.status.framesSent} sent
-                {phone.status.framesDropped > 0
-                  ? ` · ${phone.status.framesDropped} skipped`
-                  : ""}
               </Text>
             </View>
           ) : null}

@@ -50,7 +50,7 @@ export function SettingsScreen() {
           onPress={() => router.push("/settings/account" as never)}
           style={styles.profile}
         >
-          <ProfileAvatar name={name} />
+          <ProfileAvatar name={name} photoUrl={profile.photoUrl} />
           <View style={styles.profileCopy}>
             <Text
               style={[

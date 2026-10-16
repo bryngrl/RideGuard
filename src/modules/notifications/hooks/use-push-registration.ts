@@ -11,7 +11,7 @@ import { registerPushNotification } from "../services/notifications.api";
 /**
  * Registers this device's FCM push token with the backend whenever a user is
  * signed in, and re-registers if the token later rotates. Mounted once near the
- * app root. Unregistration happens on logout (see settings screen), while the
+ * app root. Unregistration happens on logout (see `use-logout.ts`), while the
  * Firebase token is still valid.
  */
 export function usePushRegistration() {
