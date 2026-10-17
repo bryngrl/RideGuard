@@ -125,6 +125,7 @@ export function Card({
           style={[
             isLarge ? Typography.bodyLarge : Typography.bodySmall,
             styles.title,
+            isLarge && styles.largeTitle,
             { color: titleColor ?? colors.text },
           ]}
           numberOfLines={2}
@@ -140,6 +141,7 @@ export function Card({
                 ? Typography.bodySmall
                 : [Typography.bodySmall, styles.smallSubtitle],
               styles.subtitle,
+              isLarge && styles.largeSubtitle,
               { color: subtitleColor ?? colors.textMuted },
             ]}
             numberOfLines={isLarge ? 3 : 1}
@@ -206,8 +208,9 @@ const styles = StyleSheet.create({
     minHeight: 96,
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.three,
-    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    gap: Spacing.four,
   },
 
   smallCard: {
@@ -248,10 +251,18 @@ const styles = StyleSheet.create({
   title: {
     flexShrink: 1,
   },
+  largeTitle: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
 
   subtitle: {
     marginTop: Spacing.half,
     flexShrink: 1,
+  },
+  largeSubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
   },
 
   smallSubtitle: {
@@ -288,6 +299,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.two,
     width: 90,
     alignSelf: "flex-start",
+    borderWidth: 0.5,
   },
   pressed: {
     opacity: 0.8,

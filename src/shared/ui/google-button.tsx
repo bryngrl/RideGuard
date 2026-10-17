@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.button,
     fontWeight: "600",
-    fontSize: 15,
     textAlign: "center",
   },
   pressed: {

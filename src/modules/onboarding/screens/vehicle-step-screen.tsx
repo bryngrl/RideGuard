@@ -1,11 +1,11 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
+import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Text, View } from "react-native";
@@ -128,7 +128,7 @@ export default function RegisterStepTwoScreen() {
               fullWidth={false}
               centerTextWithLeftIcon
               leftIcon={
-                <Ionicons name="chevron-back" size={16} color={theme.text} />
+                <BackArrowIcon color={theme.text} />
               }
               textStyle={{ color: theme.text }}
               onPress={() => router.back()}

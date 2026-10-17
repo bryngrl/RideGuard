@@ -24,7 +24,7 @@ export function QuickActions() {
           accessibilityLabel="Open SOS emergency screen"
         >
           <SosIcon width={15} height={15} />
-          <Text style={[Typography.caption, styles.sosButtonText]}>SOS</Text>
+          <Text style={[Typography.button, styles.sosButtonText]}>SOS</Text>
         </Pressable>
 
         <Pressable
@@ -38,7 +38,7 @@ export function QuickActions() {
           accessibilityLabel="Open emergency contacts"
         >
           <ContactIcon width={13} height={16} />
-          <Text style={[Typography.caption, { color: colors.primary }]}>
+          <Text style={[Typography.button, { color: colors.primary }]}>
             Contacts
           </Text>
         </Pressable>

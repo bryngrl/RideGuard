@@ -293,7 +293,7 @@ function AutoDeleteBanner({ label }: AutoDeleteBannerProps) {
         >
           <Text
             style={[
-              Typography.medium,
+              Typography.button,
               bannerStyles.changeText,
               { color: BrandColors.accent },
             ]}

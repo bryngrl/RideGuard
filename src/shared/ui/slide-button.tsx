@@ -151,7 +151,7 @@ export function SlideButton({
       <Text
         pointerEvents="none"
         style={[
-          Typography.body,
+          Typography.button,
           styles.label,
           {
             color: resolvedLabelColor,

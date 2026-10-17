@@ -202,6 +202,7 @@ export function HomeScreen() {
               title={monitoringTitle}
               subtitle={monitoringSubtitle}
               icon={monitoringIcon}
+              style={styles.monitoringCard}
               backgroundColor={monitoringCardStyles.backgroundColor}
               borderColor={monitoringCardStyles.borderColor}
               titleColor={monitoringCardStyles.titleColor}
@@ -224,6 +225,7 @@ export function HomeScreen() {
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                style={styles.deviceCard}
                 title="Camera 1"
                 subtitle={camera1DeviceId || "Hardware name"}
                 status={isCamera1Connected ? "Connected" : "Not connected"}
@@ -244,6 +246,7 @@ export function HomeScreen() {
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                style={styles.deviceCard}
                 title="Camera 2"
                 subtitle={camera2DeviceId || "Hardware name"}
                 status={isCamera2Connected ? "Connected" : "Not connected"}
@@ -264,6 +267,7 @@ export function HomeScreen() {
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                style={styles.deviceCard}
                 title="Button"
                 subtitle={buttonDeviceId || "Hardware name"}
                 status={isButtonConnected ? "Connected" : "Not connected"}

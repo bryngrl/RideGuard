@@ -1,4 +1,5 @@
 import { useTheme } from "@/shared/hooks/use-theme";
+import { Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui";
 import { useRouter } from "expo-router";
 import { Pressable, Text } from "react-native";
@@ -17,7 +18,7 @@ export function AccountScreen() {
         <Pressable
           onPress={() => router.push("/settings/account/edit" as never)}
         >
-          <Text style={{ color: colors.primary }}>Edit</Text>
+          <Text style={[Typography.button, { color: colors.primary }]}>Edit</Text>
         </Pressable>
       }
     >

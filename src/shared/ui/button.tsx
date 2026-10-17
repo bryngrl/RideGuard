@@ -136,7 +136,7 @@ export function Button({
             borderRadius: BorderRadius.lg,
           },
           text: {
-            ...Typography.bodySmall,
+            ...Typography.button,
             fontWeight: "700",
           },
           iconSize: 16,
@@ -151,7 +151,6 @@ export function Button({
           },
           text: {
             ...Typography.button,
-            fontSize: 16,
             fontWeight: "700",
           },
           iconSize: 22,
@@ -167,7 +166,6 @@ export function Button({
           },
           text: {
             ...Typography.button,
-            fontSize: 14,
           },
           iconSize: 18,
         };

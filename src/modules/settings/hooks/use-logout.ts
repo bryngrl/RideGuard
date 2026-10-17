@@ -14,18 +14,32 @@ export function useLogout() {
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const user = useAuthStore((state) => state.user);
+  const isDemo = useAuthStore((state) => state.isDemo);
   const [visible, setVisible] = useState(false);
+  const returnToWelcome = () => {
+    // Pop to the existing landing route, or replace the current route with it.
+    // Expo Router resolves this href to the correct nested navigation state.
+    router.dismissTo("/(public)/welcome");
+  };
   const logout = async () => {
     try {
+      if (isDemo) {
+        clearAuth();
+        setVisible(false);
+        returnToWelcome();
+        return;
+      }
       const token = await user?.getIdToken().catch(() => undefined);
       // Stop before signing out so no frame uploads under the old account.
       await stopPhoneCapture(token);
       // Needs the Firebase token, so before signOut. Best effort: a network
       // failure must not keep the user signed in.
       if (token) {
-        await unregisterPushNotification(token, await getInstallationId()).catch(
-          (error) => console.warn("Could not unregister push:", error),
-        );
+        try {
+          await unregisterPushNotification(token, await getInstallationId());
+        } catch (error) {
+          console.warn("Could not unregister push:", error);
+        }
       }
       await signOutGoogle().catch((error) =>
         console.warn("Google sign-out failed:", error),
@@ -33,7 +47,7 @@ export function useLogout() {
       await signOut(auth);
       clearAuth();
       setVisible(false);
-      router.replace("/(public)/sign-in");
+      returnToWelcome();
     } catch (error) {
       console.error("Logout error:", error);
       Alert.alert("Logout failed", "Something went wrong while logging out.");

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import React, { forwardRef, useState } from "react";
+import React, { forwardRef, useEffect, useState } from "react";
 import {
   Pressable,
   TextInput as RNTextInput,
@@ -11,6 +11,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
+import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
@@ -62,6 +63,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
     const hasError = !!error;
+    const reduceMotion = useReducedMotion();
+    const borderColor = useSharedValue<string>(theme.border);
+    useEffect(() => {
+      const color = hasError ? theme.error : isFocused ? theme.borderFocus : theme.border;
+      borderColor.value = reduceMotion ? color : withTiming(color, { duration: 140 });
+    }, [borderColor, hasError, isFocused, reduceMotion, theme.border, theme.borderFocus, theme.error]);
+    const focusStyle = useAnimatedStyle(() => ({ borderColor: borderColor.value }));
 
     return (
       <View style={[styles.container, containerStyle]}>
@@ -92,14 +100,15 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           </Text>
         )}
 
-        <View
+        <Animated.View
           style={[
             styles.inputWrapper,
             {
               backgroundColor: "#F6F6F6",
-              borderColor: isFocused ? theme.borderFocus : theme.border,
             },
+            focusStyle,
             inputWrapperStyle,
+            rest.editable === false && styles.disabled,
             hasError && {
               backgroundColor: theme.inputErrorBackground,
               borderColor: theme.error,
@@ -160,13 +169,14 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           {isPassword ? (
             <Pressable
               onPress={() => setIsPasswordVisible((prev) => !prev)}
+              disabled={rest.editable === false}
               style={styles.eyeButton}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={
                 isPasswordVisible ? "Hide password" : "Show password"
               }
-              accessibilityState={{ selected: isPasswordVisible }}
+              accessibilityState={{ selected: isPasswordVisible, disabled: rest.editable === false }}
             >
               <Ionicons
                 name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
@@ -177,10 +187,10 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           ) : (
             rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>
           )}
-        </View>
+        </Animated.View>
 
         {hasError ? (
-          <View style={styles.errorContainer}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(180)} style={styles.errorContainer}>
             <Ionicons
               name="alert-circle-outline"
               size={15}
@@ -189,6 +199,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             />
 
             <Text
+              accessibilityLiveRegion="polite"
               style={[
                 styles.errorText,
                 {
@@ -198,13 +209,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             >
               {error}
             </Text>
-          </View>
+          </Animated.View>
         ) : hint ? (
           <Text
             style={[
               styles.hintText,
               {
-                color: theme.textSecondary,
+                color: theme.textMuted,
               },
             ]}
           >
@@ -251,6 +262,9 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: Spacing.one,
+  },
+  disabled: {
+    opacity: 0.6,
   },
   errorContainer: {
     flexDirection: "row",

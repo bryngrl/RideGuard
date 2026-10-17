@@ -28,6 +28,7 @@ export const styles = StyleSheet.create({
 
   content: {
     flexGrow: 1,
+    paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.two,
   },
 
@@ -54,7 +55,7 @@ export const styles = StyleSheet.create({
   },
 
   deviceCards: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.four,
     position: "relative",
     zIndex: 2,
   },
@@ -64,7 +65,13 @@ export const styles = StyleSheet.create({
   },
 
   deviceCardItem: {
-    width: 180,
+    width: 162,
+  },
+  deviceCard: {
+    minHeight: 90,
+  },
+  monitoringCard: {
+    minHeight: 150,
   },
   emptyRides: {
     alignItems: "center",
@@ -100,7 +107,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: Spacing.half,
-    paddingRight: Spacing.two,
+    paddingLeft: Spacing.two,
     position: "relative",
     zIndex: 10,
   },
@@ -121,7 +128,7 @@ export const styles = StyleSheet.create({
 
   statusSection: {
     elevation: 2,
-    paddingHorizontal: Spacing.five,
+    paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.three,
     position: "relative",
     zIndex: 2,
@@ -142,7 +149,7 @@ export const styles = StyleSheet.create({
   },
 
   statusSectionWrapper: {
-    marginHorizontal: -Spacing.five,
+    marginHorizontal: -Spacing.four,
     position: "relative",
     zIndex: 1,
   },
@@ -150,7 +157,7 @@ export const styles = StyleSheet.create({
   todaySection: {
     flex: 1,
     minHeight: 86,
-    marginTop: Spacing.three,
+    marginTop: Spacing.four,
   },
   cameraWarning: {
     flexDirection: "row",

@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
-  Dimensions,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,33 +9,24 @@ import {
   TextInput,
   View,
 } from "react-native";
-import Animated, {
-  Easing,
-  FadeInDown,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import MainLogo from "@/assets/icons/logos/main.svg";
-import { BrandNameReveal } from "@/components/brand-name-reveal";
 import { ThemedText } from "@/components/themed-text";
 
 import { useGoogleSignin } from "../hooks/use-google-signin";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
+import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { GoogleButton } from "@/shared/ui/google-button";
 import { CustomTextInput } from "@/shared/ui/text-input";
 
-import { BrandColors } from "@/shared/theme";
-
 import { checkIsOldUser } from "../services/auth.api";
+import { useAuthStore } from "../store/auth.store";
 
 import { styles } from "./login-screen.styles";
 
-const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 const DEMO_USERNAME = "rideguard.demo";
 const DEMO_PASSWORD = "RideGuard123!";
 
@@ -49,8 +40,7 @@ export default function LoginScreen() {
   const theme = useTheme();
 
   const { signIn } = useGoogleSignin();
-
-  const heroTranslateY = useSharedValue(SCREEN_HEIGHT * 0.27);
+  const startDemo = useAuthStore((state) => state.startDemo);
 
   const passwordRef = useRef<TextInput>(null);
   const [username, setUsername] = useState("");
@@ -59,7 +49,6 @@ export default function LoginScreen() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [demoErrors, setDemoErrors] = useState<DemoFieldErrors>({});
-  const [formMessage, setFormMessage] = useState<string | null>(null);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const usernameError =
@@ -73,7 +62,6 @@ export default function LoginScreen() {
 
   const handleCredentialSignIn = () => {
     setSubmitted(true);
-    setFormMessage(null);
 
     if (!username.trim() || !password.trim()) {
       setDemoErrors({});
@@ -94,10 +82,9 @@ export default function LoginScreen() {
 
     if (nextErrors.username || nextErrors.password) return;
 
-    // This only validates the local demo pair; it never creates an auth session.
-    setFormMessage(
-      "Demo credentials accepted. Account login will be available when the backend is connected.",
-    );
+    Keyboard.dismiss();
+    startDemo();
+    router.replace("/(app)/(tabs)");
   };
 
   const handleGoogleSignIn = async () => {
@@ -129,17 +116,11 @@ export default function LoginScreen() {
     }
   };
 
-  // Continue the splash at its final size while the login controls appear.
-  useEffect(() => {
-    heroTranslateY.value = withTiming(0, {
-      duration: 650,
-      easing: Easing.out(Easing.cubic),
-    });
-  }, []);
-
-  const animatedHeroStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: heroTranslateY.value }],
-  }));
+  const goBack = () => {
+    Keyboard.dismiss();
+    if (router.canGoBack()) router.back();
+    else router.replace("/(public)/welcome");
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -152,52 +133,15 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.topSection}>
-            <View style={styles.heroWrapper}>
-              <Animated.View style={[styles.heroRow, animatedHeroStyle]}>
-                <MainLogo width={64} height={64} />
-                <BrandNameReveal
-                  reveal={false}
-                  style={styles.brandNameContainer}
-                />
-              </Animated.View>
-            </View>
-
-            <Animated.View
-              entering={FadeInDown.duration(650)
-                .delay(350)
-                .easing(Easing.out(Easing.cubic))}
-              style={styles.introSection}
-            >
-              <View style={styles.textGroup}>
-                <ThemedText style={styles.title}>Log in to your account</ThemedText>
-                <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>
-                  Real-time threat detection for every ride.
-                </ThemedText>
-              </View>
-
-              {formMessage && (
-                <View
-                  style={[
-                    styles.messageBox,
-                    { backgroundColor: theme.infoBackground },
-                  ]}
-                  accessibilityRole="alert"
-                >
-                  <ThemedText style={[styles.messageText, { color: theme.text }]}>
-                    {formMessage}
-                  </ThemedText>
-                </View>
-              )}
-            </Animated.View>
+          <Pressable onPress={goBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back to welcome">
+            <BackArrowIcon color={theme.text} />
+          </Pressable>
+          <View style={styles.brand}><MainLogo width={64} height={64} /></View>
+          <View style={styles.introSection}>
+            <ThemedText style={styles.title}>Log in</ThemedText>
+            <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Enter your credentials or continue with Google.</ThemedText>
           </View>
-
-          <Animated.View
-            entering={FadeInDown.duration(650)
-              .delay(350)
-              .easing(Easing.out(Easing.cubic))}
-            style={styles.formSection}
-          >
+          <View style={styles.formSection}>
             <View style={styles.fields}>
               <CustomTextInput
                 label="Username"
@@ -205,7 +149,6 @@ export default function LoginScreen() {
                 onChangeText={(value) => {
                   setUsername(value);
                   setDemoErrors((errors) => ({ ...errors, username: undefined }));
-                  setFormMessage(null);
                 }}
                 onBlur={() => setUsernameTouched(true)}
                 error={usernameError}
@@ -226,7 +169,6 @@ export default function LoginScreen() {
                 onChangeText={(value) => {
                   setPassword(value);
                   setDemoErrors((errors) => ({ ...errors, password: undefined }));
-                  setFormMessage(null);
                 }}
                 onBlur={() => setPasswordTouched(true)}
                 error={passwordError}
@@ -240,11 +182,7 @@ export default function LoginScreen() {
                 containerStyle={styles.field}
               />
               <Pressable
-                onPress={() =>
-                  setFormMessage(
-                    "Password reset is not available yet. Please continue with Google.",
-                  )
-                }
+                onPress={() => router.push("/(public)/forgot-password")}
                 style={styles.forgotButton}
                 accessibilityRole="button"
               >
@@ -257,18 +195,6 @@ export default function LoginScreen() {
               onPress={handleCredentialSignIn}
               style={styles.loginButton}
             />
-            <Pressable
-              onPress={() =>
-                setFormMessage(
-                  "Account creation is not available here yet. Choose Continue with Google to get started.",
-                )
-              }
-              style={styles.createButton}
-              accessibilityRole="button"
-            >
-              <ThemedText style={styles.createText}>Create account</ThemedText>
-            </Pressable>
-
             <View style={styles.divider}>
               <View style={[styles.dividerLine, { backgroundColor: theme.border }]} />
               <ThemedText style={[styles.dividerText, { color: theme.textMuted }]}>
@@ -310,7 +236,7 @@ export default function LoginScreen() {
                 .
               </ThemedText>
             </View>
-          </Animated.View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

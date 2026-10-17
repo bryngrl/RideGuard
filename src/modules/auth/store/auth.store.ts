@@ -5,7 +5,9 @@ import type { AuthState, AuthUser } from "../types/auth.types";
 interface AuthStore extends AuthState {
   isCheckingAuth: boolean;
   isOldUser: boolean | null;
+  isDemo: boolean;
 
+  startDemo: () => void;
   setUser: (user: AuthUser | null) => void;
   setCheckingAuth: (isCheckingAuth: boolean) => void;
   setIsOldUser: (isOldUser: boolean | null) => void;
@@ -17,12 +19,23 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isAuthenticated: false,
   isCheckingAuth: true,
   isOldUser: null,
+  isDemo: false,
+
+  startDemo: () =>
+    set({
+      user: null,
+      isDemo: true,
+      isAuthenticated: true,
+      isCheckingAuth: false,
+      isOldUser: true,
+    }),
 
   setUser: (user) =>
-    set({
+    set((state) => ({
       user,
-      isAuthenticated: user !== null,
-    }),
+      isDemo: user ? false : state.isDemo,
+      isAuthenticated: user !== null || state.isDemo,
+    })),
 
   setCheckingAuth: (isCheckingAuth) =>
     set({
@@ -40,5 +53,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
       isAuthenticated: false,
       isCheckingAuth: false,
       isOldUser: null,
+      isDemo: false,
     }),
 }));

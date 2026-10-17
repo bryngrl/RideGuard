@@ -328,7 +328,7 @@ export function EditContactScreen() {
 
             <Text
               style={[
-                Typography.medium,
+                Typography.button,
                 styles.deleteText,
                 { color: BrandColors.error },
               ]}
@@ -494,7 +494,7 @@ export function EditContactScreen() {
           >
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.button,
                 styles.cancelText,
                 { color: theme.text },
               ]}
@@ -524,7 +524,7 @@ export function EditContactScreen() {
           >
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.button,
                 styles.headerCancel,
                 { color: theme.primary },
               ]}

@@ -9,6 +9,7 @@ import type { SettingsProfile } from "../types/settings.types";
 export function useProfile() {
   const onboarding = useOnboardingStore();
   const authUser = useAuthStore((state) => state.user);
+  const isDemo = useAuthStore((state) => state.isDemo);
   // Onboarding is filled in during setup; fall back to the signed-in
   // account's name/photo (GET /auth/me, then Firebase) when it isn't, so
   // Settings never shows a mock name or avatar.
@@ -18,17 +19,29 @@ export function useProfile() {
     photoUrl,
   } = useCurrentUser();
   const profile = useMemo<SettingsProfile>(
-    () => ({
-      firstName: onboarding.firstName || accountFirstName || "",
-      lastName: onboarding.lastName || accountLastName || "",
-      phone: normalizePhoneNumber(onboarding.phone),
-      email: authUser?.email ?? "",
-      vehicleBrand: onboarding.vehicleBrand,
-      vehicleModel: onboarding.vehicleModel,
-      plateNumber: onboarding.plateNumber,
-      photoUrl,
-    }),
-    [accountFirstName, accountLastName, authUser?.email, onboarding, photoUrl],
+    () =>
+      isDemo
+        ? {
+            firstName: "Demo",
+            lastName: "",
+            phone: "",
+            email: "",
+            vehicleBrand: "",
+            vehicleModel: "",
+            plateNumber: "",
+            photoUrl: null,
+          }
+        : {
+            firstName: onboarding.firstName || accountFirstName || "",
+            lastName: onboarding.lastName || accountLastName || "",
+            phone: normalizePhoneNumber(onboarding.phone),
+            email: authUser?.email ?? "",
+            vehicleBrand: onboarding.vehicleBrand,
+            vehicleModel: onboarding.vehicleModel,
+            plateNumber: onboarding.plateNumber,
+            photoUrl,
+          },
+    [accountFirstName, accountLastName, authUser?.email, isDemo, onboarding, photoUrl],
   );
   return { profile, isLoading: false };
 }

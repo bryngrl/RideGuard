@@ -82,7 +82,7 @@ export function SearchScreen() {
               <Pressable onPress={clear}>
                 <Text
                   style={[
-                    Typography.medium,
+                    Typography.button,
                     { color: colors.accent, textAlign: "center" },
                   ]}
                 >

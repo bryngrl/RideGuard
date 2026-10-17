@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
@@ -7,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "./keyboard-avoiding-wrapper";
+import { BackArrowIcon } from "./back-arrow-icon";
 
 interface PageLayoutProps {
   title: string;
@@ -124,11 +124,7 @@ export function PageLayout({
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
-            <Ionicons
-              name="chevron-back"
-              size={16}
-              color={pageHeaderTextColor}
-            />
+            <BackArrowIcon color={pageHeaderTextColor} />
           </Pressable>
         ) : (
           <View style={styles.rightSpacer} />

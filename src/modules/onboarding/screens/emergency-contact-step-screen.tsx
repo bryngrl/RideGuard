@@ -4,6 +4,7 @@ import { styles } from "./emergency-contact-step-screen.styles";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
@@ -284,7 +285,7 @@ export default function RegisterStepThreeScreen() {
                 variant="ghost"
                 fullWidth={false}
                 leftIcon={
-                  <Ionicons name="chevron-back" size={16} color={theme.text} />
+                  <BackArrowIcon color={theme.text} />
                 }
                 textStyle={{ color: theme.text }}
                 onPress={() => router.back()}

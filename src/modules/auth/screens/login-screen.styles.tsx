@@ -11,50 +11,27 @@ export const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 440,
     alignSelf: "center",
-    paddingTop: Spacing.four,
     paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
-  topSection: {
-    flexGrow: 1,
-    justifyContent: "flex-end",
-  },
-  heroWrapper: {
-    height: 168,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  brandNameContainer: {
-    marginLeft: -15,
-    marginTop: 25,
-  },
+  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "flex-start", justifyContent: "center" },
+  brand: { alignSelf: "flex-start", marginTop: Spacing.six, marginBottom: Spacing.four },
   introSection: {
-    width: "100%",
-    marginTop: Spacing.four,
-    marginBottom: Spacing.three,
+    alignItems: "flex-start",
+    marginBottom: Spacing.four,
   },
   formSection: {
     width: "100%",
-  },
-  textGroup: {
-    alignItems: "center",
-    gap: Spacing.one,
+    flexGrow: 1,
   },
   title: {
-    fontFamily: FontFamily.geistSemiBold,
-    fontSize: 18,
-    lineHeight: 24,
+    ...Typography.h1,
     color: BrandColors.primary,
-    textAlign: "center",
   },
   subtitle: {
     ...Typography.bodySmall,
-    textAlign: "center",
+    marginTop: Spacing.two,
   },
   fields: {
     gap: Spacing.three,
@@ -83,31 +60,11 @@ export const styles = StyleSheet.create({
     height: 42,
     marginTop: Spacing.four,
   },
-  messageBox: {
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    borderRadius: 10,
-    marginTop: Spacing.three,
-  },
-  messageText: {
-    ...Typography.bodySmall,
-    textAlign: "center",
-  },
-  createButton: {
-    alignSelf: "center",
-    paddingVertical: Spacing.two,
-    marginTop: Spacing.two,
-  },
-  createText: {
-    ...Typography.button,
-    fontSize: 14,
-    color: BrandColors.primary,
-  },
   divider: {
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.three,
-    marginTop: Spacing.three,
+    marginTop: Spacing.five,
     marginBottom: Spacing.four,
   },
   dividerLine: {
@@ -124,7 +81,8 @@ export const styles = StyleSheet.create({
   legalContainer: {
     alignItems: "center",
     paddingHorizontal: Spacing.two,
-    marginTop: Spacing.three,
+    marginTop: "auto",
+    paddingTop: Spacing.four,
   },
   legalText: {
     ...Typography.bodySmall,

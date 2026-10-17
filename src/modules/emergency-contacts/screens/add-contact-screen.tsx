@@ -361,7 +361,7 @@ export function AddContactScreen() {
           >
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.button,
                 styles.cancelText,
                 { color: theme.text },
               ]}

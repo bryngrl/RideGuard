@@ -154,7 +154,7 @@ export function PhotoOptionsBottomSheet({
 
                 <Text
                   style={[
-                    Typography.body,
+                    Typography.button,
                     styles.optionText,
                     {
                       color: theme.text,
@@ -178,7 +178,7 @@ export function PhotoOptionsBottomSheet({
 
                 <Text
                   style={[
-                    Typography.body,
+                    Typography.button,
                     styles.optionText,
                     {
                       color: theme.text,

@@ -65,7 +65,7 @@ export function SosTriggerScreen() {
               accessibilityRole="button"
               accessibilityLabel="Send SOS emergency alert"
             >
-              <Text style={[Typography.h2, styles.sosText]}>
+              <Text style={[Typography.button, styles.sosText]}>
                 Tap to{"\n"}send SOS
               </Text>
 
