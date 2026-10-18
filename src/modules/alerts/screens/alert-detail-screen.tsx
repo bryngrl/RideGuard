@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import {
+  ActivityIndicator,
   Image,
   Modal,
   Pressable,
@@ -12,7 +13,6 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 
-import ClockIcon from "@/assets/icons/misc/clock.svg";
 import InformationIcon from "@/assets/icons/misc/information.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -29,16 +29,13 @@ import {
   getSnapshotUris,
 } from "../services/alerts.mapper";
 import {
-  bannerStyles,
   clipStyles,
   contentStyles,
   footerStyles,
-  gridStyles,
+  previewStyles,
   responseStyles,
   viewerStyles,
 } from "./alert-detail-screen.styles";
-
-// 2×2 grid placeholder
 
 interface SnapshotViewerProps {
   uris: string[];
@@ -117,191 +114,158 @@ function SnapshotViewer({
   );
 }
 
-interface SnapshotGridProps {
-  uris?: string[];
-  onSnapshotPress: (index: number) => void;
-  /** A clip exists for this alert. The first cell becomes a "Play clip" tile
-   * instead of a snapshot, even with no thumbnail image. */
-  hasVideo?: boolean;
-  onPlayClip?: () => void;
+// Evidence preview
+
+interface EvidenceImageProps {
+  uri: string;
+  resizeMode: "contain" | "cover";
+  onLoad?: () => void;
 }
 
-function PlaceholderCell({ label }: { label: string }) {
+/** An image with its own loading spinner and "Image unavailable" fallback.
+ * Give it a `key` of its URI so state resets when the image changes. */
+function EvidenceImage({ uri, resizeMode, onLoad }: EvidenceImageProps) {
   const theme = useTheme();
-  return (
-    <View
-      style={[gridStyles.cell, { backgroundColor: theme.backgroundElement }]}
-    >
-      <View style={gridStyles.placeholder}>
-        <Text
-          style={{
-            color: theme.textInactive,
-            fontSize: 11,
-            textAlign: "center",
-          }}
-        >
-          {label}
-        </Text>
-      </View>
-    </View>
+  const [status, setStatus] = useState<"loading" | "loaded" | "failed">(
+    "loading",
   );
-}
 
-function PlayClipCell({
-  uri,
-  onPress,
-}: {
-  uri: string | null;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  return (
-    <View
-      style={[gridStyles.cell, { backgroundColor: theme.backgroundElement }]}
-    >
-      <Pressable
-        onPress={onPress}
-        style={gridStyles.snapshotButton}
-        accessibilityRole="button"
-        accessibilityLabel="Play clip"
-      >
-        {uri ? (
-          <Image source={{ uri }} style={gridStyles.image} resizeMode="cover" />
-        ) : null}
-        <View style={gridStyles.playOverlay} pointerEvents="none">
-          <Ionicons name="play-circle" size={36} color="#FFFFFF" />
-        </View>
-      </Pressable>
-    </View>
-  );
-}
-
-function SnapshotGrid({
-  uris = [],
-  onSnapshotPress,
-  hasVideo = false,
-  onPlayClip,
-}: SnapshotGridProps) {
-  // The clip's thumbnail is the same image as snapshot 0. Playing it still
-  // works with no thumbnail: PlayClipCell falls back to a plain placeholder.
-  const restUris = hasVideo ? uris.slice(1) : uris;
-  const cellCount = 4 - (hasVideo ? 1 : 0);
-  const cells = Array.from(
-    { length: cellCount },
-    (_, i) => restUris[i] ?? null,
-  );
-  const snapshotOffset = hasVideo ? 1 : 0;
-
-  if (!hasVideo && uris.length === 0) {
+  if (status === "failed") {
     return (
-      <View style={gridStyles.container}>
-        {Array.from({ length: 4 }, (_, i) => (
-          <PlaceholderCell key={i} label="Snapshots coming soon" />
-        ))}
+      <View style={previewStyles.centered}>
+        <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
+          Image unavailable
+        </Text>
       </View>
     );
   }
 
   return (
-    <View style={gridStyles.container}>
-      {hasVideo ? (
-        <PlayClipCell uri={uris[0] ?? null} onPress={() => onPlayClip?.()} />
+    <>
+      <Image
+        source={{ uri }}
+        style={previewStyles.image}
+        resizeMode={resizeMode}
+        onLoad={() => {
+          setStatus("loaded");
+          onLoad?.();
+        }}
+        onError={() => setStatus("failed")}
+      />
+      {status === "loading" ? (
+        <View style={previewStyles.centered} pointerEvents="none">
+          <ActivityIndicator color={theme.textInactive} />
+        </View>
       ) : null}
-      {cells.map((uri, idx) =>
-        uri ? (
-          <View
-            key={idx}
-            style={[gridStyles.cell, { backgroundColor: "transparent" }]}
-          >
-            <Pressable
-              onPress={() => onSnapshotPress(idx + snapshotOffset)}
-              style={gridStyles.snapshotButton}
-              accessibilityRole="button"
-              accessibilityLabel={`Open snapshot ${idx + snapshotOffset + 1}`}
-            >
-              <Image
-                source={{ uri }}
-                style={gridStyles.image}
-                resizeMode="cover"
-              />
-            </Pressable>
-          </View>
-        ) : (
-          <PlaceholderCell key={idx} label="No snapshot" />
-        ),
-      )}
-    </View>
+    </>
   );
 }
 
-// Auto delete notice banner
-
-interface AutoDeleteBannerProps {
-  label: string;
+interface EvidencePreviewProps {
+  uris: string[];
+  hasVideo: boolean;
+  onPlayClip: () => void;
+  onOpenImage: (index: number) => void;
 }
 
-function AutoDeleteBanner({ label }: AutoDeleteBannerProps) {
+/** One large preview plus a gallery only when there are several images. With a
+ * clip, the first image is its thumbnail and the preview plays the clip. */
+function EvidencePreview({
+  uris,
+  hasVideo,
+  onPlayClip,
+  onOpenImage,
+}: EvidencePreviewProps) {
   const theme = useTheme();
+  const mainUri = uris[0] ?? null;
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
 
-  const handleChange = () => {
-    RNAlert.alert("Change setting", "Auto-delete duration settings");
-  };
+  useEffect(() => setThumbnailLoaded(false), [mainUri]);
 
   return (
-    <View
-      style={[
-        bannerStyles.container,
-        {
-          backgroundColor: theme.backgroundElement,
-          borderColor: theme.border,
-        },
-      ]}
-    >
-      <View style={bannerStyles.iconContainer}>
-        <ClockIcon width={16} height={16} color={theme.text} />
-      </View>
+    <View style={previewStyles.container}>
+      <Pressable
+        onPress={() => {
+          if (hasVideo) onPlayClip();
+          else if (mainUri) onOpenImage(0);
+        }}
+        disabled={!hasVideo && !mainUri}
+        style={[
+          previewStyles.main,
+          { backgroundColor: theme.backgroundElement },
+        ]}
+        accessibilityRole={hasVideo || mainUri ? "button" : "image"}
+        accessibilityLabel={
+          hasVideo
+            ? "Play clip"
+            : mainUri
+              ? "Open image full screen"
+              : "Image unavailable"
+        }
+      >
+        {mainUri ? (
+          <EvidenceImage
+            key={mainUri}
+            uri={mainUri}
+            resizeMode="contain"
+            onLoad={() => setThumbnailLoaded(true)}
+          />
+        ) : hasVideo ? null : (
+          <View style={previewStyles.centered}>
+            <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
+              Image unavailable
+            </Text>
+          </View>
+        )}
 
-      <View style={bannerStyles.textBlock}>
-        <Text
-          style={[
-            Typography.medium,
-            bannerStyles.mainText,
-            { color: theme.textMuted },
-          ]}
-        >
-          {label}
-        </Text>
+        {hasVideo ? (
+          <View style={previewStyles.playOverlay} pointerEvents="none">
+            <View style={previewStyles.playButton}>
+              <Ionicons name="play" size={18} color="#FFFFFF" />
+              <Text style={[Typography.medium, previewStyles.playText]}>
+                Play clip
+              </Text>
+            </View>
+          </View>
+        ) : null}
+      </Pressable>
 
-        <View style={bannerStyles.infoRow}>
-          <Text
-            style={[
-              Typography.bodySmall,
-              bannerStyles.infoText,
-              { color: theme.textInactive },
-            ]}
-            numberOfLines={1}
-          >
-            Viewable in-app only for 47h, then automatically deleted.
-          </Text>
-        </View>
-
+      {hasVideo && mainUri && thumbnailLoaded && uris.length === 1 ? (
         <Pressable
-          onPress={handleChange}
-          hitSlop={Spacing.one}
+          onPress={() => onOpenImage(0)}
+          hitSlop={Spacing.two}
           accessibilityRole="button"
-          accessibilityLabel="Change auto-delete setting"
+          accessibilityLabel="View image full screen"
+          style={previewStyles.viewImage}
         >
-          <Text
-            style={[
-              Typography.medium,
-              bannerStyles.changeText,
-              { color: BrandColors.accent },
-            ]}
-          >
-            Change
+          <Text style={[Typography.medium, { color: BrandColors.accent }]}>
+            View image
           </Text>
         </Pressable>
-      </View>
+      ) : null}
+
+      {uris.length > 1 ? (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={previewStyles.gallery}
+        >
+          {uris.map((uri, index) => (
+            <Pressable
+              key={`${uri}-${index}`}
+              onPress={() => onOpenImage(index)}
+              style={[
+                previewStyles.thumb,
+                { backgroundColor: theme.backgroundElement },
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={`Open image ${index + 1} of ${uris.length}`}
+            >
+              <EvidenceImage key={uri} uri={uri} resizeMode="cover" />
+            </Pressable>
+          ))}
+        </ScrollView>
+      ) : null}
     </View>
   );
 }
@@ -364,7 +328,7 @@ export function AlertDetailScreen() {
   const isFalseAlarm = alert.isFalseAlarm === true;
   const detectionType = getAlertDetectionType(alert.message);
   const snapshotUris = getSnapshotUris(alert.imageUrl);
-  const hasVideo = Boolean(alert.videoUrl);
+  const hasVideo = Boolean(alert.videoUrl?.trim());
   const isViolenceType =
     detectionType === "violence" || detectionType === "both";
 
@@ -450,12 +414,12 @@ export function AlertDetailScreen() {
           </Text>
         </View>
 
-        {/* Image or Placeholder */}
-        <SnapshotGrid
+        <EvidencePreview
+          key={alert.alertId}
           uris={snapshotUris}
           hasVideo={hasVideo}
           onPlayClip={() => setClipOpen(true)}
-          onSnapshotPress={(index) => {
+          onOpenImage={(index) => {
             setViewerIndex(index);
             setViewerVisible(true);
           }}
@@ -466,7 +430,6 @@ export function AlertDetailScreen() {
           visible={viewerVisible}
           onClose={() => setViewerVisible(false)}
         />
-        {/* 2×2 Snapshot grid - shows placeholder if no data */}
 
         {isViolenceType && !hasVideo ? (
           <Text
@@ -480,16 +443,22 @@ export function AlertDetailScreen() {
           </Text>
         ) : null}
 
+        <Text
+          style={[
+            Typography.bodySmall,
+            contentStyles.cameraLabel,
+            { color: theme.textInactive },
+          ]}
+        >
+          Camera {alert.deviceId}
+        </Text>
+
         {clipOpen && alert.videoUrl ? (
           <ClipPlayerModal
             uri={alert.videoUrl}
             onClose={() => setClipOpen(false)}
           />
         ) : null}
-
-        {/* Auto-delete notice. Clip evidence has no deletion schedule yet, so
-            the claim below would be false for it. */}
-        {hasVideo ? null : <AutoDeleteBanner label="Auto-deletes in 47h 12m" />}
 
         {/* Response */}
         <Response contactsNotified={true} />

@@ -49,8 +49,8 @@ function normalizeVideoUrl(input: unknown): string | null {
 export function getSnapshotUris(
   imageUrl: string | string[] | null | undefined,
 ): string[] {
-  if (typeof imageUrl === "string") return [imageUrl];
-  return imageUrl ?? [];
+  const uris = typeof imageUrl === "string" ? [imageUrl] : (imageUrl ?? []);
+  return uris.filter((uri) => typeof uri === "string" && uri.trim() !== "");
 }
 
 /**
