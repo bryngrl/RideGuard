@@ -63,7 +63,9 @@ Google sign-in and the testing login are preserved.
 
 In a development build, send a code from Forgot Password, then tap the existing
 "Preview code screen (no code was sent)" action shown when delivery is unavailable.
-Enter `123456` and confirm to open the new password form in explicit preview mode.
+Enter any six digits and choose **Preview new password** to view the form in
+explicit preview mode. No verification code is sent or verified, and no reset
+authorization is created.
 This creates no verified session or reset token and never calls the update endpoint.
 You can test password visibility and validation; submitting valid fields explains
 that no password was changed. This preview is disabled in release builds.

@@ -27,6 +27,7 @@ export interface SettingsSnapshot {
 }
 
 export type SettingsRoute =
+  | "/mpin/manage"
   | "/devices"
   | "/settings/location"
   | "/settings/retention"

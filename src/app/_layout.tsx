@@ -11,6 +11,8 @@ import { useReducedMotion } from "react-native-reanimated";
 import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import { useSettingsStore } from "@/modules/settings/store/settings.store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useMpinLifecycle } from "@/modules/mpin/hooks/use-mpin-lifecycle";
+import { MpinPrivacyCover } from "@/modules/mpin/components/mpin-privacy-cover";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,6 +42,7 @@ export default function RootLayout() {
   useAuth();
   useAbly();
   usePushRegistration();
+  useMpinLifecycle();
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && settingsHydrated) {
@@ -73,7 +76,8 @@ export default function RootLayout() {
             name="(public)/verify-code"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />
-          <Stack.Screen name="(app)/(tabs)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(app)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(mpin)/mpin" options={{ animation: reduceMotion ? "none" : "slide_from_right", gestureEnabled: false }} />
           <Stack.Screen
             name="(public)/new-password"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
@@ -84,6 +88,7 @@ export default function RootLayout() {
           />
           <Stack.Screen name="(onboarding)/register" options={{ animation: "fade" }} />
         </Stack>
+        <MpinPrivacyCover />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

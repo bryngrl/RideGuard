@@ -2,6 +2,14 @@ import type { SettingsRowDefinition } from "../types/settings.types";
 
 export const settingsRows: SettingsRowDefinition[] = [
   {
+    id: "mpin",
+    title: "Change MPIN",
+    section: "Account security",
+    iconKey: "check",
+    route: "/mpin/manage",
+    searchKeywords: ["mpin", "pin", "security", "password", "change", "reset"],
+  },
+  {
     id: "camera",
     title: "Camera and quick button",
     section: "Safety and hardware",
@@ -76,6 +84,7 @@ export const settingsRows: SettingsRowDefinition[] = [
 ];
 
 export const settingsSections = [
+  "Account security",
   "Safety and hardware",
   "Preferences",
   "General",

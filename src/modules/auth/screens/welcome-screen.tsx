@@ -1,5 +1,6 @@
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { BrandNameReveal } from "@/components/brand-name-reveal";
+import { BrandLockup } from "@/components/brand-lockup";
 import { BrandColors, Spacing } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -222,10 +223,7 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
             </View>
           </>
         ) : (
-          <View style={styles.brand}>
-            <MainLogo width={64} height={64} />
-            <BrandNameReveal reveal={false} style={styles.wordmark} />
-          </View>
+          <BrandLockup />
         )}
       </Animated.View>
       <Animated.View style={[styles.actions, revealMotion]} pointerEvents={showLanding ? "auto" : "none"}>
@@ -277,8 +275,6 @@ const styles = StyleSheet.create({
     borderColor: "#CEDFF9",
   },
   brandAnchor: { position: "absolute", top: "50%", left: 0, right: 0, marginTop: -32, alignItems: "center" },
-  brand: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
-  wordmark: { marginLeft: -15, marginTop: 25 },
   measureWordmark: { position: "absolute", opacity: 0, left: -1000 },
   startupLogo: { position: "absolute", top: 2.5, left: "50%", marginLeft: -32 },
   startupWordmark: { position: "absolute", top: 25, left: "50%" },
