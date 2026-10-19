@@ -106,15 +106,21 @@ export function BottomNavigation() {
               key={tab.label}
               style={({ pressed }) => [
                 styles.tab,
+                isActive && {
+                  backgroundColor: colors.infoBackground,
+                },
                 pressed && styles.tabPressed,
               ]}
               onPress={() => handleNavigation(tab.route)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
             >
               <Icon width={16} height={16} />
 
               <Text
                 style={[
                   styles.label,
+                  isActive && styles.activeLabel,
                   {
                     color,
                   },
@@ -145,8 +151,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 9999,
 
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.one,
   },
 
   tab: {
@@ -156,7 +162,8 @@ const styles = StyleSheet.create({
 
     gap: Spacing.one,
 
-    paddingVertical: Spacing.one,
+    borderRadius: 9999,
+    paddingVertical: Spacing.two + Spacing.half,
   },
 
   tabPressed: {
@@ -166,6 +173,8 @@ const styles = StyleSheet.create({
   label: {
     ...Typography.bodySmall,
     textAlign: "center",
+  },
+  activeLabel: {
     fontWeight: 700,
   },
 });

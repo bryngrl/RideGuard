@@ -8,8 +8,8 @@ import { useCurrentUser } from "@/modules/auth";
 import { useDeviceStore } from "@/modules/devices";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
+import { ToggleSwitch } from "@/modules/settings/components/toggle-switch";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Button } from "@/shared/ui/button";
 import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { RideDetailsSheet } from "@/shared/ui/ride-details-sheet";
@@ -19,17 +19,31 @@ import {
   default as InactiveSensorIcon,
 } from "@assets/icons/sensors/button/button.svg";
 
-import { Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { BrandColors, Colors } from "@/shared/theme/colors";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
+import Animated, { LinearTransition, useReducedMotion } from "react-native-reanimated";
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+} from "react-native-svg";
 import { QuickActions } from "@/shared/ui/quick-actions";
-import { styles } from "./home-screen.styles";
+import {
+  CAMERA_CARD_GAP,
+  CAMERA_CARD_WIDTH,
+  CAMERA_CAROUSEL_END_PADDING,
+  styles,
+} from "./home-screen.styles";
+
 export function HomeScreen() {
   const router = useRouter();
   const colors = useTheme();
+  const reduceMotion = useReducedMotion();
 
   const { firstName } = useCurrentUser();
 
@@ -38,6 +52,15 @@ export function HomeScreen() {
   const [showStartCaptureAlert, setShowStartCaptureAlert] = useState(false);
   const [showRideDetailsSheet, setShowRideDetailsSheet] = useState(false);
   const [rideStartedAt, setRideStartedAt] = useState<Date | null>(null);
+  const [carouselWidth, setCarouselWidth] = useState(0);
+  const carouselEndOffset = Math.max(
+    0,
+    Spacing.four +
+      3 * CAMERA_CARD_WIDTH +
+      2 * CAMERA_CARD_GAP +
+      CAMERA_CAROUSEL_END_PADDING -
+      carouselWidth,
+  );
 
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
 
@@ -52,6 +75,9 @@ export function HomeScreen() {
   const displayName = firstName?.trim() || "there";
 
   const hasCameraConnected = isCamera1Connected || isCamera2Connected;
+  const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
+    Boolean,
+  ).length;
 
   const {
     monitoringCardState,
@@ -113,12 +139,12 @@ export function HomeScreen() {
           };
 
   const handleEndRide = () => {
-    setRideStartedAt(null);
     setShowEndRideAlert(true);
   };
 
   const handleConfirmEndRide = () => {
     setIsRideActive(false);
+    setRideStartedAt(null);
     setShowEndRideAlert(false);
     setTimeout(() => {
       setShowRideDetailsSheet(true);
@@ -133,10 +159,6 @@ export function HomeScreen() {
     setShowEndRideAlert(false);
   };
 
-  const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
-    Boolean,
-  ).length;
-
   const { formattedDuration } = useRideTimer(isRideActive, rideStartedAt);
 
   const cameraCoverageColor =
@@ -149,7 +171,7 @@ export function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingWrapper
-        enableScrollView={false}
+        safeAreaEdges={["top"]}
         contentContainerStyle={styles.content}
       >
         {/* HEADER */}
@@ -179,6 +201,9 @@ export function HomeScreen() {
                 styles.greetingName,
                 { color: colors.text },
               ]}
+              numberOfLines={2}
+              adjustsFontSizeToFit
+              minimumFontScale={0.75}
             >
               {displayName}!
             </Text>
@@ -187,32 +212,74 @@ export function HomeScreen() {
 
         {/* RIDE STATUS */}
         <View style={styles.statusSectionWrapper}>
-          <LinearGradient
-            colors={["#FFFFFF", "#F5F8FF", "#DCE8FF"]}
-            locations={[0, 0.45, 1]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
+          <Svg
             style={styles.statusGradient}
+            width="100%"
+            height={150}
+            viewBox="0 0 400 150"
+            preserveAspectRatio="none"
             pointerEvents="none"
-          />
-
-          <View style={styles.statusSection}>
-            <Card
-              size="large"
-              title={monitoringTitle}
-              subtitle={monitoringSubtitle}
-              icon={monitoringIcon}
-              style={styles.monitoringCard}
-              backgroundColor={monitoringCardStyles.backgroundColor}
-              borderColor={monitoringCardStyles.borderColor}
-              titleColor={monitoringCardStyles.titleColor}
-              subtitleColor={monitoringCardStyles.subtitleColor}
-              actionTitle={
-                monitoringCardState === "no-camera" ? "Connect" : undefined
-              }
-              onActionPress={monitoringAction}
+          >
+            <Defs>
+              <SvgLinearGradient id="homeHeaderGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                <Stop offset="0%" stopColor="#FFFFFF" />
+                <Stop offset="45%" stopColor="#F5F8FF" />
+                <Stop offset="100%" stopColor="#DCE8FF" />
+              </SvgLinearGradient>
+            </Defs>
+            <Path
+              d="M0 0 H400 V128 Q200 172 0 128 Z"
+              fill="url(#homeHeaderGradient)"
             />
-          </View>
+          </Svg>
+
+          <Animated.View
+            layout={reduceMotion ? undefined : LinearTransition.duration(220)}
+            style={styles.statusSection}
+          >
+            {monitoringCardState === "no-camera" && (
+              <LinearGradient
+                colors={["#FFFDF7", "#FFF9EA", "#FFF0C8"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.monitoringCardGradient}
+                pointerEvents="none"
+              />
+            )}
+            <Animated.View
+              layout={reduceMotion ? undefined : LinearTransition.duration(220)}
+            >
+              <Card
+                size="large"
+                title={monitoringTitle}
+                subtitle={monitoringSubtitle}
+                icon={monitoringIcon}
+                style={[
+                  styles.monitoringCard,
+                  monitoringCardState !== "no-camera" &&
+                    styles.monitoringStateCard,
+                ]}
+                titleStyle={
+                  monitoringCardState === "threat"
+                    ? [styles.monitoringStateTitle, styles.threatTitle]
+                    : styles.monitoringStateTitle
+                }
+                subtitleStyle={styles.monitoringStateSubtitle}
+                backgroundColor={
+                  monitoringCardState === "no-camera"
+                    ? "transparent"
+                    : monitoringCardStyles.backgroundColor
+                }
+                borderColor={monitoringCardStyles.borderColor}
+                titleColor={monitoringCardStyles.titleColor}
+                subtitleColor={monitoringCardStyles.subtitleColor}
+                actionTitle={
+                  monitoringCardState === "no-camera" ? "Connect" : undefined
+                }
+                onActionPress={monitoringAction}
+              />
+            </Animated.View>
+          </Animated.View>
         </View>
 
         {/* DEVICE CARDS */}
@@ -220,14 +287,19 @@ export function HomeScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            onLayout={(event) => setCarouselWidth(event.nativeEvent.layout.width)}
+            scrollEnabled={carouselEndOffset > 0}
+            snapToOffsets={[0, carouselEndOffset]}
+            decelerationRate="fast"
             contentContainerStyle={styles.deviceCardsScrollContent}
           >
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                spacious
                 style={styles.deviceCard}
                 title="Camera 1"
-                subtitle={camera1DeviceId || "Hardware name"}
+                subtitle={camera1DeviceId || "Not paired"}
                 status={isCamera1Connected ? "Connected" : "Not connected"}
                 connectionState={
                   isCamera1Connected ? "connected" : "disconnected"
@@ -246,9 +318,10 @@ export function HomeScreen() {
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                spacious
                 style={styles.deviceCard}
                 title="Camera 2"
-                subtitle={camera2DeviceId || "Hardware name"}
+                subtitle={camera2DeviceId || "Not paired"}
                 status={isCamera2Connected ? "Connected" : "Not connected"}
                 connectionState={
                   isCamera2Connected ? "connected" : "disconnected"
@@ -267,9 +340,10 @@ export function HomeScreen() {
             <View style={styles.deviceCardItem}>
               <Card
                 size="small"
+                spacious
                 style={styles.deviceCard}
                 title="Button"
-                subtitle={buttonDeviceId || "Hardware name"}
+                subtitle={buttonDeviceId || "Not paired"}
                 status={isButtonConnected ? "Connected" : "Not connected"}
                 connectionState={
                   isButtonConnected ? "connected" : "disconnected"
@@ -289,7 +363,7 @@ export function HomeScreen() {
 
         {/* OVERVIEW */}
         <View style={styles.todaySection}>
-          <Text style={[Typography.h2, { color: colors.primary }]}>
+          <Text style={[Typography.h3, { color: colors.primary }]}>
             Overview
           </Text>
 
@@ -298,7 +372,7 @@ export function HomeScreen() {
             <View style={styles.currentRideRow}>
               <Text
                 style={[
-                  Typography.caption,
+                  Typography.body,
                   styles.currentRideLabel,
                   { color: colors.text },
                 ]}
@@ -306,32 +380,37 @@ export function HomeScreen() {
                 Capturing status
               </Text>
 
-              <View
-                style={[
-                  styles.statusBadge,
-                  {
-                    backgroundColor: isRideActive ? "#E5FFE6" : "#7b7b7b20",
-                  },
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.statusBadgeText,
-                    {
-                      color: isRideActive ? "#2CB031" : "#7B7B7B",
-                    },
-                  ]}
-                >
-                  {isRideActive ? "On" : "Off"}
+              <ToggleSwitch
+                value={isRideActive}
+                onChange={(enabled) =>
+                  enabled ? handleStartCapture() : handleEndRide()
+                }
+                disabled={
+                  (!isCamera1Connected && !isRideActive) ||
+                  showStartCaptureAlert ||
+                  showEndRideAlert
+                }
+                size="regular"
+                accessibilityLabel="Capturing status"
+              />
+            </View>
+
+            {!isCamera1Connected && !isRideActive && (
+              <View style={styles.cameraWarning}>
+                <ErrorIcon width={16} height={16} />
+                <Text style={styles.cameraWarningText}>
+                  {hasCameraConnected
+                    ? "Connect Camera 1 to enable monitoring"
+                    : "Connect at least 1 camera to enable monitoring"}
                 </Text>
               </View>
-            </View>
+            )}
 
             {/* Duration */}
             <View style={styles.currentRideRow}>
               <Text
                 style={[
-                  Typography.caption,
+                  Typography.body,
                   styles.currentRideLabel,
                   { color: colors.text },
                 ]}
@@ -341,7 +420,7 @@ export function HomeScreen() {
 
               <Text
                 style={[
-                  Typography.caption,
+                  Typography.body,
                   styles.currentRideValue,
                   { color: colors.textMuted },
                 ]}
@@ -354,17 +433,17 @@ export function HomeScreen() {
             <View style={styles.currentRideRow}>
               <Text
                 style={[
-                  Typography.caption,
+                  Typography.body,
                   styles.currentRideLabel,
                   { color: colors.text },
                 ]}
               >
-                Camera coverage
+                Camera in use
               </Text>
 
               <Text
                 style={[
-                  Typography.caption,
+                  Typography.body,
                   styles.currentRideValue,
                   {
                     color: cameraCoverageColor,
@@ -375,29 +454,10 @@ export function HomeScreen() {
               </Text>
             </View>
           </View>
-          {/* CAPTURING BUTTON */}
-          <Button
-            title={isRideActive ? "Stop Capturing" : "Start Capturing"}
-            variant={isRideActive ? "danger" : "primary"}
-            size="md"
-            fullWidth
-            disabled={!isCamera1Connected}
-            onPress={isRideActive ? handleEndRide : handleStartCapture}
-            style={isRideActive ? styles.endRideButton : styles.rideButton}
-          />
-          {!hasCameraConnected && (
-            <View style={styles.cameraWarning}>
-              <ErrorIcon width={16} height={16} />
-
-              <Text style={styles.cameraWarningText}>
-                Connect at least 1 camera to enable monitoring
-              </Text>
-            </View>
-          )}
         </View>
       </KeyboardAvoidingWrapper>
 
-      <QuickActions />
+      <QuickActions homeLayout />
 
       <SweetAlert
         visible={showStartCaptureAlert}

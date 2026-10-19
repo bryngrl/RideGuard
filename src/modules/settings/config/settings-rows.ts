@@ -51,8 +51,8 @@ export const settingsRows: SettingsRowDefinition[] = [
   },
   {
     id: "contacts",
-    title: "Emergency contacts",
-    section: "Preferences",
+    title: "Emergency Contacts",
+    section: "Safety and hardware",
     iconKey: "contact",
     route: "/contact",
     searchKeywords: ["emergency", "contacts"],

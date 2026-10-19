@@ -5,7 +5,7 @@ import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
-export function QuickActions() {
+export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
   const router = useRouter();
   const colors = useTheme();
 
@@ -17,31 +17,27 @@ export function QuickActions() {
         <Pressable
           style={({ pressed }) => [
             styles.sosButton,
+            homeLayout && styles.homeSosButton,
             pressed && styles.actionPressed,
           ]}
           onPress={() => router.push("/sos" as any)}
           accessibilityRole="button"
           accessibilityLabel="Open SOS emergency screen"
         >
-          <SosIcon width={15} height={15} />
+          <SosIcon width={homeLayout ? 22 : 15} height={homeLayout ? 22 : 15} />
           <Text style={[Typography.button, styles.sosButtonText]}>SOS</Text>
         </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.contactsButton,
-            { borderColor: colors.primary },
-            pressed && styles.actionPressed,
-          ]}
-          onPress={() => router.push("/contact" as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Open emergency contacts"
-        >
-          <ContactIcon width={13} height={16} />
-          <Text style={[Typography.button, { color: colors.primary }]}>
-            Contacts
-          </Text>
-        </Pressable>
+        {!homeLayout && (
+          <Pressable
+            style={({ pressed }) => [styles.contactsButton, { borderColor: colors.primary }, pressed && styles.actionPressed]}
+            onPress={() => router.push("/contact" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open emergency contacts"
+          >
+            <ContactIcon width={13} height={16} />
+            <Text style={[Typography.button, { color: colors.primary }]}>Contacts</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
@@ -57,7 +53,6 @@ const styles = StyleSheet.create({
   },
   actions: {
     alignItems: "center",
-    backgroundColor: "transparent",
     flexDirection: "row",
     gap: Spacing.one,
   },
@@ -80,6 +75,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 40,
     paddingHorizontal: Spacing.three,
+  },
+  homeSosButton: {
+    minHeight: 56,
+    width: "100%",
+    gap: Spacing.two,
   },
   sosButtonText: {
     color: BrandColors.secondary,

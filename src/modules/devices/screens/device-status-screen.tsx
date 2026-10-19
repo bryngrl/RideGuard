@@ -99,7 +99,12 @@ export function DeviceStatusScreen() {
                       },
                     ]}
                   />
-                  <Text style={[Typography.body, { color: theme.textMuted }]}>
+                  <Text
+                    style={[
+                      isConnected ? Typography.medium : Typography.body,
+                      { color: isConnected ? theme.success : theme.textMuted },
+                    ]}
+                  >
                     {isConnected ? "Connected" : "Not connected"}
                   </Text>
                 </View>
