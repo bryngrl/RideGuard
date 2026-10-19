@@ -1,11 +1,12 @@
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
+import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
 
 import {
   recoveryMessage,
@@ -38,11 +39,9 @@ export default function VerifyCodeScreen() {
   );
   const [now, setNow] = useState(Date.now());
   const [code, setCode] = useState("");
-  const [focused, setFocused] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const inputRef = useRef<TextInput>(null);
   const requestPending = useRef(false);
   const active = useRef(true);
   const session = usePasswordRecoveryStore((state) => state.session);
@@ -64,9 +63,11 @@ export default function VerifyCodeScreen() {
   }, []));
 
   useEffect(() => {
-    if (!delivery && !session) return;
     const interval = setInterval(() => setNow(Date.now()), 1000);
-    const subscription = AppState.addEventListener("change", () => setNow(Date.now()));
+    const subscription = AppState.addEventListener("change", (state) => {
+      setNow(Date.now());
+      if (state !== "active") setCode("");
+    });
     return () => { clearInterval(interval); subscription.remove(); };
   }, [delivery, session]);
 
@@ -100,10 +101,6 @@ export default function VerifyCodeScreen() {
       return;
     }
     if (preview) {
-      if (code !== "123456") {
-        setError("That code is incorrect. Use 123456 for this development preview.");
-        return;
-      }
       setCode("");
       router.push({ pathname: "/(public)/new-password", params: { preview: "1" } });
       return;
@@ -197,57 +194,12 @@ export default function VerifyCodeScreen() {
                 : delivery
                 ? "An email was sent to the address connected to this account."
                 : preview
-                  ? "Development preview: enter 123456 to test the new password screen. No code was sent."
+                  ? "Design preview only. Enter any six digits to view the new-password design. No code is sent or verified."
                   : "Code delivery is not connected yet."}
             </Text>
 
-            {!verified && <View style={styles.codeArea}>
-              <Pressable
-                onPress={() => inputRef.current?.focus()}
-                style={styles.codeBoxes}
-                accessibilityRole="button"
-                accessibilityLabel="Enter six-digit confirmation code"
-              >
-                {Array.from({ length: CODE_LENGTH }, (_, index) => {
-                  const active = focused && index === Math.min(code.length, CODE_LENGTH - 1);
-                  return (
-                    <View
-                      key={index}
-                      style={[
-                        styles.codeBox,
-                        {
-                          backgroundColor: error
-                            ? theme.inputErrorBackground
-                            : theme.backgroundElement,
-                          borderColor: error
-                            ? theme.error
-                            : active
-                              ? theme.borderFocus
-                              : theme.border,
-                        },
-                      ]}
-                    >
-                      <Text style={[styles.codeDigit, { color: theme.text }]}>
-                        {code[index] ?? ""}
-                      </Text>
-                    </View>
-                  );
-                })}
-              </Pressable>
-              <TextInput
-                ref={inputRef}
-                value={code}
-                onChangeText={handleCodeChange}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                style={styles.hiddenInput}
-                keyboardType="number-pad"
-                autoComplete="sms-otp"
-                textContentType="oneTimeCode"
-                accessibilityLabel="Six-digit confirmation code"
-                editable={!isVerifying && !isResending}
-              />
-            </View>}
+            {!verified && <VerificationCodeInput value={code} onChange={handleCodeChange}
+              disabled={isVerifying || isResending} error={!!error || expired} />}
 
             {error && (
               <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.error }]}>
@@ -260,7 +212,7 @@ export default function VerifyCodeScreen() {
               </Text>
             )}
             <Button
-              title={verified ? "Continue" : "Confirm"}
+              title={preview ? "Preview new password" : verified ? "Continue" : "Confirm"}
               onPress={handleConfirm}
               isLoading={isVerifying}
               disabled={isResending}

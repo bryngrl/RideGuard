@@ -8,6 +8,7 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 export default function CompleteSetupScreen() {
   const router = useRouter();
@@ -28,6 +29,9 @@ export default function CompleteSetupScreen() {
     setIsLoading(true);
 
     try {
+      // This screen follows the existing required onboarding steps. The app
+      // layout checks MPIN status before exposing Home when MPIN is enabled.
+      useAuthStore.getState().setIsOldUser(true);
       router.replace("/(app)/(tabs)");
     } finally {
       setIsLoading(false);
