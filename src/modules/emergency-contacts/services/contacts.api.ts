@@ -12,6 +12,7 @@ type ContactRecord = {
   phone: string;
   relationship: string;
   photo_url: string | null;
+  public_id: string | null;
 };
 
 type Envelope<T> = { success: boolean; message?: string; data: T };
