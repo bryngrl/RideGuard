@@ -11,8 +11,7 @@ import type {
  * PATCH /settings/notifications -> updateNotifications
  * PATCH /settings/location -> updateLocationSharing
  * PATCH /settings/theme -> updateTheme
- * PATCH /profile/personal-info -> updateProfile
- * PATCH /profile/vehicle -> updateVehicle
+ * Profile and vehicle editing need backend update routes before they can save.
  */
 
 export async function getSettings() {
@@ -51,8 +50,8 @@ export async function updateTheme(value: ThemePreference) {
 export async function updateProfile(
   profile: Pick<SettingsProfile, "firstName" | "lastName" | "phone">,
 ) {
-  // BACKEND: replace body with PATCH /profile/personal-info profile.
-  return profile;
+  void profile;
+  throw new Error("Profile editing is not available from the current API yet.");
 }
 
 export async function updateVehicle(
@@ -61,6 +60,6 @@ export async function updateVehicle(
     "vehicleBrand" | "vehicleModel" | "plateNumber"
   >,
 ) {
-  // BACKEND: replace body with PATCH /profile/vehicle vehicle.
-  return vehicle;
+  void vehicle;
+  throw new Error("Vehicle editing is not available from the current API yet.");
 }

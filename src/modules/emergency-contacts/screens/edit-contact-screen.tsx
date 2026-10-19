@@ -16,6 +16,7 @@ import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet"
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./edit-contact-screen.styles";
+import { deleteContact, updateContact } from "../services/contacts.api";
 
 const RELATIONSHIPS = [
   { label: "Parent", value: "Parent" },
@@ -55,6 +56,7 @@ export function EditContactScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(
     initialProfileImage || null,
   );
+  const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [contactNameError, setContactNameError] = useState("");
@@ -95,6 +97,7 @@ export function EditContactScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
+      setPhotoAsset(result.assets[0]);
     }
   };
 
@@ -118,6 +121,7 @@ export function EditContactScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
+      setPhotoAsset(result.assets[0]);
     }
   };
 
@@ -188,6 +192,7 @@ export function EditContactScreen() {
     setPhoneNumber(normalizePhoneNumber(initialPhoneNumber ?? ""));
     setRelationship(initialRelationship ?? "");
     setProfileImage(initialProfileImage || null);
+    setPhotoAsset(null);
     setContactNameError("");
     setPhoneNumberError("");
     setRelationshipError("");
@@ -216,28 +221,23 @@ export function EditContactScreen() {
   const handleSave = async () => {
     if (isLoading) return;
     if (!validateForm()) return;
+    if (!contactId) return;
 
     try {
       setIsLoading(true);
-
-      const updatedContact = {
-        id: contactId ?? "",
+      await updateContact(contactId, {
         name: contactName.trim(),
-        phoneNumber: formatPhoneNumber(phoneNumber),
+        phone: `+63${phoneNumber}`,
         relationship: relationship.trim(),
-        profileImage: profileImage ?? "",
-      };
-
-      console.log("DEMO UPDATED CONTACT:", updatedContact);
-
-      setIsEditing(false);
-      setIsRelationshipOpen(false);
-      setNotificationMessage("Changed saved successfully");
-      setNotificationType("success");
-      setShowNotification(true);
+        photoAsset,
+      });
+      router.replace({
+        pathname: "/contact" as any,
+        params: { notification: "success", message: "Saved successfully" },
+      });
     } catch (error) {
       console.error("CONTACT UPDATE ERROR:", error);
-      setNotificationMessage("Failed to save contact");
+      setNotificationMessage(error instanceof Error ? error.message : "Failed to save contact");
       setNotificationType("error");
       setShowNotification(true);
     } finally {
@@ -250,20 +250,24 @@ export function EditContactScreen() {
     setActiveConfirmation("delete");
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (isLoading) return;
-
     setActiveConfirmation(null);
+    if (!contactId) return;
     setIsLoading(true);
-
-    router.replace({
-      pathname: "/contact" as any,
-      params: {
-        notification: "success",
-        message: "Deleted successfully",
-        deletedContactId: contactId ?? "",
-      },
-    });
+    try {
+      await deleteContact(contactId);
+      router.replace({
+        pathname: "/contact" as any,
+        params: { notification: "success", message: "Deleted successfully" },
+      });
+    } catch (error) {
+      setNotificationMessage(error instanceof Error ? error.message : "Failed to delete contact");
+      setNotificationType("error");
+      setShowNotification(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderPreview = () => {

@@ -4,10 +4,12 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { EmergencyContactList } from "../components/emergency-contact-list";
+import { listContacts } from "../services/contacts.api";
 import type { EmergencyContact } from "../types/emergency-contact.types";
 import { styles } from "./contact-list-screen.styles";
 
@@ -15,29 +17,26 @@ export function ContactListScreen() {
   const colors = useTheme();
   const router = useRouter();
 
-  // DEMO CONTACT DATA
-  const [contacts, setContacts] = useState<EmergencyContact[]>([
-    {
-      id: "1",
-      name: "Jovilyn Esquerra",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "2",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "3",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "4",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-  ]);
+  const isDemo = useAuthStore((state) => state.isDemo);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    if (isDemo) return;
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
+    listContacts().then((items) => {
+      if (active) setContacts(items);
+    }).catch((error) => {
+      if (active) setLoadError(error instanceof Error ? error.message : "Unable to load contacts.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [isDemo, retryCount]));
 
   const handleAddContact = () => {
     router.push("/contact/add-contact" as any);
@@ -50,41 +49,17 @@ export function ContactListScreen() {
         contactId: contact.id,
         contactName: contact.name,
         phoneNumber: contact.phoneNumber,
+          relationship: contact.relationship ?? "",
+          profileImage: contact.profileImage ?? "",
       },
     });
   };
 
-  const { notification, message, updatedContact, deletedContactId } =
+  const { notification, message } =
     useLocalSearchParams<{
       notification?: "success" | "error";
       message?: string;
-      updatedContact?: string;
-      deletedContactId?: string;
     }>();
-
-  useEffect(() => {
-    if (!updatedContact) return;
-
-    try {
-      const updated = JSON.parse(updatedContact) as EmergencyContact;
-
-      setContacts((currentContacts) =>
-        currentContacts.map((contact) =>
-          contact.id === updated.id ? updated : contact,
-        ),
-      );
-    } catch (error) {
-      console.error("FAILED TO PARSE UPDATED CONTACT:", error);
-    }
-  }, [updatedContact]);
-
-  useEffect(() => {
-    if (!deletedContactId) return;
-
-    setContacts((currentContacts) =>
-      currentContacts.filter((contact) => contact.id !== deletedContactId),
-    );
-  }, [deletedContactId]);
 
   const [showNotification, setShowNotification] = useState(false);
 
@@ -124,7 +99,16 @@ export function ContactListScreen() {
       />
 
       <View style={styles.contactContent}>
-        {contacts.length === 0 ? (
+        {loading ? (
+          <Text style={{ color: colors.textMuted, padding: 24 }}>Loading contacts...</Text>
+        ) : loadError ? (
+          <View style={{ padding: 24 }}>
+            <Text accessibilityRole="alert" style={{ color: colors.error }}>{loadError}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setRetryCount((count) => count + 1)}>
+              <Text style={{ color: colors.primary, marginTop: 12 }}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : contacts.length === 0 ? (
           <EmptyContacts colors={colors} />
         ) : (
           <EmergencyContactList

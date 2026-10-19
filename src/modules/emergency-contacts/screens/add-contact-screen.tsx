@@ -13,6 +13,7 @@ import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/shared/ui/text-input";
+import { createContact } from "../services/contacts.api";
 import { styles } from "./add-contact-screen.styles";
 
 const RELATIONSHIPS = [
@@ -38,6 +39,7 @@ export function AddContactScreen() {
 
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
@@ -66,6 +68,7 @@ export function AddContactScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
+      setPhotoAsset(result.assets[0]);
     }
   };
 
@@ -89,6 +92,7 @@ export function AddContactScreen() {
 
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
+      setPhotoAsset(result.assets[0]);
     }
   };
 
@@ -142,18 +146,14 @@ export function AddContactScreen() {
 
     if (!isValid) return;
 
-    const payload = {
-      contact_name: contactName.trim(),
-      emergency_phone_number: `+63${phoneNumber}`,
-      relationship: relationship.trim(),
-    };
-
-    console.log("Emergency contact payload:", payload);
-
     try {
       setIsLoading(true);
-
-      // TODO: Call emergency contact API when implemented
+      await createContact({
+        name: contactName.trim(),
+        phone: `+63${phoneNumber}`,
+        relationship: relationship.trim(),
+        photoAsset,
+      });
       router.replace({
         pathname: "/contact" as any,
         params: {
