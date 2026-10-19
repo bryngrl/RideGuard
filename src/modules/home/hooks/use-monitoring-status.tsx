@@ -72,7 +72,7 @@ export function useMonitoringStatus({
       backgroundColor: "#FFFFFF",
       borderColor: "#7b7b7b4f",
       titleColor: Colors.light.primary,
-      subtitleColor: "#5D8063",
+      subtitleColor: "#7B7B7B",
     },
     threat: {
       backgroundColor: Colors.light.dangerBackground,
@@ -82,7 +82,7 @@ export function useMonitoringStatus({
     },
   }[monitoringCardState];
 
-  let monitoringTitle = "Monitoring Active";
+  let monitoringTitle = "Monitoring active";
   let monitoringSubtitle = "Nothing detected right now.";
   let monitoringIcon: ReactNode = <GreenEyeIcon width={38} height={38} />;
 
@@ -95,7 +95,7 @@ export function useMonitoringStatus({
 
     if (isViolenceAndWeaponDetected) {
       monitoringTitle = "Violence and Weapon detected";
-      monitoringSubtitle = "Critical threat. SOS activated automatically.";
+      monitoringSubtitle = "SOS activated automatically.";
     } else if (isViolenceDetected) {
       monitoringTitle = "Violence detected";
       monitoringSubtitle = showFollowUpThreatMessage
@@ -109,7 +109,7 @@ export function useMonitoringStatus({
     }
   } else {
     // TODO: Update for movement detection.
-    monitoringTitle = "Monitoring Active";
+    monitoringTitle = "Monitoring active";
     monitoringSubtitle = "Nothing detected right now.";
   }
 

@@ -4,12 +4,13 @@ import {
   StyleProp,
   StyleSheet,
   Text,
+  TextStyle,
   View,
   ViewStyle,
 } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 
 export type CardSize = "small" | "large";
@@ -40,6 +41,8 @@ export interface CardProps {
 
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  titleStyle?: StyleProp<TextStyle>;
+  subtitleStyle?: StyleProp<TextStyle>;
 }
 
 export function Card({
@@ -64,6 +67,8 @@ export function Card({
   onActionPress,
   onPress,
   style,
+  titleStyle,
+  subtitleStyle,
 }: CardProps) {
   const colors = useTheme();
   const isLarge = size === "large";
@@ -140,6 +145,7 @@ export function Card({
             isLarge && styles.largeTitle,
             !isLarge && spacious && styles.spaciousSmallTitle,
             { color: titleColor ?? colors.text },
+            titleStyle,
           ]}
           numberOfLines={2}
         >
@@ -157,6 +163,7 @@ export function Card({
               isLarge && styles.largeSubtitle,
               !isLarge && spacious && styles.spaciousSmallSubtitle,
               { color: subtitleColor ?? colors.textMuted },
+              subtitleStyle,
             ]}
             numberOfLines={isLarge ? 3 : 1}
             adjustsFontSizeToFit
@@ -187,7 +194,13 @@ export function Card({
                   : [Typography.bodySmall, styles.smallStatusText],
                 styles.statusText,
                 !isLarge && spacious && styles.spaciousStatusText,
-                { color: colors.textMuted },
+                !isLarge && spacious && connectionState === "connected" && styles.connectedStatusText,
+                {
+                  color:
+                    !isLarge && spacious && connectionState === "connected"
+                      ? colors.success
+                      : colors.textMuted,
+                },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -287,6 +300,7 @@ const styles = StyleSheet.create({
   spaciousSmallTitle: {
     fontSize: 14,
     lineHeight: 18,
+    fontFamily: FontFamily.geistMedium,
   },
 
   subtitle: {
@@ -313,8 +327,11 @@ const styles = StyleSheet.create({
     lineHeight: 11,
   },
   spaciousStatusText: {
-    fontSize: 10,
-    lineHeight: 12,
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  connectedStatusText: {
+    fontFamily: FontFamily.geistMedium,
   },
 
   statusRow: {
@@ -326,6 +343,7 @@ const styles = StyleSheet.create({
   },
   spaciousStatusRow: {
     marginTop: Spacing.two,
+    gap: Spacing.one,
   },
 
   statusDot: {

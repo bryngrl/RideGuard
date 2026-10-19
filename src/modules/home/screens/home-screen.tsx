@@ -25,6 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, Text, View } from "react-native";
+import Animated, { LinearTransition, useReducedMotion } from "react-native-reanimated";
 import Svg, {
   Defs,
   LinearGradient as SvgLinearGradient,
@@ -38,9 +39,11 @@ import {
   CAMERA_CAROUSEL_END_PADDING,
   styles,
 } from "./home-screen.styles";
+
 export function HomeScreen() {
   const router = useRouter();
   const colors = useTheme();
+  const reduceMotion = useReducedMotion();
 
   const { firstName } = useCurrentUser();
 
@@ -230,7 +233,10 @@ export function HomeScreen() {
             />
           </Svg>
 
-          <View style={styles.statusSection}>
+          <Animated.View
+            layout={reduceMotion ? undefined : LinearTransition.duration(220)}
+            style={styles.statusSection}
+          >
             {monitoringCardState === "no-camera" && (
               <LinearGradient
                 colors={["#FFFDF7", "#FFF9EA", "#FFF0C8"]}
@@ -240,26 +246,40 @@ export function HomeScreen() {
                 pointerEvents="none"
               />
             )}
-            <Card
-              size="large"
-              title={monitoringTitle}
-              subtitle={monitoringSubtitle}
-              icon={monitoringIcon}
-              style={styles.monitoringCard}
-              backgroundColor={
-                monitoringCardState === "no-camera"
-                  ? "transparent"
-                  : monitoringCardStyles.backgroundColor
-              }
-              borderColor={monitoringCardStyles.borderColor}
-              titleColor={monitoringCardStyles.titleColor}
-              subtitleColor={monitoringCardStyles.subtitleColor}
-              actionTitle={
-                monitoringCardState === "no-camera" ? "Connect" : undefined
-              }
-              onActionPress={monitoringAction}
-            />
-          </View>
+            <Animated.View
+              layout={reduceMotion ? undefined : LinearTransition.duration(220)}
+            >
+              <Card
+                size="large"
+                title={monitoringTitle}
+                subtitle={monitoringSubtitle}
+                icon={monitoringIcon}
+                style={[
+                  styles.monitoringCard,
+                  monitoringCardState !== "no-camera" &&
+                    styles.monitoringStateCard,
+                ]}
+                titleStyle={
+                  monitoringCardState === "threat"
+                    ? [styles.monitoringStateTitle, styles.threatTitle]
+                    : styles.monitoringStateTitle
+                }
+                subtitleStyle={styles.monitoringStateSubtitle}
+                backgroundColor={
+                  monitoringCardState === "no-camera"
+                    ? "transparent"
+                    : monitoringCardStyles.backgroundColor
+                }
+                borderColor={monitoringCardStyles.borderColor}
+                titleColor={monitoringCardStyles.titleColor}
+                subtitleColor={monitoringCardStyles.subtitleColor}
+                actionTitle={
+                  monitoringCardState === "no-camera" ? "Connect" : undefined
+                }
+                onActionPress={monitoringAction}
+              />
+            </Animated.View>
+          </Animated.View>
         </View>
 
         {/* DEVICE CARDS */}
