@@ -87,8 +87,8 @@ export function useMonitoringStatus({
   let monitoringIcon: ReactNode = <GreenEyeIcon width={38} height={38} />;
 
   if (monitoringCardState === "no-camera") {
-    monitoringTitle = "No Camera Connected";
-    monitoringSubtitle = "Detection monitoring is inactive.";
+    monitoringTitle = "No external camera";
+    monitoringSubtitle = "Connect one to start monitoring";
     monitoringIcon = <WarningIcon width={38} height={38} />;
   } else if (monitoringCardState === "threat") {
     monitoringIcon = <RedEyeIcon width={38} height={38} />;

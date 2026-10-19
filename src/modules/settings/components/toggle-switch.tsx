@@ -11,10 +11,14 @@ export function ToggleSwitch({
   value,
   onChange,
   disabled = false,
+  size = "compact",
+  accessibilityLabel,
 }: {
   value: boolean;
   onChange: (value: boolean) => void;
   disabled?: boolean;
+  size?: "compact" | "regular";
+  accessibilityLabel?: string;
 }) {
   const colors = useTheme();
   const progress = useSharedValue(value ? 1 : 0);
@@ -29,9 +33,10 @@ export function ToggleSwitch({
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={size === "compact" ? styles.compactContainer : styles.regularContainer}>
       <Pressable
         accessibilityRole="switch"
+        accessibilityLabel={accessibilityLabel}
         accessibilityState={{ checked: value, disabled }}
         disabled={disabled}
         onPress={() => onChange(!value)}
@@ -62,8 +67,11 @@ export function ToggleSwitch({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    transform: [{ scale: 0.7 }], // 👈 Change this number here to shrink or grow it easily!
+  compactContainer: {
+    transform: [{ scale: 0.7 }],
+  },
+  regularContainer: {
+    justifyContent: "center",
   },
   track: {
     width: 60, // Original size kept intact
