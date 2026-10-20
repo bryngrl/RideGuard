@@ -1,36 +1,56 @@
 import { BorderRadius, BrandColors, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
-export const gridStyles = StyleSheet.create({
-  cell: {
-    aspectRatio: 1.45,
-    borderRadius: BorderRadius.sm,
-    overflow: "hidden",
-    width: "49%",
+export const previewStyles = StyleSheet.create({
+  centered: {
+    ...StyleSheet.absoluteFill,
+    alignItems: "center",
+    justifyContent: "center",
   },
   container: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
     marginBottom: Spacing.four,
+  },
+  gallery: {
+    gap: Spacing.two,
+    marginTop: Spacing.two,
   },
   image: {
     height: "100%",
     width: "100%",
   },
-  placeholder: {
+  main: {
+    aspectRatio: 4 / 3,
+    borderRadius: BorderRadius.sm,
+    maxHeight: 320,
+    overflow: "hidden",
+    width: "100%",
+  },
+  playButton: {
     alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
+    borderRadius: 9999,
+    flexDirection: "row",
+    gap: Spacing.one,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   playOverlay: {
     ...StyleSheet.absoluteFill,
     alignItems: "center",
-    backgroundColor: "rgba(0, 0, 0, 0.25)",
     justifyContent: "center",
   },
-  snapshotButton: {
-    flex: 1,
+  playText: {
+    color: "#FFFFFF",
+  },
+  thumb: {
+    borderRadius: BorderRadius.sm,
+    height: 56,
+    overflow: "hidden",
+    width: 72,
+  },
+  viewImage: {
+    alignSelf: "flex-start",
+    marginTop: Spacing.two,
   },
 });
 
@@ -80,40 +100,6 @@ export const viewerStyles = StyleSheet.create({
   },
 });
 
-export const bannerStyles = StyleSheet.create({
-  changeText: {
-    marginTop: Spacing.one,
-    textDecorationLine: "underline",
-  },
-  container: {
-    alignItems: "center",
-    borderWidth: 1,
-    flexDirection: "row",
-    gap: Spacing.two,
-    marginBottom: Spacing.five,
-    padding: Spacing.three,
-    width: "100%",
-  },
-  iconContainer: {
-    paddingRight: Spacing.two,
-  },
-  infoRow: {
-    alignItems: "center",
-    flexDirection: "row",
-    width: "100%",
-  },
-  infoText: {
-    flex: 1,
-  },
-  mainText: {
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  textBlock: {
-    flex: 1,
-  },
-});
-
 export const timelineStyles = StyleSheet.create({
   container: {
     marginBottom: Spacing.five,
@@ -160,6 +146,9 @@ export const contentStyles = StyleSheet.create({
   alertTitle: {
     fontWeight: "700",
     marginBottom: 2,
+  },
+  cameraLabel: {
+    marginBottom: Spacing.five,
   },
   scroll: {
     paddingBottom: Spacing.six ?? 32,

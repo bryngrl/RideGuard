@@ -6,7 +6,6 @@ import { useMemo, useState } from "react";
 import { SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAbly } from "@/shared/hooks/use-ably";
 import { useAlertsStore } from "../store/alerts.store";
 import { AlertItem } from "../components/alert-item";
 import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
@@ -68,9 +67,6 @@ export function AlertsScreen() {
   const theme = useTheme();
   const router = useRouter();
   const [filter, setFilter] = useState<TabFilter>("all");
-
-  // Mount realtime subscription
-  useAbly();
 
   // Get raw alerts from store
   const alerts = useAlertsStore((state) => state.alerts);
