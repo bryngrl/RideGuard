@@ -1,13 +1,6 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import React from "react";
-import {
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native";
+import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
@@ -97,7 +90,7 @@ export function Card({
       accessibilityLabel={title}
       disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         isLarge ? styles.largeCard : styles.smallCard,
         !isLarge && spacious && styles.spaciousSmallCard,
@@ -105,7 +98,6 @@ export function Card({
           backgroundColor: backgroundColor ?? colors.card,
           borderColor: borderColor ?? colors.border,
         },
-        pressed && onPress && styles.pressed,
         style,
       ]}
     >
@@ -364,9 +356,5 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     borderWidth: 0.5,
     paddingVertical: Spacing.one + Spacing.half,
-  },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.99 }],
   },
 });

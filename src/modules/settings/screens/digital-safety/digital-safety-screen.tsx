@@ -1,4 +1,4 @@
-import { PageLayout } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 export function DigitalSafetyScreen() {
-  return <PageLayout title="Digital safety" />;
+  return <SettingsPageLayout title="Digital safety" />;
 }

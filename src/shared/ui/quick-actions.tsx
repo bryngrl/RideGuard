@@ -1,9 +1,10 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import SosIcon from "@/assets/icons/home/echo-sos.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
   const router = useRouter();
@@ -15,10 +16,11 @@ export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
     >
       <View style={styles.actions}>
         <Pressable
-          style={({ pressed }) => [
+          feedbackRadius={BorderRadius.full}
+          feedbackColor={BrandColors.secondary}
+          style={[
             styles.sosButton,
             homeLayout && styles.homeSosButton,
-            pressed && styles.actionPressed,
           ]}
           onPress={() => router.push("/sos" as any)}
           accessibilityRole="button"
@@ -29,7 +31,8 @@ export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
         </Pressable>
         {!homeLayout && (
           <Pressable
-            style={({ pressed }) => [styles.contactsButton, { borderColor: colors.primary }, pressed && styles.actionPressed]}
+            feedbackRadius={BorderRadius.full}
+            style={[styles.contactsButton, { borderColor: colors.primary }]}
             onPress={() => router.push("/contact" as any)}
             accessibilityRole="button"
             accessibilityLabel="Open emergency contacts"
@@ -44,9 +47,6 @@ export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  actionPressed: {
-    opacity: 0.75,
-  },
   container: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,

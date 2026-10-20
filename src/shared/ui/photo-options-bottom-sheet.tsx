@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { FeedbackPressable } from "@/shared/ui/feedback-pressable";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -141,12 +142,9 @@ export function PhotoOptionsBottomSheet({
             />
 
             <View style={styles.optionsContainer}>
-              <Pressable
+              <FeedbackPressable
                 onPress={handleTakePhoto}
-                style={({ pressed }) => [
-                  styles.option,
-                  pressed && styles.optionPressed,
-                ]}
+                style={styles.option}
                 accessibilityRole="button"
                 accessibilityLabel="Take photo"
               >
@@ -163,14 +161,11 @@ export function PhotoOptionsBottomSheet({
                 >
                   Take photo
                 </Text>
-              </Pressable>
+              </FeedbackPressable>
 
-              <Pressable
+              <FeedbackPressable
                 onPress={handleChoosePhoto}
-                style={({ pressed }) => [
-                  styles.option,
-                  pressed && styles.optionPressed,
-                ]}
+                style={styles.option}
                 accessibilityRole="button"
                 accessibilityLabel="Choose existing photo"
               >
@@ -187,7 +182,7 @@ export function PhotoOptionsBottomSheet({
                 >
                   Choose existing photo
                 </Text>
-              </Pressable>
+              </FeedbackPressable>
             </View>
           </Animated.View>
         </GestureDetector>
@@ -236,9 +231,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
 
-  optionPressed: {
-    opacity: 0.6,
-  },
 
   optionText: {
     marginLeft: 20,

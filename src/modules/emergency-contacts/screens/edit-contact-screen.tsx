@@ -1,8 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
@@ -419,11 +420,9 @@ export function EditContactScreen() {
           />
 
           <View style={styles.relationshipDropdown}>
-            <Pressable
-              onPress={() => setIsRelationshipOpen((previous) => !previous)}
-            >
-              <View pointerEvents="none">
+            <View>
                 <CustomTextInput
+                  onFieldPress={() => setIsRelationshipOpen((previous) => !previous)}
                   label="Relationship"
                   required
                   value={relationship}
@@ -439,8 +438,7 @@ export function EditContactScreen() {
                   }
                   containerStyle={{ paddingBottom: 0 }}
                 />
-              </View>
-            </Pressable>
+            </View>
 
             {isRelationshipOpen && (
               <View
@@ -456,6 +454,7 @@ export function EditContactScreen() {
                   <Pressable
                     key={item.value}
                     style={styles.dropdownItem}
+                    feedbackRadius={0}
                     onPress={() => {
                       setRelationship(item.value);
                       setIsRelationshipOpen(false);

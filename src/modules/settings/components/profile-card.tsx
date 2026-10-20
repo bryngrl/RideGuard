@@ -1,10 +1,11 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { normalizePhoneNumber } from "@/shared/lib/phone-utils";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ProfileAvatar, getProfileDisplayName } from "@/shared/ui";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import Animated, {
   interpolate,
@@ -35,7 +36,7 @@ export function ProfileCard({
   }));
 
   return (
-    <Pressable onPress={onPress} style={styles.wrapper}>
+    <Pressable onPress={onPress} style={styles.wrapper} feedbackRadius={BorderRadius.xl}>
       <Animated.View style={[styles.card, front]}>
         <CardContent profile={profile} />
       </Animated.View>

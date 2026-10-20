@@ -36,7 +36,9 @@ export type SettingsRoute =
   | "/contact"
   | "/privacy/privacy"
   | "/settings/digital-safety"
-  | "/settings/about";
+  | "/settings/about"
+  | "/settings/sos-preferences"
+  | "/settings/archives";
 
 export interface SettingsRowDefinition {
   id: string;

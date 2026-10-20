@@ -311,7 +311,7 @@ export function HomeScreen() {
                     <InactiveCameraIcon width={14} height={14} />
                   )
                 }
-                onPress={() => router.push("/devices" as any)}
+                onPress={() => router.push("/devices?focus=camera1" as any)}
               />
             </View>
 
@@ -333,7 +333,7 @@ export function HomeScreen() {
                     <InactiveCameraIcon width={14} height={14} />
                   )
                 }
-                onPress={() => router.push("/devices" as any)}
+                onPress={() => router.push("/devices?focus=camera2" as any)}
               />
             </View>
 
@@ -355,7 +355,7 @@ export function HomeScreen() {
                     <InactiveSensorIcon width={18} height={18} />
                   )
                 }
-                onPress={() => router.push("/devices" as any)}
+                onPress={() => router.push("/devices?focus=button" as any)}
               />
             </View>
           </ScrollView>

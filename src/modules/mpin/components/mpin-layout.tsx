@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -21,6 +22,7 @@ export function MpinLayout({ title, description, children, onBack, busy, error, 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.toolbar}>
           {onBack && <Pressable onPress={onBack} disabled={busy} style={styles.back}
+            feedbackRadius={16} feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }} feedbackBehindContent
             accessibilityRole="button" accessibilityLabel="Go back" accessibilityState={{ disabled: !!busy }}>
             <BackArrowIcon color={theme.text} />
           </Pressable>}
@@ -55,7 +57,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { flexGrow: 1, width: "100%", maxWidth: 440, alignSelf: "center", paddingHorizontal: Spacing.five, paddingTop: Spacing.two, paddingBottom: Spacing.four },
   toolbar: { height: 48 },
-  back: { width: 44, height: 48, marginLeft: -Spacing.two, justifyContent: "center" },
+  back: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "center", justifyContent: "center" },
   body: { flexGrow: 1 },
   intro: { alignItems: "center", marginTop: Spacing.four },
   icon: { width: 60, height: 60, borderRadius: BorderRadius.full, justifyContent: "center", alignItems: "center", marginBottom: Spacing.four },

@@ -1,3 +1,4 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -5,7 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { styles } from "./create-account-screen.styles";
@@ -67,7 +68,7 @@ export default function CreateAccountScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Pressable onPress={goBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Back to welcome">
+      <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
         <BackArrowIcon color={theme.text} />
       </Pressable>
       <View style={styles.brand}><MainLogo width={64} height={64} /></View>

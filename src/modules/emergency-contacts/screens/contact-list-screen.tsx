@@ -1,3 +1,4 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import AddIcon from "@/assets/icons/arrows/cross.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -6,7 +7,7 @@ import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { EmergencyContactList } from "../components/emergency-contact-list";
 import { listContacts } from "../services/contacts.api";
@@ -83,6 +84,7 @@ export function ContactListScreen() {
       rightAction={
         <Pressable
           onPress={handleAddContact}
+          feedbackRadius={8}
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel="Add emergency contact"
@@ -104,7 +106,7 @@ export function ContactListScreen() {
         ) : loadError ? (
           <View style={{ padding: 24 }}>
             <Text accessibilityRole="alert" style={{ color: colors.error }}>{loadError}</Text>
-            <Pressable accessibilityRole="button" onPress={() => setRetryCount((count) => count + 1)}>
+            <Pressable accessibilityRole="button" onPress={() => setRetryCount((count) => count + 1)} feedbackRadius={9999}>
               <Text style={{ color: colors.primary, marginTop: 12 }}>Try again</Text>
             </Pressable>
           </View>

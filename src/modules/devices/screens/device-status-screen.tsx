@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
@@ -19,6 +19,7 @@ type DeviceStatus = {
 export function DeviceStatusScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
 
   const devices: DeviceStatus[] = [
@@ -43,6 +44,8 @@ export function DeviceStatusScreen() {
       type: "button",
     },
   ];
+  const focusedName = focus === "camera1" ? "Camera 1" : focus === "camera2" ? "Camera 2" : focus === "button" ? "Quick Button" : null;
+  if (focusedName) devices.sort((a, b) => Number(b.name === focusedName) - Number(a.name === focusedName));
 
   const handleDeviceAction = (device: DeviceStatus) => {
     const isConnected = Boolean(device.deviceId);

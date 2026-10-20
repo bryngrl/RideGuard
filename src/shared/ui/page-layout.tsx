@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
-import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
@@ -121,6 +122,10 @@ export function PageLayout({
           <Pressable
             onPress={handleBack}
             style={styles.backButton}
+            feedbackRadius={16}
+            feedbackInsets={Spacing.one}
+            feedbackBehindContent
+            hitSlop={Spacing.one}
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
@@ -202,7 +207,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
 
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "center",
   },
 

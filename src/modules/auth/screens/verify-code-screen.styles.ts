@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
     width: 44,
     height: 48,
     marginLeft: -Spacing.two,
-    alignItems: "flex-start",
+    alignItems: "center",
     justifyContent: "center",
   },
   main: {

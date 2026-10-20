@@ -1,4 +1,4 @@
-import { PageLayout } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 export function AboutScreen() {
-  return <PageLayout title="About" />;
+  return <SettingsPageLayout title="About" />;
 }

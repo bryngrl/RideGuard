@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { mockSettings } from "../config/mock-data";
 import type { Retention, ThemePreference } from "../types/settings.types";
+import { settingsRows } from "../config/settings-rows";
 
 interface SettingsState {
   isHydrated: boolean;
@@ -50,12 +51,12 @@ export const useSettingsStore = create<SettingsState>()(
       // BACKEND SYNC: call updateTheme after persisting this value.
       setThemePreference: (themePreference) => set({ themePreference }),
       addSearchHistory: (value) =>
-        set((state) => ({
-          searchHistory: [
-            value,
-            ...state.searchHistory.filter((item) => item !== value),
-          ].slice(0, 6),
-        })),
+        set((state) => {
+          // Only known menu titles may be saved; never retain free-form input.
+          const title = settingsRows.find((row) => row.title === value)?.title;
+          if (!title) return state;
+          return { searchHistory: [title, ...state.searchHistory.filter((item) => item !== title)].slice(0, 6) };
+        }),
       clearSearchHistory: () => set({ searchHistory: [] }),
     }),
     {

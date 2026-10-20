@@ -1,8 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Typography } from "@/shared/theme";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Pressable, SectionList, Text, View } from "react-native";
+import { SectionList, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAbly } from "@/shared/hooks/use-ably";

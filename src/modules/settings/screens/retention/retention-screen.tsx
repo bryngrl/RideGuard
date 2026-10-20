@@ -1,6 +1,6 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { StyleSheet, Text, View } from "react-native";
 import { InfoNote } from "../../components/info-note";
 import { RadioOption } from "../../components/radio-option";
@@ -11,7 +11,7 @@ export function RetentionScreen() {
   const value = useSettingsStore((state) => state.retention);
   const setValue = useSettingsStore((state) => state.setRetention);
   return (
-    <PageLayout title="Data & footage retention" contentStyle={styles.content}>
+    <SettingsPageLayout title="Data & footage retention" contentStyle={styles.content}>
       <Text style={[Typography.h3, { color: colors.text }]}>
         Automatic deletion
       </Text>
@@ -46,7 +46,7 @@ export function RetentionScreen() {
           description={SETTINGS_COPY.flaggedIncidentsDescription}
         />
       </View>
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }
 const styles = StyleSheet.create({
@@ -56,6 +56,6 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.four,
     maxWidth: 310,
   },
-  panel: { borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.three },
+  panel: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: Spacing.three },
   note: { marginTop: "auto", paddingTop: Spacing.six },
 });

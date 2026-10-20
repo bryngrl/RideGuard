@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
-  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "flex-start", justifyContent: "center" },
+  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "center", justifyContent: "center" },
   brand: { alignSelf: "flex-start", marginTop: Spacing.six, marginBottom: Spacing.four },
   introSection: {
     alignItems: "flex-start",

@@ -1,8 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { Alert, Image, Text, View } from "react-native";
 
 import HelpIcon from "@/assets/icons/actions/help.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
@@ -188,6 +189,7 @@ export function AddContactScreen() {
       rightAction={
         <Pressable
           onPress={handleHelp}
+          feedbackRadius={10}
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel="Emergency contact information"
@@ -273,11 +275,9 @@ export function AddContactScreen() {
           />
 
           <View style={styles.relationshipDropdown}>
-            <Pressable
-              onPress={() => setIsRelationshipOpen((previous) => !previous)}
-            >
-              <View pointerEvents="none">
+            <View>
                 <CustomTextInput
+                  onFieldPress={() => setIsRelationshipOpen((previous) => !previous)}
                   label="Relationship"
                   required
                   value={relationship}
@@ -295,8 +295,7 @@ export function AddContactScreen() {
                     paddingBottom: 0,
                   }}
                 />
-              </View>
-            </Pressable>
+            </View>
 
             {isRelationshipOpen && (
               <View
@@ -312,6 +311,7 @@ export function AddContactScreen() {
                   <Pressable
                     key={item.value}
                     style={styles.dropdownItem}
+                    feedbackRadius={0}
                     onPress={() => {
                       setRelationship(item.value);
                       setIsRelationshipOpen(false);

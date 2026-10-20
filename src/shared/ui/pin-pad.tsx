@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
-import { Pressable, StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 
@@ -83,7 +84,8 @@ export function PinPad({ value, onChange, onComplete, disabled = false, error = 
                 onPress={() => key === "delete" ? backspace() : enter(key)}
                 accessibilityRole="button" accessibilityLabel={key === "delete" ? "Delete last digit" : key}
                 accessibilityState={{ disabled: disabled || (key === "delete" && !value.length) }}
-                style={({ pressed }) => [styles.key, pressed && { backgroundColor: theme.backgroundSelected, opacity: 0.8 }]}>
+                feedbackRadius={BorderRadius.lg}
+                style={styles.key}>
                 {key === "delete" ? <Ionicons name="backspace-outline" size={25} color={theme.text} /> :
                   <Text style={[styles.digit, { color: theme.text }]}>{key}</Text>}
               </Pressable>

@@ -1,8 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BackArrowIcon } from "./back-arrow-icon";
@@ -33,6 +34,9 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
             onPress={onBack}
             disabled={backDisabled}
             style={styles.backButton}
+            feedbackRadius={16}
+            feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }}
+            feedbackBehindContent
             accessibilityRole="button"
             accessibilityLabel="Go back"
             accessibilityState={{ disabled: !!backDisabled }}
@@ -57,7 +61,7 @@ const styles = StyleSheet.create({
     flexGrow: 1, width: "100%", maxWidth: 440, alignSelf: "center",
     paddingHorizontal: Spacing.five, paddingTop: Spacing.two, paddingBottom: Spacing.five,
   },
-  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "flex-start", justifyContent: "center" },
+  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "center", justifyContent: "center" },
   brand: { alignSelf: "flex-start", marginTop: Spacing.six, marginBottom: Spacing.four },
   heading: { ...Typography.h1 },
   description: { ...Typography.bodySmall, marginTop: Spacing.two },

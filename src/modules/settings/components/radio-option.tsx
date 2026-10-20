@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 export function RadioOption({
   title,
   subtitle,
@@ -18,6 +19,7 @@ export function RadioOption({
   return (
     <Pressable
       onPress={onPress}
+      feedbackRadius={0}
       disabled={disabled}
       style={[styles.row, { opacity: disabled ? 0.45 : 1 }]}
     >

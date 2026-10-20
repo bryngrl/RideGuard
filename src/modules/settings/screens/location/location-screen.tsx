@@ -1,6 +1,6 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { StyleSheet, View } from "react-native";
 import { InfoNote } from "../../components/info-note";
 import { ToggleRow } from "../../components/toggle-row";
@@ -10,7 +10,7 @@ export function LocationScreen() {
   const colors = useTheme();
   const state = useSettingsStore();
   return (
-    <PageLayout title="Location sharing" contentStyle={styles.content}>
+    <SettingsPageLayout title="Location sharing" contentStyle={styles.content}>
       <ToggleRow
         title={SETTINGS_COPY.deviceLocation}
         description={SETTINGS_COPY.locationDescription}
@@ -29,7 +29,7 @@ export function LocationScreen() {
           description={SETTINGS_COPY.flaggedIncidentsDescription}
         />
       </View>
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }
 const styles = StyleSheet.create({

@@ -1,10 +1,11 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Typography } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui";
+import { Spacing, Typography } from "@/shared/theme";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { useRouter } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { ProfileCard } from "../../components/profile-card";
 import { useProfile } from "../../hooks/use-profile";
@@ -39,11 +40,18 @@ export function AccountScreen() {
     }
   };
   return (
-    <PageLayout
+    <SettingsPageLayout
       title="Account"
       rightAction={
         <Pressable
           onPress={() => router.push("/settings/account/edit" as never)}
+          style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+          feedbackRadius={16}
+          feedbackInsets={Spacing.one}
+          feedbackBehindContent
+          hitSlop={Spacing.one}
+          accessibilityRole="button"
+          accessibilityLabel="Edit account"
         >
           <Text style={[Typography.button, { color: colors.primary }]}>Edit</Text>
         </Pressable>
@@ -62,6 +70,6 @@ export function AccountScreen() {
           </Pressable>}
         </View>
       )}
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }

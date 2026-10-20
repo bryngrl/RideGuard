@@ -1,9 +1,11 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { ConfirmationModal, CustomTextInput, PageLayout } from "@/shared/ui";
+import { ConfirmationModal, CustomTextInput } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 export function AccountEditScreen() {
@@ -17,7 +19,7 @@ export function AccountEditScreen() {
     if (await edit.save()) router.back();
   };
   return (
-    <PageLayout
+    <SettingsPageLayout
       title="Account"
       onBack={cancel}
       footer={
@@ -118,7 +120,7 @@ export function AccountEditScreen() {
         }}
         onSecondaryPress={() => setConfirm(false)}
       />
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }
 const styles = StyleSheet.create({

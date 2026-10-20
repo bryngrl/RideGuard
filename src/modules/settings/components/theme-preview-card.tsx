@@ -1,7 +1,8 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 export function ThemePreviewCard({
   mode,
   selected,
@@ -19,6 +20,7 @@ export function ThemePreviewCard({
     <Pressable
       disabled={disabled}
       onPress={onPress}
+      feedbackColor={dark ? colors.secondary : colors.primary}
       style={[
         styles.card,
         {

@@ -1,20 +1,31 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import React, { forwardRef, useEffect, useState } from "react";
-import {
-  Pressable,
-  TextInput as RNTextInput,
-  TextInputProps as RNTextInputProps,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native";
+import React, { forwardRef, useEffect, useState, type PropsWithChildren } from "react";
+import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks";
-import { Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+
+function FieldPressTarget({
+  onPress,
+  label,
+  children,
+}: PropsWithChildren<{ onPress?: () => void; label?: string }>) {
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      feedbackRadius={BorderRadius.full}
+      feedbackInsets={1}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {children}
+    </Pressable>
+  ) : (
+    <>{children}</>
+  );
+}
 
 export interface CustomTextInputProps extends RNTextInputProps {
   label?: string;
@@ -32,6 +43,7 @@ export interface CustomTextInputProps extends RNTextInputProps {
   labelStyle?: StyleProp<TextStyle>;
   inputWrapperStyle?: StyleProp<ViewStyle>;
   prefixStyle?: StyleProp<TextStyle>;
+  onFieldPress?: () => void;
 }
 
 export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
@@ -52,6 +64,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       labelStyle,
       inputWrapperStyle,
       prefixStyle,
+      onFieldPress,
       onFocus,
       onBlur,
       ...rest
@@ -100,7 +113,9 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           </Text>
         )}
 
+        <FieldPressTarget onPress={onFieldPress} label={label}>
         <Animated.View
+          pointerEvents={onFieldPress ? "none" : "auto"}
           style={[
             styles.inputWrapper,
             {
@@ -171,6 +186,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               onPress={() => setIsPasswordVisible((prev) => !prev)}
               disabled={rest.editable === false}
               style={styles.eyeButton}
+              feedbackRadius={14}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={
@@ -188,6 +204,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>
           )}
         </Animated.View>
+        </FieldPressTarget>
 
         {hasError ? (
           <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(180)} style={styles.errorContainer}>

@@ -1,3 +1,4 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { Button } from "@/shared/ui/button";
 import { styles } from "./emergency-contact-step-screen.styles";
@@ -13,7 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { ProfilePayload, submitProfile } from "../services/onboarding.api";
 import { useOnboardingStore } from "../store/onboarding.store";
 
@@ -212,9 +213,9 @@ export default function RegisterStepThreeScreen() {
             />
 
             <View style={styles.relationshipDropdown}>
-              <Pressable onPress={() => setIsRelationshipOpen((prev) => !prev)}>
-                <View pointerEvents="none">
+              <View>
                   <CustomTextInput
+                    onFieldPress={() => setIsRelationshipOpen((prev) => !prev)}
                     label="Relationship"
                     required
                     value={store.relationship}
@@ -230,8 +231,7 @@ export default function RegisterStepThreeScreen() {
                     }
                     containerStyle={{ paddingBottom: 0 }}
                   />
-                </View>
-              </Pressable>
+              </View>
 
               {isRelationshipOpen && (
                 <View
@@ -254,6 +254,7 @@ export default function RegisterStepThreeScreen() {
                     <Pressable
                       key={item.value}
                       style={styles.dropdownItem}
+                      feedbackRadius={0}
                       onPress={() => {
                         store.updateDraft({
                           relationship: item.value,

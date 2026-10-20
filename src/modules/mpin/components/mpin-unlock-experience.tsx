@@ -1,7 +1,8 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, AppState, BackHandler, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { ActivityIndicator, AppState, BackHandler, ScrollView, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -93,6 +94,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
         minHeight: Math.max(contentHeight, entry ? panelTop + panelHeight + Spacing.four : cardTop + cardHeight + Spacing.four),
       }]} showsVerticalScrollIndicator={false}>
         {(entry || onExit) && <Pressable onPress={closeEntry} disabled={busy} accessibilityRole="button"
+          feedbackRadius={16} feedbackInsets={6} feedbackBehindContent
           accessibilityLabel={entry ? "Back to MPIN Login" : "Back to MPIN settings"}
           style={styles.back}><BackArrowIcon color={theme.text} /></Pressable>}
         <View style={styles.lock} accessible accessibilityLabel="MPIN login">
@@ -105,7 +107,8 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
           onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}>
           <Pressable accessibilityRole="button" accessibilityLabel="MPIN Login" accessibilityHint="Opens the four-digit MPIN keypad"
             onPress={() => { if (!entry) setEntry(true); }}
-            style={({ pressed }) => [styles.card, { borderColor: theme.border, backgroundColor: pressed ? theme.backgroundElement : theme.background }, pressed && styles.pressed]}>
+            feedbackRadius={BorderRadius.lg}
+            style={[styles.card, { borderColor: theme.border, backgroundColor: theme.background }]}>
             <View style={styles.grid} importantForAccessibility="no-hide-descendants">
               {[0, 1, 2].map((row) => <View key={row} style={styles.gridRow}>
                 {[0, 1, 2].map((column) => <View key={column} style={[styles.gridDot, { borderColor: theme.text }]} />)}
@@ -142,12 +145,11 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { width: "100%", maxWidth: 440, alignSelf: "center", paddingHorizontal: Spacing.five },
-  back: { position: "absolute", left: Spacing.four, top: Spacing.two, width: 44, height: 44, justifyContent: "center", zIndex: 2 },
+  back: { position: "absolute", left: Spacing.four, top: Spacing.two, width: 44, height: 44, alignItems: "center", justifyContent: "center", zIndex: 2 },
   lock: { position: "absolute", top: 42, left: 0, right: 0, alignItems: "center" },
   brand: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   cardPosition: { position: "absolute", left: Spacing.five, right: Spacing.five, alignItems: "center" },
   card: { width: 112, minHeight: 142, borderWidth: 1, borderRadius: BorderRadius.lg, alignItems: "center", justifyContent: "center", gap: Spacing.four, padding: Spacing.three },
-  pressed: { opacity: 0.8 },
   grid: { gap: Spacing.two },
   gridRow: { flexDirection: "row", gap: Spacing.two },
   gridDot: { width: 9, height: 9, borderWidth: 2, borderRadius: BorderRadius.full },

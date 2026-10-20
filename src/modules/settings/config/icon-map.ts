@@ -7,6 +7,9 @@ import FilmstripIcon from "@/assets/icons/settings/filmstrip.svg";
 import LocationIcon from "@/assets/icons/settings/location.svg";
 import LogoutIcon from "@/assets/icons/settings/logout.svg";
 import NotificationIcon from "@/assets/icons/settings/notification.svg";
+import LockIcon from "@/assets/icons/settings/lock.svg";
+import SosIcon from "@/assets/icons/settings/sos.svg";
+import ArchiveIcon from "@/assets/icons/settings/archive.svg";
 import type { ComponentType } from "react";
 import type { SvgProps } from "react-native-svg";
 
@@ -20,4 +23,7 @@ export const settingsIconMap: Record<string, ComponentType<SvgProps>> = {
   location: LocationIcon,
   logout: LogoutIcon,
   notification: NotificationIcon,
+  lock: LockIcon,
+  sos: SosIcon,
+  archive: ArchiveIcon,
 };

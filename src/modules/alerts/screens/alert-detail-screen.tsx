@@ -1,15 +1,6 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  Image,
-  Modal,
-  Pressable,
-  Alert as RNAlert,
-  FlatList,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Image, Modal, Alert as RNAlert, FlatList, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { useEffect, useState } from "react";
 
 import ClockIcon from "@/assets/icons/misc/clock.svg";
@@ -287,6 +278,7 @@ function AutoDeleteBanner({ label }: AutoDeleteBannerProps) {
 
         <Pressable
           onPress={handleChange}
+          feedbackRadius={9999}
           hitSlop={Spacing.one}
           accessibilityRole="button"
           accessibilityLabel="Change auto-delete setting"

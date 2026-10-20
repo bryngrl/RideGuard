@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { StyleSheet, View } from "react-native";
 
 import { Spacing } from "@/shared/theme";
 import type { EmergencyContact } from "../types/emergency-contact.types";

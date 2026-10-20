@@ -1,5 +1,5 @@
 import { Spacing, Typography } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui/page-layout";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { ReactNode } from "react";
 import { Text, View } from "react-native";
 import { styles } from "./legal-screen.styles";
@@ -78,7 +78,7 @@ function Subsection({ title, children }: SubsectionProps) {
 
 export function PrivacyScreen() {
   return (
-    <PageLayout
+    <SettingsPageLayout
       title="Privacy Policy"
       contentStyle={{ paddingTop: Spacing.four }}
     >
@@ -174,6 +174,6 @@ export function PrivacyScreen() {
           for advertising, marketing, or any purpose unrelated to safety.
         </Paragraph>
       </Section>
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }

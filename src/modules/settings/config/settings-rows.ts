@@ -3,16 +3,32 @@ import type { SettingsRowDefinition } from "../types/settings.types";
 export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "mpin",
-    title: "Change MPIN",
-    section: "Account security",
-    iconKey: "check",
+    title: "MPIN",
+    section: "Account & Security",
+    iconKey: "lock",
     route: "/mpin/manage",
     searchKeywords: ["mpin", "pin", "security", "password", "change", "reset"],
   },
   {
+    id: "sos-preferences",
+    title: "SOS Preferences",
+    section: "Safety & Emergency",
+    iconKey: "sos",
+    route: "/settings/sos-preferences",
+    searchKeywords: ["sos", "automatic", "emergency", "threat"],
+  },
+  {
+    id: "contacts",
+    title: "Emergency contacts",
+    section: "Safety & Emergency",
+    iconKey: "contact",
+    route: "/contact",
+    searchKeywords: ["emergency", "contacts"],
+  },
+  {
     id: "camera",
     title: "Camera and quick button",
-    section: "Safety and hardware",
+    section: "Devices & Monitoring",
     iconKey: "camera",
     route: "/devices",
     searchKeywords: ["camera", "quick button", "hardware"],
@@ -20,7 +36,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "location",
     title: "Location sharing",
-    section: "Safety and hardware",
+    section: "Devices & Monitoring",
     iconKey: "location",
     route: "/settings/location",
     searchKeywords: ["location", "sharing"],
@@ -28,15 +44,23 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "retention",
     title: "Data and footage retention",
-    section: "Safety and hardware",
+    section: "Data & History",
     iconKey: "filmstrip",
     route: "/settings/retention",
     searchKeywords: ["data", "footage", "retention", "storage"],
   },
   {
+    id: "archives",
+    title: "Archives",
+    section: "Data & History",
+    iconKey: "archive",
+    route: "/settings/archives",
+    searchKeywords: ["archive", "archived", "records", "history"],
+  },
+  {
     id: "display",
     title: "Display",
-    section: "Preferences",
+    section: "General",
     iconKey: "display",
     route: "/settings/display",
     searchKeywords: ["display", "appearance", "theme"],
@@ -44,18 +68,10 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "notifications",
     title: "Notifications",
-    section: "Preferences",
+    section: "General",
     iconKey: "notification",
     route: "/settings/notifications",
     searchKeywords: ["notification", "alerts", "sound", "vibration"],
-  },
-  {
-    id: "contacts",
-    title: "Emergency Contacts",
-    section: "Safety and hardware",
-    iconKey: "contact",
-    route: "/contact",
-    searchKeywords: ["emergency", "contacts"],
   },
   {
     id: "privacy",
@@ -84,8 +100,9 @@ export const settingsRows: SettingsRowDefinition[] = [
 ];
 
 export const settingsSections = [
-  "Account security",
-  "Safety and hardware",
-  "Preferences",
+  "Account & Security",
+  "Safety & Emergency",
+  "Devices & Monitoring",
+  "Data & History",
   "General",
 ];

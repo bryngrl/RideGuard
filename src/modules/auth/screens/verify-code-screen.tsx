@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from "react-native";
+import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -178,6 +179,9 @@ export default function VerifyCodeScreen() {
           <Pressable
             onPress={backToRecovery}
             style={styles.backButton}
+            feedbackRadius={16}
+            feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }}
+            feedbackBehindContent
             accessibilityRole="button"
             accessibilityLabel="Go back"
             disabled={isVerifying || isResending}
