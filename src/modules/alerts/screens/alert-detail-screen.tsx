@@ -5,6 +5,7 @@ import {
   Modal,
   Pressable,
   Alert as RNAlert,
+  AppState,
   FlatList,
   ScrollView,
   Text,
@@ -22,10 +23,13 @@ import { PageLayout } from "@/shared/ui/page-layout";
 
 import { ClipPlayerModal } from "../components/clip-player-modal";
 import { useAlertDetails } from "../hooks/use-alert-details";
+import { useSettingsStore } from "@/modules/settings/store/settings.store";
+
 import {
   formatClockTime,
   formatRelativeDay,
   getAlertDetectionType,
+  getArchiveStatusLabel,
   getSnapshotUris,
 } from "../services/alerts.mapper";
 import {
@@ -312,6 +316,24 @@ export function AlertDetailScreen() {
   const [viewerIndex, setViewerIndex] = useState(0);
   const [clipOpen, setClipOpen] = useState(false);
 
+  // Loaded preference lets a fresh realtime alert show a tentative countdown.
+  const autoArchiveHours = useSettingsStore((state) => state.autoArchiveHours);
+
+  // Re-tick the countdown while the screen is visible and on foreground. This
+  // is display only; it never changes persisted archive status.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const tick = () => setNow(Date.now());
+    const interval = setInterval(tick, 30_000);
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") tick();
+    });
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, []);
+
   // Get alert data from hook
   const { alert, isSubmitting, markAsFalseAlarm } = useAlertDetails();
 
@@ -331,6 +353,7 @@ export function AlertDetailScreen() {
   const hasVideo = Boolean(alert.videoUrl?.trim());
   const isViolenceType =
     detectionType === "violence" || detectionType === "both";
+  const archiveStatus = getArchiveStatusLabel(alert, autoArchiveHours, now);
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
@@ -394,6 +417,10 @@ export function AlertDetailScreen() {
 
             <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
               {formatRelativeDay(alert.timeStamp)}
+            </Text>
+
+            <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
+              {archiveStatus}
             </Text>
 
             {isFalseAlarm ? (

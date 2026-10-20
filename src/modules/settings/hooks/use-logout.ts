@@ -1,6 +1,8 @@
 import { auth } from "@/lib/firebase";
+import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
 import { signOutGoogle } from "@/modules/auth";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useSettingsStore } from "../store/settings.store";
 import {
   getInstallationId,
   unregisterPushNotification,
@@ -32,6 +34,9 @@ export function useLogout() {
       );
       await signOut(auth);
       clearAuth();
+      // Clear account-specific state so the next account starts clean.
+      useAlertsStore.getState().clearAlerts();
+      useSettingsStore.getState().resetAutoArchive();
       setVisible(false);
       router.replace("/(public)/sign-in");
     } catch (error) {

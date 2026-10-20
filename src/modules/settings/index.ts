@@ -7,7 +7,7 @@ export * from "./screens/legal-screen.styles";
 export { LocationScreen } from "./screens/location/location-screen";
 export { NotificationsScreen } from "./screens/notifications/notifications-screen";
 export * from "./screens/privacy-screen";
-export { RetentionScreen } from "./screens/retention/retention-screen";
+export { AutoArchiveScreen } from "./screens/retention/retention-screen";
 export { SearchScreen } from "./screens/search-screen";
 export * from "./screens/settings-screen";
 export * from "./screens/terms-screen";

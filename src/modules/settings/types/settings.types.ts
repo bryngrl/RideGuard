@@ -1,4 +1,5 @@
-export type Retention = 24 | 48 | 72;
+// Auto-archive period in hours, or null for "Never".
+export type AutoArchiveHours = 24 | 48 | 72 | null;
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface SettingsProfile {
@@ -15,7 +16,7 @@ export interface SettingsProfile {
 }
 
 export interface SettingsSnapshot {
-  retention: Retention;
+  autoArchiveHours: AutoArchiveHours;
   alertsEnabled: boolean;
   pushEnabled: boolean;
   soundEnabled: boolean;

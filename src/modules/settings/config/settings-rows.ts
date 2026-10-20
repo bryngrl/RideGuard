@@ -19,11 +19,11 @@ export const settingsRows: SettingsRowDefinition[] = [
   },
   {
     id: "retention",
-    title: "Data and footage retention",
+    title: "Auto archive",
     section: "Safety and hardware",
     iconKey: "filmstrip",
     route: "/settings/retention",
-    searchKeywords: ["data", "footage", "retention", "storage"],
+    searchKeywords: ["auto archive", "archive", "alerts", "retention", "storage"],
   },
   {
     id: "display",

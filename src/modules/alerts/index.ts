@@ -7,7 +7,7 @@ export { AlertItem } from "./components/alert-item";
 
 // Hooks
 export { useAlertDetails } from "./hooks/use-alert-details";
-export { useAlerts } from "./hooks/use-alerts";
+export { useAlertsList } from "./hooks/use-alerts";
 
 // Types
 export type {
