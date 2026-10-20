@@ -5,6 +5,7 @@ import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Scroll
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
@@ -180,7 +181,7 @@ export default function VerifyCodeScreen() {
             onPress={backToRecovery}
             style={styles.backButton}
             feedbackRadius={16}
-            feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }}
+            feedbackInsets={Spacing.two}
             feedbackBehindContent
             accessibilityRole="button"
             accessibilityLabel="Go back"

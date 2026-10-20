@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
 
 import { FontFamily, Spacing, Typography } from "@/shared/theme";
+import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE } from "@/shared/ui/back-arrow-icon";
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -14,9 +15,9 @@ export const styles = StyleSheet.create({
     paddingBottom: Spacing.five,
   },
   backButton: {
-    width: 44,
-    height: 48,
-    marginLeft: -Spacing.two,
+    width: BACK_ARROW_TOUCH_SIZE,
+    height: BACK_ARROW_TOUCH_SIZE,
+    marginLeft: BACK_ARROW_TOUCH_LEFT - Spacing.five,
     alignItems: "center",
     justifyContent: "center",
   },

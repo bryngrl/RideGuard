@@ -10,6 +10,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useGoogleSignin } from "../hooks/use-google-signin";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { Spacing } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { GoogleButton } from "@/shared/ui/google-button";
@@ -126,7 +127,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={{ top: 8, right: 6, bottom: 8, left: 6 }} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
+          <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
             <BackArrowIcon color={theme.text} />
           </Pressable>
           <View style={styles.brand}><MainLogo width={64} height={64} /></View>

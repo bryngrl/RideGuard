@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from "react-native";
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
-import { PageLayout } from "@/shared/ui/page-layout";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 
 import { useDeviceStore } from "../store/devices.store";
 
@@ -68,7 +68,7 @@ export function DeviceStatusScreen() {
   };
 
   return (
-    <PageLayout title="Camera and quick button">
+    <SettingsPageLayout title="Camera and quick button">
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
@@ -83,7 +83,7 @@ export function DeviceStatusScreen() {
 
           return (
             <View key={device.name} style={styles.deviceSection}>
-              <Text style={[Typography.h3, { color: theme.text }]}>
+              <Text style={[Typography.h4, { color: theme.text }]}>
                 {device.name}
               </Text>
 
@@ -128,13 +128,14 @@ export function DeviceStatusScreen() {
                 title={actionTitle}
                 variant={isConnected ? "primary" : "outline"}
                 fullWidth
+                style={styles.action}
                 onPress={() => handleDeviceAction(device)}
               />
             </View>
           );
         })}
       </View>
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }
 
@@ -145,6 +146,7 @@ const styles = StyleSheet.create({
   deviceSection: {
     gap: Spacing.two,
   },
+  action: { marginTop: Spacing.two },
   infoRow: {
     alignItems: "center",
     flexDirection: "row",

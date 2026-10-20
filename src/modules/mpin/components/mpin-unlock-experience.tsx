@@ -9,7 +9,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { BrandLockup } from "@/components/brand-lockup";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, PinLayout, Spacing, Typography } from "@/shared/theme";
-import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
+import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { Button } from "@/shared/ui/button";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { PinPad } from "@/shared/ui/pin-pad";
@@ -94,7 +94,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
         minHeight: Math.max(contentHeight, entry ? panelTop + panelHeight + Spacing.four : cardTop + cardHeight + Spacing.four),
       }]} showsVerticalScrollIndicator={false}>
         {(entry || onExit) && <Pressable onPress={closeEntry} disabled={busy} accessibilityRole="button"
-          feedbackRadius={16} feedbackInsets={6} feedbackBehindContent
+          feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent
           accessibilityLabel={entry ? "Back to MPIN Login" : "Back to MPIN settings"}
           style={styles.back}><BackArrowIcon color={theme.text} /></Pressable>}
         <View style={styles.lock} accessible accessibilityLabel="MPIN login">
@@ -145,7 +145,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { width: "100%", maxWidth: 440, alignSelf: "center", paddingHorizontal: Spacing.five },
-  back: { position: "absolute", left: Spacing.four, top: Spacing.two, width: 44, height: 44, alignItems: "center", justifyContent: "center", zIndex: 2 },
+  back: { position: "absolute", left: BACK_ARROW_TOUCH_LEFT, top: Spacing.two, width: BACK_ARROW_TOUCH_SIZE, height: BACK_ARROW_TOUCH_SIZE, alignItems: "center", justifyContent: "center", zIndex: 2 },
   lock: { position: "absolute", top: 42, left: 0, right: 0, alignItems: "center" },
   brand: { position: "absolute", left: 0, right: 0, alignItems: "center" },
   cardPosition: { position: "absolute", left: Spacing.five, right: Spacing.five, alignItems: "center" },
