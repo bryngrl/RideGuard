@@ -4,7 +4,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "mpin",
     title: "MPIN",
-    section: "Account & Security",
+    section: "App & Account",
     iconKey: "lock",
     route: "/mpin/manage",
     searchKeywords: ["mpin", "pin", "security", "password", "change", "reset"],
@@ -12,7 +12,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "sos-preferences",
     title: "SOS Preferences",
-    section: "Safety & Emergency",
+    section: "Safety & Monitoring",
     iconKey: "sos",
     route: "/settings/sos-preferences",
     searchKeywords: ["sos", "automatic", "emergency", "threat"],
@@ -20,7 +20,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "contacts",
     title: "Emergency contacts",
-    section: "Safety & Emergency",
+    section: "Safety & Monitoring",
     iconKey: "contact",
     route: "/contact",
     searchKeywords: ["emergency", "contacts"],
@@ -28,7 +28,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "camera",
     title: "Camera and quick button",
-    section: "Devices & Monitoring",
+    section: "Safety & Monitoring",
     iconKey: "camera",
     route: "/devices",
     searchKeywords: ["camera", "quick button", "hardware"],
@@ -36,7 +36,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "location",
     title: "Location sharing",
-    section: "Devices & Monitoring",
+    section: "Safety & Monitoring",
     iconKey: "location",
     route: "/settings/location",
     searchKeywords: ["location", "sharing"],
@@ -44,7 +44,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "retention",
     title: "Data and footage retention",
-    section: "Data & History",
+    section: "Safety & Monitoring",
     iconKey: "filmstrip",
     route: "/settings/retention",
     searchKeywords: ["data", "footage", "retention", "storage"],
@@ -52,7 +52,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "archives",
     title: "Archives",
-    section: "Data & History",
+    section: "Safety & Monitoring",
     iconKey: "archive",
     route: "/settings/archives",
     searchKeywords: ["archive", "archived", "records", "history"],
@@ -60,7 +60,7 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "display",
     title: "Display",
-    section: "General",
+    section: "App & Account",
     iconKey: "display",
     route: "/settings/display",
     searchKeywords: ["display", "appearance", "theme"],
@@ -68,31 +68,31 @@ export const settingsRows: SettingsRowDefinition[] = [
   {
     id: "notifications",
     title: "Notifications",
-    section: "General",
+    section: "App & Account",
     iconKey: "notification",
     route: "/settings/notifications",
     searchKeywords: ["notification", "alerts", "sound", "vibration"],
   },
   {
-    id: "privacy",
-    title: "Privacy policy",
-    section: "General",
-    iconKey: "check",
-    route: "/privacy/privacy",
-    searchKeywords: ["privacy", "policy"],
+    id: "terms",
+    title: "Terms of Service",
+    section: "Information",
+    iconKey: "terms",
+    route: "/settings/terms-of-service",
+    searchKeywords: ["terms", "service", "legal", "agreement"],
   },
   {
-    id: "digital-safety",
-    title: "Digital safety",
-    section: "General",
-    iconKey: "check",
-    route: "/settings/digital-safety",
-    searchKeywords: ["digital", "safety"],
+    id: "privacy",
+    title: "Privacy Policy",
+    section: "Information",
+    iconKey: "privacy",
+    route: "/privacy/privacy",
+    searchKeywords: ["privacy", "policy", "data"],
   },
   {
     id: "about",
     title: "About",
-    section: "General",
+    section: "Information",
     iconKey: "about",
     route: "/settings/about",
     searchKeywords: ["about", "information"],
@@ -100,9 +100,7 @@ export const settingsRows: SettingsRowDefinition[] = [
 ];
 
 export const settingsSections = [
-  "Account & Security",
-  "Safety & Emergency",
-  "Devices & Monitoring",
-  "Data & History",
-  "General",
+  "Safety & Monitoring",
+  "App & Account",
+  "Information",
 ];

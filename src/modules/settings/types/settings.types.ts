@@ -36,6 +36,7 @@ export type SettingsRoute =
   | "/contact"
   | "/privacy/privacy"
   | "/settings/digital-safety"
+  | "/settings/terms-of-service"
   | "/settings/about"
   | "/settings/sos-preferences"
   | "/settings/archives";

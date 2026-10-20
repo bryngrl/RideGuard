@@ -1,240 +1,74 @@
-import { Spacing, Typography } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui/page-layout";
-import { ReactNode } from "react";
-import { Text, View } from "react-native";
-import { styles } from "./legal-screen.styles";
+import { InformationPage, type InformationSection } from "../components/information-page";
 
-interface SectionProps {
-  title: string;
-  children: ReactNode;
-}
-
-function Section({ title, children }: SectionProps) {
-  return (
-    <View style={styles.section}>
-      <Text style={[Typography.h4, styles.sectionTitle, { fontSize: 14 }]}>
-        {title}
-      </Text>
-      <View style={styles.sectionContent}>{children}</View>
-    </View>
-  );
-}
-
-function Paragraph({ children }: { children: ReactNode }) {
-  return (
-    <Text
-      style={[
-        Typography.bodySmall,
-        styles.paragraph,
-        {
-          marginTop: Spacing.one,
-        },
-      ]}
-    >
-      {children}
-    </Text>
-  );
-}
-
-function Bullet({ children }: { children: ReactNode }) {
-  return (
-    <View style={styles.bulletRow}>
-      <Text
-        style={[
-          Typography.bodySmall,
-          styles.bullet,
-          {
-            marginLeft: Spacing.two,
-          },
-        ]}
-      >
-        •
-      </Text>
-
-      <Text
-        style={[Typography.bodySmall, styles.bulletText, { lineHeight: 16 }]}
-      >
-        {children}
-      </Text>
-    </View>
-  );
-}
+const sections: InformationSection[] = [
+  {
+    title: "1. Introduction and acceptance",
+    paragraphs: [
+      "RideGuard is intended to help car-based Transport Network Vehicle Service (TNVS) drivers recognize and respond to possible safety risks. These terms explain the features available in the app and their limits. Please read them before using RideGuard.",
+    ],
+  },
+  {
+    title: "2. What RideGuard does",
+    paragraphs: [
+      "The app supports account access, connected-camera viewing, user-started phone-camera monitoring, AI-assisted threat alerts, alert records, emergency contacts, and an SOS interface. Available features depend on the connected device, permissions, account, and service configuration.",
+    ],
+  },
+  {
+    title: "3. Accounts and your information",
+    paragraphs: [
+      "Sign-in is used to access account-specific information. Keep your sign-in methods and devices secure, and provide accurate contact and vehicle details when you choose to add them. Some profile fields cannot currently be edited through the app.",
+    ],
+  },
+  {
+    title: "4. Cameras and authorized use",
+    paragraphs: [
+      "When you start a supported phone-camera session, the app can capture and send periodic images for threat analysis. Connected cameras may also provide a live view. Use recording and monitoring only where you are authorized, and follow applicable rules on passenger notice and consent.",
+    ],
+  },
+  {
+    title: "5. AI-assisted detection",
+    paragraphs: [
+      "RideGuard can flag possible weapons or violent activity, but automated analysis may produce false alarms or miss a real threat. An alert is information to assess, not a confirmation that an incident occurred. RideGuard cannot guarantee detection, prevention, or driver or passenger safety.",
+    ],
+  },
+  {
+    title: "6. Alerts and emergency functions",
+    paragraphs: [
+      "The app can display alerts and associated incident images or clips when the connected service provides them. The SOS screens provide a manual emergency flow, but this version of RideGuard does not confirm that an SOS action has reached emergency contacts or emergency services. Do not rely on the app as your only way to seek help.",
+    ],
+  },
+  {
+    title: "7. Automatic SOS preferences",
+    paragraphs: [
+      "The automatic SOS control is currently unavailable because it is not connected to a preference service. Do not assume that a detected threat will automatically trigger an SOS message or contact anyone.",
+    ],
+  },
+  {
+    title: "8. MPIN and account security",
+    paragraphs: [
+      "MPIN screens are present, but MPIN setup and verification are not available in this version. Your account sign-in remains the active access method. Do not treat an unconfigured MPIN as protection for your account or incident data.",
+    ],
+  },
+  {
+    title: "9. Responsible use",
+    paragraphs: [
+      "Use RideGuard for authorized safety-related purposes. Do not use another person's account, misuse access to images or alerts, or use the app to harass or profile passengers. You remain responsible for deciding how to respond to an alert and for complying with applicable recording and privacy rules.",
+    ],
+  },
+  {
+    title: "10. Availability and technical limits",
+    paragraphs: [
+      "Monitoring and alert delivery can be interrupted by camera problems, permissions, battery limits, network loss, backend availability, or device configuration. Emergency features also depend on the services to which they are connected. RideGuard does not promise continuous or real-time protection.",
+    ],
+  },
+  {
+    title: "11. Changes to these terms",
+    paragraphs: [
+      "These terms may need to change as RideGuard's features and operations change. The current text will be available in the app. A formal process for notifying users of material changes has not yet been confirmed.",
+    ],
+  },
+];
 
 export function TermsScreen() {
-  return (
-    <PageLayout
-      title="Terms of Service"
-      contentStyle={{ paddingTop: Spacing.four }}
-    >
-      <Section title="I. Acceptance of Terms">
-        <Paragraph>
-          By creating an account or using Rideguard, you agree to be bound by
-          these Terms of Service and our Privacy Policy. If you do not agree, do
-          not use the app or hardware.
-        </Paragraph>
-      </Section>
-
-      <Section title="II. Description of Service">
-        <Paragraph>
-          Rideguard is a driver-safety system consisting of:
-        </Paragraph>
-
-        <View style={styles.list}>
-          <Bullet>A mobile application.</Bullet>
-          <Bullet>
-            An EM coil (metal) detection sensor installed in the vehicle door.
-          </Bullet>
-          <Bullet>
-            A cabin-facing camera for passenger movement and behavior
-            monitoring.
-          </Bullet>
-        </View>
-
-        <Paragraph>
-          The system is designed to detect metal objects, flag unusual passenger
-          movement, and respond automatically if a physical attack on the driver
-          is detected. Rideguard is a safety aid intended to reduce risk and
-          support faster emergency response — it is not a guarantee of
-          protection and cannot prevent all incidents.
-        </Paragraph>
-      </Section>
-
-      <Section title="III. Eligibility">
-        <Paragraph>You must be:</Paragraph>
-
-        <View style={styles.list}>
-          <Bullet>A licensed driver in good standing.</Bullet>
-          <Bullet>At least 18 years of age.</Bullet>
-          <Bullet>
-            The registered owner or authorized operator of the vehicle in which
-            Rideguard hardware is installed.
-          </Bullet>
-        </View>
-      </Section>
-
-      <Section title="IV. Account Registration">
-        <Paragraph>
-          You agree to provide accurate, current information during onboarding,
-          including your name, contact details, driver's license, and vehicle
-          information. You are responsible for keeping your account credentials
-          secure.
-        </Paragraph>
-      </Section>
-
-      <Section title="V. Hardware Requirements and Driver Responsibilities">
-        <Paragraph>
-          You agree to provide accurate, current information during onboarding,
-          including your name, contact details, driver's license, and vehicle
-          information. You are responsible for keeping your account credentials
-          secure.
-        </Paragraph>
-      </Section>
-
-      <Section title="VI. Automated Alerts and Emergency Response">
-        <Bullet>
-          Tier 1 (metal detected): Informational only. No automatic action is
-          taken.
-        </Bullet>
-
-        <Bullet>
-          Tier 2 (metal detected + suspicious movement): An elevated alert is
-          sent to you. Depending on your settings, your emergency contact may be
-          notified automatically or only after your confirmation.
-        </Bullet>
-
-        <Bullet>
-          Tier 3 (attack detected): RideGuard automatically dials emergency
-          services and notifies your emergency contacts with your live location.
-          This occurs without requiring driver confirmation, since you may be
-          incapacitated.
-        </Bullet>
-
-        <Paragraph>
-          You acknowledge that automated detection systems, including
-          camera-based behavior analysis, may produce false positives or false
-          negatives, and that RideGuard is not liable for outcomes resulting
-          from detection errors, to the extent permitted by law.
-        </Paragraph>
-      </Section>
-
-      <Section title="VII. Footage, Data, and Evidence">
-        <Bullet>
-          Footage from rides with no flagged incident is automatically deleted
-          according to your selected retention window (24–72 hours).
-        </Bullet>
-
-        <Bullet>
-          Footage and face captures tied to a flagged or reported incident are
-          retained and locked to preserve evidence and cannot be deleted by the
-          driver.
-        </Bullet>
-
-        <Bullet>
-          You may not use Rideguard footage for purposes unrelated to your own
-          safety, including sharing passenger footage publicly, without
-          appropriate legal basis.
-        </Bullet>
-      </Section>
-
-      <Section title="VIII. Passenger Notice">
-        <Paragraph>
-          Where required by local law, you are responsible for ensuring
-          appropriate notice is given to passengers that recording and detection
-          technology is in use in the vehicle.
-        </Paragraph>
-      </Section>
-
-      <Section title="IX. Prohibited Use">
-        <Paragraph>You agree not to:</Paragraph>
-
-        <View style={styles.list}>
-          <Bullet>
-            Use Rideguard to harass, discriminate against, or profile
-            passengers.
-          </Bullet>
-          <Bullet>Disable safety features to conceal misconduct.</Bullet>
-          <Bullet>Attempt to access another driver's account or data.</Bullet>
-          <Bullet>
-            Reverse-engineer or tamper with the detection hardware or software.
-          </Bullet>
-        </View>
-      </Section>
-
-      <Section title="X. Service Availability">
-        <Paragraph>
-          Rideguard relies on hardware connectivity (Bluetooth), mobile network
-          access, and location services. Service interruptions (e.g., loss of
-          signal, hardware disconnection, low battery) may affect detection and
-          alert delivery. Rideguard is not liable for gaps in protection caused
-          by factors outside its control.
-        </Paragraph>
-      </Section>
-
-      <Section title="XI. Limitation of Liability">
-        <Paragraph>
-          To the maximum extent permitted by law, Rideguard and its developers
-          are not liable for indirect, incidental, or consequential damages
-          arising from use of, or inability to use, the app or hardware,
-          including but not limited to failure to detect a threat or delay in
-          emergency response.
-        </Paragraph>
-      </Section>
-
-      <Section title="XII. Termination">
-        <Paragraph>
-          Rideguard may suspend or terminate accounts that violate these terms.
-          You may stop using the service and request account deletion at any
-          time through the app.
-        </Paragraph>
-      </Section>
-
-      <Section title="XIII. Changes to These Terms">
-        <Paragraph>
-          We may update these Terms from time to time. Continued use of
-          Rideguard after changes take effect constitutes acceptance of the
-          revised terms.
-        </Paragraph>
-      </Section>
-    </PageLayout>
-  );
+  return <InformationPage title="Terms of Service" sections={sections} />;
 }

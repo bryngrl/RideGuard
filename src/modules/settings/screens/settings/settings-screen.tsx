@@ -86,26 +86,26 @@ export function SettingsScreen() {
                 <SettingRow
                   key={row.id}
                   row={row}
-                  showDivider={index < rows.length - 1 || section === "General"}
+                  showDivider={index < rows.length - 1}
                   onPress={() => router.push(row.route as never)}
                 />
               ))}
-            {section === "General" && (
-              <SettingRow
-                row={{
-                  id: "logout",
-                  title: "Log out",
-                  section,
-                  iconKey: "logout",
-                  searchKeywords: [],
-                }}
-                danger
-                showDivider={false}
-                onPress={logout.open}
-              />
-            )}
           </SettingsSection>
         ))}
+        <View style={[styles.logoutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SettingRow
+            row={{
+              id: "logout",
+              title: "Log out",
+              section: "Information",
+              iconKey: "logout",
+              searchKeywords: [],
+            }}
+            danger
+            showDivider={false}
+            onPress={logout.open}
+          />
+        </View>
         </Animated.View>}
       </KeyboardAvoidingWrapper>
       <ConfirmationModal
@@ -133,4 +133,5 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.five,
   },
   profileCopy: { flex: 1, marginLeft: Spacing.three },
+  logoutCard: { marginTop: Spacing.five, borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, overflow: "hidden" },
 });

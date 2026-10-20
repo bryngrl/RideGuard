@@ -1,9 +1,7 @@
 export { AboutScreen } from "./screens/about/about-screen";
 export { AccountEditScreen } from "./screens/account-edit-screen";
 export { AccountScreen } from "./screens/account-screen";
-export { DigitalSafetyScreen } from "./screens/digital-safety/digital-safety-screen";
 export { DisplayScreen } from "./screens/display/display-screen";
-export * from "./screens/legal-screen.styles";
 export { LocationScreen } from "./screens/location/location-screen";
 export { NotificationsScreen } from "./screens/notifications/notifications-screen";
 export * from "./screens/privacy-screen";
