@@ -10,6 +10,7 @@ interface ConfirmationModalProps {
   primaryButtonText: string;
   secondaryButtonText: string;
   primaryButtonColor?: string;
+  maxWidth?: number;
   onPrimaryPress: () => void;
   onSecondaryPress: () => void;
 }
@@ -21,6 +22,7 @@ export function ConfirmationModal({
   primaryButtonText,
   primaryButtonColor,
   secondaryButtonText,
+  maxWidth,
   onPrimaryPress,
   onSecondaryPress,
 }: ConfirmationModalProps) {
@@ -40,6 +42,7 @@ export function ConfirmationModal({
             {
               backgroundColor: theme.card,
             },
+            maxWidth ? { maxWidth } : null,
           ]}
         >
           <Text

@@ -394,7 +394,6 @@ export function EditContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            inputWrapperStyle={styles.pillInput}
             onChangeText={(text) => {
               setContactName(text);
               if (contactNameError) setContactNameError("");
@@ -410,7 +409,6 @@ export function EditContactScreen() {
             value={phoneNumber}
             error={phoneNumberError}
             maxLength={10}
-            inputWrapperStyle={styles.pillInput}
             onChangeText={handlePhoneChange}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
@@ -424,7 +422,6 @@ export function EditContactScreen() {
                   value={relationship}
                   error={relationshipError}
                   editable={false}
-                  inputWrapperStyle={styles.pillInput}
                   rightIcon={
                     <Ionicons
                       name={isRelationshipOpen ? "caret-up" : "caret-down"}

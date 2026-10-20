@@ -46,14 +46,14 @@ export function ProfileCard({
           style={styles.gradient}
         >
           <View style={styles.backContent}>
-            <Text style={[Typography.h3, { color: colors.text }]}>
-              {firstName ? `${firstName}'s Vehicle` : "Your Vehicle"}
+            <Text numberOfLines={1} style={[styles.backTitle, { color: colors.text }]}>
+              {firstName ? `${firstName}’s vehicle` : "Your vehicle"}
             </Text>
-            <Text style={[Typography.bodySmall, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.backDetail, { color: colors.text }]}>
               {`${profile.vehicleBrand} ${profile.vehicleModel}`.trim() ||
                 "No vehicle added"}
             </Text>
-            <Text style={[Typography.bodySmall, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.backDetail, { color: colors.text }]}>
               {profile.plateNumber || "No plate number"}
             </Text>
           </View>
@@ -125,10 +125,14 @@ const styles = StyleSheet.create({
   },
   backContent: {
     flex: 1,
-    justifyContent: "center",
-  },
-  copy: {
     gap: Spacing.half,
+    paddingLeft: Spacing.two,
+    paddingTop: Spacing.two,
+  },
+  backTitle: { ...Typography.bodyLarge, fontFamily: "Geist-SemiBold", lineHeight: 22 },
+  backDetail: { ...Typography.bodySmall, fontSize: 12, lineHeight: 16 },
+  copy: {
+    gap: 0,
     flex: 1,
     paddingRight: Spacing.two,
   },

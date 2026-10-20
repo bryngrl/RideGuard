@@ -119,7 +119,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: theme.inputBackground,
+              backgroundColor: theme.backgroundElement,
             },
             focusStyle,
             inputWrapperStyle,
@@ -323,5 +323,6 @@ const styles = StyleSheet.create({
 
   prefixText: {
     ...Typography.input,
+    fontSize: 14,
   },
 });

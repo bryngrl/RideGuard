@@ -137,7 +137,6 @@ export function AccountEditScreen() {
         <CustomTextInput
           label="Full name"
           required
-          inputWrapperStyle={{ backgroundColor: colors.backgroundElement }}
           value={fullName}
           onChangeText={changeFullName}
           error={edit.submitted ? edit.fieldErrors.firstName || edit.fieldErrors.lastName : undefined}
@@ -146,7 +145,6 @@ export function AccountEditScreen() {
         <CustomTextInput
           label="Phone number"
           required
-          inputWrapperStyle={{ backgroundColor: colors.backgroundElement }}
           prefix="+63"
           keyboardType="number-pad"
           maxLength={12}
@@ -158,14 +156,12 @@ export function AccountEditScreen() {
         <CustomTextInput
           label="Email"
           required
-          inputWrapperStyle={{ backgroundColor: colors.backgroundElement }}
           value={edit.form.email || "Managed by your sign-in provider"}
           editable={false}
         />
         <CustomTextInput
           label="Vehicle"
           required
-          inputWrapperStyle={{ backgroundColor: colors.backgroundElement }}
           value={vehicleName}
           onChangeText={changeVehicle}
           error={edit.submitted ? edit.fieldErrors.vehicleBrand || edit.fieldErrors.vehicleModel : undefined}
@@ -173,7 +169,6 @@ export function AccountEditScreen() {
         <CustomTextInput
           label="Plate number"
           required
-          inputWrapperStyle={{ backgroundColor: colors.backgroundElement }}
           value={edit.form.plateNumber}
           onChangeText={(value) => edit.setField("plateNumber", value)}
           error={edit.submitted ? edit.fieldErrors.plateNumber : undefined}

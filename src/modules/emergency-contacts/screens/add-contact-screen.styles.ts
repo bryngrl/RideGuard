@@ -49,12 +49,6 @@ export const styles = StyleSheet.create({
     marginBottom: Spacing.five,
   },
 
-  pillInput: {
-    backgroundColor: "#F6F6F6",
-    borderColor: "#D9D9D9",
-    borderRadius: BorderRadius.full,
-  },
-
   profileImage: {
     alignItems: "center",
     borderRadius: 48,

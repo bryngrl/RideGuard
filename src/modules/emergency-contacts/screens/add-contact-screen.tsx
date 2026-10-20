@@ -242,7 +242,6 @@ export function AddContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            inputWrapperStyle={styles.pillInput}
             onChangeText={(text) => {
               setContactName(text);
 
@@ -263,7 +262,6 @@ export function AddContactScreen() {
             value={phoneNumber}
             error={phoneNumberError}
             maxLength={10}
-            inputWrapperStyle={styles.pillInput}
             onChangeText={handlePhoneChange}
             containerStyle={{
               paddingBottom: Spacing.two,
@@ -279,7 +277,6 @@ export function AddContactScreen() {
                   value={relationship}
                   error={relationshipError}
                   editable={false}
-                  inputWrapperStyle={styles.pillInput}
                   rightIcon={
                     <Ionicons
                       name={isRelationshipOpen ? "caret-up" : "caret-down"}

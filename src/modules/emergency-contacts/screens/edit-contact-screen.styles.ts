@@ -107,11 +107,6 @@ export const styles = StyleSheet.create({
     marginTop: Spacing.one,
   },
 
-  pillInput: {
-    borderColor: "#ffffffff",
-    borderRadius: BorderRadius.full,
-  },
-
   previewContainer: {
     flex: 1,
     width: "100%",

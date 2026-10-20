@@ -1,11 +1,15 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
+import { auth } from "@/lib/firebase";
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
+import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 
+import { releaseDevice } from "../services/devices.api";
 import { useDeviceStore } from "../store/devices.store";
 
 type DeviceStatus = {
@@ -21,6 +25,8 @@ export function DeviceStatusScreen() {
   const router = useRouter();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [deviceToDisconnect, setDeviceToDisconnect] = useState<DeviceStatus | null>(null);
 
   const devices: DeviceStatus[] = [
     {
@@ -65,6 +71,47 @@ export function DeviceStatusScreen() {
         ? `/(onboarding)/devices/camera/camera-preview?camera=${cameraNumber}`
         : `/(onboarding)/devices/camera?camera=${cameraNumber}`) as never,
     );
+  };
+
+  const disconnectDevice = async (device: DeviceStatus) => {
+    if (disconnectingId) return;
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Sign in required", "Sign in to disconnect this device.");
+      return;
+    }
+
+    setDisconnectingId(device.deviceId);
+    try {
+      await releaseDevice(device.deviceId, await user.getIdToken(true));
+      const state = useDeviceStore.getState();
+      if (state.camera1DeviceId === device.deviceId) {
+        state.setCamera1DeviceId("");
+        state.setCamera1Activated(false);
+      }
+      if (state.camera2DeviceId === device.deviceId) {
+        state.setCamera2DeviceId("");
+        state.setCamera2Activated(false);
+      }
+      if (state.buttonDeviceId === device.deviceId) {
+        state.setButtonDeviceId("");
+        state.setButtonActivated(false);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Could not disconnect",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setDisconnectingId(null);
+    }
+  };
+
+  const confirmDisconnect = () => {
+    if (!deviceToDisconnect || disconnectingId) return;
+    const device = deviceToDisconnect;
+    setDeviceToDisconnect(null);
+    void disconnectDevice(device);
   };
 
   return (
@@ -129,12 +176,35 @@ export function DeviceStatusScreen() {
                 variant={isConnected ? "primary" : "outline"}
                 fullWidth
                 style={styles.action}
+                disabled={Boolean(disconnectingId)}
                 onPress={() => handleDeviceAction(device)}
               />
+              {isConnected && (
+                <Button
+                  title="Disconnect"
+                  variant="danger"
+                  fullWidth
+                  style={styles.disconnect}
+                  isLoading={disconnectingId === device.deviceId}
+                  disabled={Boolean(disconnectingId)}
+                  onPress={() => setDeviceToDisconnect(device)}
+                />
+              )}
             </View>
           );
         })}
       </View>
+      <ConfirmationModal
+        visible={deviceToDisconnect !== null}
+        title={`Disconnect ${deviceToDisconnect?.name ?? "device"}?`}
+        description="This device will no longer be linked to your account until you connect it again."
+        primaryButtonText="Disconnect"
+        secondaryButtonText="Cancel"
+        primaryButtonColor={theme.error}
+        maxWidth={320}
+        onPrimaryPress={confirmDisconnect}
+        onSecondaryPress={() => setDeviceToDisconnect(null)}
+      />
     </SettingsPageLayout>
   );
 }
@@ -147,6 +217,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   action: { marginTop: Spacing.two },
+  disconnect: { borderWidth: 1 },
   infoRow: {
     alignItems: "center",
     flexDirection: "row",
