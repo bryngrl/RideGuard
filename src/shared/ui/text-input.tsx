@@ -5,7 +5,7 @@ import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp
 import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
 
 function FieldPressTarget({
   onPress,
@@ -119,7 +119,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: "#F6F6F6",
+              backgroundColor: theme.inputBackground,
             },
             focusStyle,
             inputWrapperStyle,
@@ -147,7 +147,11 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
                 style={[
                   styles.prefixText,
                   {
-                    color: theme.textMuted,
+                    color: hasError
+                      ? theme.error
+                      : isFocused
+                        ? theme.borderFocus
+                        : theme.textMuted,
                   },
                   prefixStyle,
                 ]}
@@ -255,6 +259,7 @@ const styles = StyleSheet.create({
     ...Typography.bodySmall,
     fontSize: 13,
     lineHeight: 18,
+    fontFamily: FontFamily.geistMedium,
     marginBottom: Spacing.two,
     marginLeft: Spacing.half,
   },
@@ -264,12 +269,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
-    minHeight: 50,
+    minHeight: 46,
   },
   input: {
     flex: 1,
     ...Typography.input,
-    paddingVertical: 12,
+    paddingVertical: Spacing.two,
   },
   leftIcon: {
     marginRight: Spacing.two,
@@ -317,7 +322,6 @@ const styles = StyleSheet.create({
   },
 
   prefixText: {
-    ...Typography.bodySmall,
-    fontWeight: "400",
+    ...Typography.input,
   },
 });

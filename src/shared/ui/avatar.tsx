@@ -1,6 +1,6 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   StyleProp,
@@ -31,6 +31,7 @@ export function ProfileAvatar({
 }: ProfileAvatarProps) {
   const colors = useTheme();
   const [failedToLoad, setFailedToLoad] = useState(false);
+  useEffect(() => setFailedToLoad(false), [photoUrl]);
   const dimensionStyle = size
     ? { width: size, height: size, borderRadius: size / 2 }
     : undefined;

@@ -62,7 +62,7 @@ export function SettingsScreen() {
           feedbackInsets={{ top: -Spacing.three, right: -Spacing.four, bottom: -Spacing.three, left: -Spacing.four }}
           feedbackBehindContent
         >
-          <ProfileAvatar name={name} photoUrl={profile.photoUrl} />
+          <ProfileAvatar name={name} photoUrl={profile.photoUrl} size={56} />
           <View style={styles.profileCopy}>
             <Text
               style={[
@@ -131,6 +131,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     marginVertical: Spacing.five,
+    paddingLeft: Spacing.two,
   },
   profileCopy: { flex: 1, marginLeft: Spacing.three },
   logoutCard: { marginTop: Spacing.five, borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, overflow: "hidden" },

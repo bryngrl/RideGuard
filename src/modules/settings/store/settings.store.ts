@@ -62,6 +62,18 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "rideguard-settings-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      merge: (persisted, current) => {
+        const saved = persisted && typeof persisted === "object" ? persisted as Partial<SettingsState> : {};
+        const themePreference = saved.themePreference;
+        return {
+          ...current,
+          ...saved,
+          themePreference: themePreference === "light" || themePreference === "dark" || themePreference === "system"
+            ? themePreference
+            : "system",
+          isHydrated: false,
+        };
+      },
       onRehydrateStorage: () => () =>
         useSettingsStore.setState({ isHydrated: true }),
     },

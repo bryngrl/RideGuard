@@ -163,6 +163,6 @@ export default function NewPasswordScreen() {
 const styles = StyleSheet.create({
   form: { marginTop: Spacing.five, gap: Spacing.three },
   field: { marginBottom: 0 },
-  inputWrapper: { minHeight: 44 },
+  inputWrapper: { minHeight: 46 },
   submitButton: { height: 41, marginTop: Spacing.two },
 });

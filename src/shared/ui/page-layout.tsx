@@ -5,9 +5,9 @@ import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
-import { Spacing, Typography } from "@/shared/theme";
+import { FontFamily, Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "./keyboard-avoiding-wrapper";
-import { BackArrowIcon } from "./back-arrow-icon";
+import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "./back-arrow-icon";
 
 interface PageLayoutProps {
   title: string;
@@ -123,9 +123,8 @@ export function PageLayout({
             onPress={handleBack}
             style={styles.backButton}
             feedbackRadius={16}
-            feedbackInsets={Spacing.one}
+            feedbackInsets={Spacing.two}
             feedbackBehindContent
-            hitSlop={Spacing.one}
             accessibilityRole="button"
             accessibilityLabel="Go back"
           >
@@ -194,32 +193,34 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    height: 52,
-
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
 
-    paddingHorizontal: Spacing.four,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
   },
 
   backButton: {
-    width: 40,
-    height: 40,
+    width: BACK_ARROW_TOUCH_SIZE,
+    height: BACK_ARROW_TOUCH_SIZE,
+    marginLeft: BACK_ARROW_TOUCH_LEFT - Spacing.three,
+    marginRight: Spacing.three - BACK_ARROW_TOUCH_LEFT,
 
     alignItems: "center",
     justifyContent: "center",
   },
 
   title: {
-    fontWeight: "700",
+    fontSize: 17,
+    fontFamily: FontFamily.geistMedium,
     textAlign: "center",
     flex: 1,
   },
 
   rightSpacer: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
   },
 
   divider: {
@@ -249,8 +250,8 @@ const styles = StyleSheet.create({
   },
 
   rightAction: {
-    width: 40,
-    height: 40,
+    width: 48,
+    height: 48,
     alignItems: "center",
     justifyContent: "center",
   },

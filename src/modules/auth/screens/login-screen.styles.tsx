@@ -1,6 +1,7 @@
 import { StyleSheet } from "react-native";
 
 import { BrandColors, FontFamily, Spacing, Typography } from "@/shared/theme";
+import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE } from "@/shared/ui/back-arrow-icon";
 
 export const styles = StyleSheet.create({
   container: {
@@ -15,7 +16,7 @@ export const styles = StyleSheet.create({
     paddingTop: Spacing.two,
     paddingBottom: Spacing.four,
   },
-  backButton: { width: 44, height: 48, marginLeft: -Spacing.two, alignItems: "center", justifyContent: "center" },
+  backButton: { width: BACK_ARROW_TOUCH_SIZE, height: BACK_ARROW_TOUCH_SIZE, marginLeft: BACK_ARROW_TOUCH_LEFT - Spacing.five, alignItems: "center", justifyContent: "center" },
   brand: { alignSelf: "flex-start", marginTop: Spacing.six, marginBottom: Spacing.four },
   introSection: {
     alignItems: "flex-start",
@@ -40,11 +41,11 @@ export const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputWrapper: {
-    minHeight: 44,
+    minHeight: 46,
   },
   input: {
     paddingVertical: Spacing.two,
-    fontSize: 14,
+    fontSize: 15,
   },
   forgotButton: {
     alignSelf: "flex-end",

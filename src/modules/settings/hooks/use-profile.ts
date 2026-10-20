@@ -1,7 +1,6 @@
 import { useCurrentUser } from "@/modules/auth";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useOnboardingStore } from "@/modules/onboarding";
-import { normalizePhoneNumber } from "@/shared/lib/phone-utils";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import type { SettingsProfile } from "../types/settings.types";
@@ -54,7 +53,7 @@ export function useProfile() {
         : {
             firstName: serverProfile?.personalInfo?.firstName || onboarding.firstName || accountFirstName || "",
             lastName: serverProfile?.personalInfo?.lastName || onboarding.lastName || accountLastName || "",
-            phone: normalizePhoneNumber(serverProfile?.personalInfo?.phoneNumber || onboarding.phone),
+            phone: serverProfile?.personalInfo?.phoneNumber || onboarding.phone,
             email: serverProfile?.personalInfo?.email || authUser?.email || "",
             vehicleBrand: serverProfile?.vehicle?.brand || onboarding.vehicleBrand,
             vehicleModel: serverProfile?.vehicle?.model || onboarding.vehicleModel,

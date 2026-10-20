@@ -406,10 +406,6 @@ export function EditContactScreen() {
             label="Phone number"
             required
             prefix="+63"
-            prefixStyle={{
-              color: theme.textMuted,
-              fontWeight: "400",
-            }}
             keyboardType="phone-pad"
             value={phoneNumber}
             error={phoneNumberError}

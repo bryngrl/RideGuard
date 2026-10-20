@@ -67,9 +67,9 @@ export const Typography = {
     fontFamily: FontFamily.geistMedium,
   },
   input: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 22,
-    fontFamily: FontFamily.geistRegular,
+    fontFamily: FontFamily.geistMedium,
   },
   caption: {
     fontSize: 12,

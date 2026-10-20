@@ -50,7 +50,7 @@ export function RetentionScreen() {
   );
 }
 const styles = StyleSheet.create({
-  content: { paddingTop: Spacing.three, flexGrow: 1 },
+  content: { flexGrow: 1 },
   description: {
     marginTop: Spacing.three,
     marginBottom: Spacing.four,

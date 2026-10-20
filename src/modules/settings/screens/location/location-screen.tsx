@@ -33,6 +33,6 @@ export function LocationScreen() {
   );
 }
 const styles = StyleSheet.create({
-  content: { paddingTop: Spacing.three, flexGrow: 1 },
+  content: { flexGrow: 1 },
   note: { marginTop: "auto", paddingTop: Spacing.six },
 });

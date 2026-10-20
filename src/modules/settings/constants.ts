@@ -1,13 +1,11 @@
 export { RETENTION_OPTIONS, SETTINGS_COPY } from "./config/settings-copy";
 export const NOTIFICATION_COPY = {
-  flags: "Flags",
+  alertsHeading: "Alerts",
   alerts: "Alerts",
-  attackDetected: "Attack detected",
+  possibleThreat: "Possible weapon or violence detected",
   alwaysOn: "Always on",
   delivery: "Delivery",
   push: "Push notification",
-  sound: "Sound",
-  vibration: "Vibration",
 } as const;
 
 export const SETTINGS_SECTIONS = [
@@ -36,7 +34,7 @@ export const SETTINGS_SECTIONS = [
       { title: "MPIN", icon: "lock", route: "/mpin/manage" },
       { title: "Display", icon: "display", route: "/settings/display" },
       {
-        title: "Notifications",
+        title: "Notification",
         icon: "notification",
         route: "/settings/notifications",
       },

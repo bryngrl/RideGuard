@@ -1,9 +1,9 @@
 export const SETTINGS_COPY = {
   retentionDescription:
-    "Select how long unflagged trip recordings and system logs are stored before being permanently deleted.",
-  flaggedIncidents: "Flagged incidents",
+    "Select how long trip recordings without alerts and system logs are stored before being permanently deleted.",
+  flaggedIncidents: "Incident footage",
   flaggedIncidentsDescription:
-    "If a safety flag or security threat is detected during a ride, the associated footage will be saved automatically until reviewed.",
+    "If a possible safety threat is detected during a ride, the associated footage will be saved automatically until reviewed.",
   locationDescription: "Needed for incident tagging and SOS",
   deviceLocation: "Share while using app",
   contactLocation: "Share with emergency contacts",

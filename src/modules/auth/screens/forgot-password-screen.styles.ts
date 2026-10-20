@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputWrapper: {
-    minHeight: 44,
+    minHeight: 46,
   },
   sendButton: {
     marginTop: Spacing.four,

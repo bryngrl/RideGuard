@@ -67,11 +67,11 @@ export const settingsRows: SettingsRowDefinition[] = [
   },
   {
     id: "notifications",
-    title: "Notifications",
+    title: "Notification",
     section: "App & Account",
     iconKey: "notification",
     route: "/settings/notifications",
-    searchKeywords: ["notification", "alerts", "sound", "vibration"],
+    searchKeywords: ["notification", "alerts", "push", "weapon", "violence"],
   },
   {
     id: "terms",
