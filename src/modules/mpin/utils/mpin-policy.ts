@@ -62,7 +62,7 @@ export function canAccessMpinEmergency(segments: readonly string[], status: Mpin
 // arbitrary external URLs or recovery routes as a post-verification destination.
 export function safeReturnPath(value: string): string {
   if (["/", "/settings", "/settings/account", "/settings/account/edit", "/settings/location", "/settings/retention",
-    "/settings/display", "/settings/notifications", "/settings/search", "/settings/about", "/settings/digital-safety",
+    "/settings/display", "/settings/notifications", "/settings/search", "/settings/about", "/settings/digital-safety", "/settings/terms-of-service",
     "/camera", "/alerts", "/contact", "/contact/add-contact", "/contact/edit-contact", "/devices"].includes(value)) return value;
   if (/^\/alerts\/[A-Za-z0-9_-]+$/.test(value)) return value;
   return "/";
