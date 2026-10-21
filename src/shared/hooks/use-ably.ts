@@ -61,9 +61,12 @@ export function useAbly() {
             .catch((error) => {
               console.error("[Ably] Failed to load camera channels:", error);
             }),
-          getSavedAlerts(firebaseToken, { limit: 50 })
-            .then((result) => {
-              if (!cancelled) mergeAlerts(result.alerts);
+          Promise.all([
+            getSavedAlerts(firebaseToken, { limit: 50, status: "active" }),
+            getSavedAlerts(firebaseToken, { limit: 50, status: "archived" }),
+          ])
+            .then(([active, archived]) => {
+              if (!cancelled) mergeAlerts([...active.alerts, ...archived.alerts]);
             })
             .catch((error) => {
               console.error("[Alerts] Failed to load saved alerts:", error);
@@ -160,8 +163,11 @@ export function useAbly() {
       syncing = true;
       try {
         const token = await user.getIdToken();
-        const result = await getSavedAlerts(token, { limit: 50 });
-        if (!cancelled) mergeAlerts(result.alerts);
+        const [active, archived] = await Promise.all([
+          getSavedAlerts(token, { limit: 50, status: "active" }),
+          getSavedAlerts(token, { limit: 50, status: "archived" }),
+        ]);
+        if (!cancelled) mergeAlerts([...active.alerts, ...archived.alerts]);
       } catch (error) {
         console.error("[Alerts] Failed to reconcile realtime alerts:", error);
       } finally {

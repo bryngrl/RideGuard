@@ -1,4 +1,4 @@
-export { RETENTION_OPTIONS, SETTINGS_COPY } from "./config/settings-copy";
+export { AUTO_ARCHIVE_OPTIONS, SETTINGS_COPY } from "./config/settings-copy";
 export const NOTIFICATION_COPY = {
   alertsHeading: "Alerts",
   alerts: "Alerts",
@@ -21,7 +21,7 @@ export const SETTINGS_SECTIONS = [
         route: "/settings/location",
       },
       {
-        title: "Data and footage retention",
+        title: "Auto archive",
         icon: "filmstrip",
         route: "/settings/retention",
       },

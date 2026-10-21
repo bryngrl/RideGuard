@@ -37,6 +37,9 @@ export interface SavedAlertsPage {
 export interface GetSavedAlertsOptions {
   limit?: number;
   cursor?: string;
+  // Filters by stored archive state. Omitted keeps the all-non-false-alarm
+  // behavior. Keep a separate cursor per status.
+  status?: "active" | "archived";
 }
 
 /**
@@ -54,6 +57,9 @@ export async function getSavedAlerts(
   }
   if (options.cursor) {
     params.push(`cursor=${encodeURIComponent(options.cursor)}`);
+  }
+  if (options.status) {
+    params.push(`status=${options.status}`);
   }
 
   const endpoint = params.length ? `/alerts?${params.join("&")}` : "/alerts";

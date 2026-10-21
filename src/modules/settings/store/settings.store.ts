@@ -1,13 +1,22 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
+
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+
 import { mockSettings } from "../config/mock-data";
-import type { Retention, ThemePreference } from "../types/settings.types";
 import { settingsRows } from "../config/settings-rows";
+import { getAutoArchive, updateAutoArchive } from "../services/settings.api";
+import type { AutoArchiveHours, ThemePreference } from "../types/settings.types";
+
+// Tracks the auto-archive request lifecycle so the screen can show saving /
+// error / retry without pretending an unsaved value stuck.
+export type AutoArchiveStatus = "idle" | "loading" | "saving" | "error";
 
 interface SettingsState {
   isHydrated: boolean;
-  retention: Retention;
+  autoArchiveHours: AutoArchiveHours;
+  autoArchiveStatus: AutoArchiveStatus;
   alertsEnabled: boolean;
   pushEnabled: boolean;
   soundEnabled: boolean;
@@ -16,7 +25,9 @@ interface SettingsState {
   locationWithContacts: boolean;
   themePreference: ThemePreference;
   searchHistory: string[];
-  setRetention: (value: Retention) => void;
+  loadAutoArchive: () => Promise<void>;
+  saveAutoArchive: (value: AutoArchiveHours) => Promise<boolean>;
+  resetAutoArchive: () => void;
   setAlertsEnabled: (value: boolean) => void;
   setPushEnabled: (value: boolean) => void;
   setSoundEnabled: (value: boolean) => void;
@@ -28,13 +39,62 @@ interface SettingsState {
   clearSearchHistory: () => void;
 }
 
+async function currentToken(): Promise<string | null> {
+  const user = useAuthStore.getState().user;
+  if (!user) return null;
+  try {
+    return await user.getIdToken();
+  } catch {
+    return null;
+  }
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...mockSettings,
+      autoArchiveStatus: "idle",
       isHydrated: false,
-      // BACKEND SYNC: call updateRetention after persisting this value.
-      setRetention: (retention) => set({ retention }),
+
+      // Hydrate the preference from the server (source of truth). Called on
+      // login and when the Auto archive screen opens.
+      loadAutoArchive: async () => {
+        const token = await currentToken();
+        if (!token) return;
+        set({ autoArchiveStatus: "loading" });
+        try {
+          const hours = await getAutoArchive(token);
+          set({ autoArchiveHours: hours, autoArchiveStatus: "idle" });
+        } catch (error) {
+          console.error("Failed to load auto-archive preference:", error);
+          set({ autoArchiveStatus: "error" });
+        }
+      },
+
+      // Persist to the server first; only reflect the new value after it saves.
+      // Returns whether the save succeeded so the screen can surface a retry.
+      saveAutoArchive: async (value) => {
+        const token = await currentToken();
+        if (!token) {
+          set({ autoArchiveStatus: "error" });
+          return false;
+        }
+        set({ autoArchiveStatus: "saving" });
+        try {
+          const saved = await updateAutoArchive(value, token);
+          set({ autoArchiveHours: saved, autoArchiveStatus: "idle" });
+          return true;
+        } catch (error) {
+          console.error("Failed to save auto-archive preference:", error);
+          set({ autoArchiveStatus: "error" });
+          return false;
+        }
+      },
+
+      // Clear account-specific preference state on logout / account change.
+      resetAutoArchive: () =>
+        set({ autoArchiveHours: null, autoArchiveStatus: "idle" }),
+
       // BACKEND SYNC: call updateNotifications after persisting this value.
       setAlertsEnabled: (alertsEnabled) => set({ alertsEnabled }),
       // BACKEND SYNC: call updateNotifications after persisting this value.

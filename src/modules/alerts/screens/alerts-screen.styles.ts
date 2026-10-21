@@ -31,6 +31,9 @@ export const styles = StyleSheet.create({
   sectionSeparator: {
     height: Spacing.one,
   },
+  footerSpinner: {
+    paddingVertical: Spacing.four,
+  },
   tab: {
     borderRadius: 20,
     paddingHorizontal: Spacing.four,
