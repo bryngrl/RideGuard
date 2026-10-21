@@ -1,5 +1,6 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { plateInput, validPlateInput } from "@/shared/lib/input-formats";
 import { Spacing, Typography } from "@/shared/theme";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { Button } from "@/shared/ui/button";
@@ -7,8 +8,8 @@ import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { Text, TextInput, View } from "react-native";
 import { useOnboardingStore } from "../store/onboarding.store";
 import { styles } from "./vehicle-step-screen.styles";
 
@@ -22,6 +23,9 @@ export default function RegisterStepTwoScreen() {
   const [vehicleBrandError, setVehicleBrandError] = useState("");
   const [vehicleModelError, setVehicleModelError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
+  const brandRef = useRef<TextInput>(null);
+  const modelRef = useRef<TextInput>(null);
+  const plateRef = useRef<TextInput>(null);
 
   const handleNextStep = () => {
     setVehicleBrandError("");
@@ -43,9 +47,15 @@ export default function RegisterStepTwoScreen() {
     if (!plateNumber.trim()) {
       setPlateNumberError("Please enter your plate number.");
       isValid = false;
+    } else if (!validPlateInput(plateNumber)) {
+      setPlateNumberError("Enter a valid vehicle plate number.");
+      isValid = false;
     }
 
-    if (!isValid) return;
+    if (!isValid) {
+      (!vehicleBrand.trim() ? brandRef : !vehicleModel.trim() ? modelRef : plateRef).current?.focus();
+      return;
+    }
 
     router.push("/(onboarding)/register/emergency-contact");
   };
@@ -77,6 +87,7 @@ export default function RegisterStepTwoScreen() {
 
         <View style={styles.formContainer}>
           <CustomTextInput
+            ref={brandRef}
             label="Vehicle Brand"
             required
             value={vehicleBrand}
@@ -89,6 +100,7 @@ export default function RegisterStepTwoScreen() {
           />
 
           <CustomTextInput
+            ref={modelRef}
             label="Vehicle Model"
             required
             value={vehicleModel}
@@ -101,12 +113,17 @@ export default function RegisterStepTwoScreen() {
           />
 
           <CustomTextInput
+            ref={plateRef}
             label="Plate Number"
             required
+            autoCapitalize="characters"
             value={plateNumber}
             error={plateNumberError}
+            onBlur={() => {
+              if (plateNumber && !validPlateInput(plateNumber)) setPlateNumberError("Enter a valid vehicle plate number.");
+            }}
             onChangeText={(text) => {
-              updateDraft({ plateNumber: text });
+              updateDraft({ plateNumber: plateInput(text) });
               if (plateNumberError) setPlateNumberError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}

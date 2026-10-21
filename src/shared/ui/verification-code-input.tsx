@@ -30,7 +30,7 @@ export function VerificationCodeInput({ value, onChange, disabled = false, error
     <TextInput ref={input} value={value} onChangeText={(next) => onChange(next.replace(/\D/g, "").slice(0, 6))}
       onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       style={styles.input} keyboardType="number-pad" autoComplete="one-time-code"
-      textContentType="oneTimeCode" maxLength={6} editable={!disabled}
+      textContentType="oneTimeCode" editable={!disabled}
       accessibilityLabel="Six-digit email verification code" />
   </View>;
 }

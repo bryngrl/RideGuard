@@ -3,6 +3,7 @@ import {
   isValidPhoneNumber,
   normalizePhoneNumber,
 } from "@/shared/lib/phone-utils";
+import { validPlateInput } from "@/shared/lib/input-formats";
 import { useEffect, useState } from "react";
 import { updateProfile, updateVehicle } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
@@ -52,7 +53,7 @@ export function useAccountEdit(profile: SettingsProfile) {
       : phoneValid ? undefined : "Enter a valid 10-digit Philippine mobile number.",
     vehicleBrand: normalizedForm.vehicleBrand ? undefined : "Enter your vehicle brand.",
     vehicleModel: normalizedForm.vehicleModel ? undefined : "Enter your vehicle model.",
-    plateNumber: normalizedForm.plateNumber ? undefined : "Enter your plate number.",
+    plateNumber: !normalizedForm.plateNumber ? "Enter your plate number." : validPlateInput(normalizedForm.plateNumber) ? undefined : "Enter a valid vehicle plate number.",
   };
   const valid = Object.values(fieldErrors).every((message) => !message);
   const setField = (field: keyof EditableProfile, value: string) =>

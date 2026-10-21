@@ -2,12 +2,13 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Image, Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { Alert, Image, Text, TextInput, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
@@ -54,6 +55,8 @@ export function EditContactScreen() {
     normalizePhoneNumber(initialPhoneNumber ?? ""),
   );
   const [relationship, setRelationship] = useState(initialRelationship ?? "");
+  const nameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
   const [profileImage, setProfileImage] = useState<string | null>(
     initialProfileImage || null,
   );
@@ -127,11 +130,7 @@ export function EditContactScreen() {
   };
 
   const handlePhoneChange = (text: string) => {
-    const digitsOnly = text.replace(/\D/g, "");
-    const formattedPhone = digitsOnly.replace(/^0+/, "");
-    const limitedPhone = formattedPhone.slice(0, 10);
-
-    setPhoneNumber(limitedPhone);
+    setPhoneNumber(text);
 
     if (phoneNumberError) {
       setPhoneNumberError("");
@@ -156,7 +155,7 @@ export function EditContactScreen() {
     if (!trimmedPhone) {
       setPhoneNumberError("Please enter a phone number.");
       isValid = false;
-    } else if (!/^9\d{9}$/.test(trimmedPhone)) {
+    } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Please enter a valid 10-digit mobile number.");
       isValid = false;
     }
@@ -221,7 +220,12 @@ export function EditContactScreen() {
 
   const handleSave = async () => {
     if (isLoading) return;
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      if (!contactName.trim()) nameRef.current?.focus();
+      else if (!validNationalMobile(phoneNumber)) phoneRef.current?.focus();
+      else setIsRelationshipOpen(true);
+      return;
+    }
     if (!contactId) return;
 
     try {
@@ -391,9 +395,11 @@ export function EditContactScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Contact name"
+            ref={nameRef}
             required
             value={contactName}
             error={contactNameError}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
               if (contactNameError) setContactNameError("");
@@ -403,12 +409,16 @@ export function EditContactScreen() {
 
           <CustomTextInput
             label="Phone number"
+            ref={phoneRef}
             required
             prefix="+63"
             keyboardType="phone-pad"
             value={phoneNumber}
+            inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneNumberError}
-            maxLength={10}
+            onBlur={() => {
+              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+            }}
             onChangeText={handlePhoneChange}
             containerStyle={{ paddingBottom: Spacing.two }}
           />

@@ -22,6 +22,7 @@ export default function CreateAccountScreen() {
   const router = useRouter();
   const theme = useTheme();
   const emailRef = useRef<TextInput>(null);
+  const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
   const [username, setUsername] = useState("");
@@ -51,7 +52,10 @@ export default function CreateAccountScreen() {
   const handleSubmit = () => {
     setSubmitted(true);
     setFormMessage(null);
-    if (usernameError || emailError || passwordError || confirmError) return;
+    if (usernameError || emailError || passwordError || confirmError) {
+      (usernameError ? usernameRef : emailError ? emailRef : passwordError ? passwordRef : confirmRef).current?.focus();
+      return;
+    }
 
     Keyboard.dismiss();
     setFormMessage(
@@ -81,6 +85,7 @@ export default function CreateAccountScreen() {
 
       <View style={styles.fields}>
         <CustomTextInput
+          ref={usernameRef}
           label="Username"
           required
           value={username}

@@ -1,10 +1,11 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import React, { forwardRef, useEffect, useState, type PropsWithChildren } from "react";
+import React, { forwardRef, useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks";
+import { formatInputEdit, type InputFormat } from "@/shared/lib/input-formats";
 import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
 
 function FieldPressTarget({
@@ -44,6 +45,8 @@ export interface CustomTextInputProps extends RNTextInputProps {
   inputWrapperStyle?: StyleProp<ViewStyle>;
   prefixStyle?: StyleProp<TextStyle>;
   onFieldPress?: () => void;
+  /** Keep the form value raw while formatting only the visible input. */
+  inputFormat?: InputFormat;
 }
 
 export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
@@ -65,8 +68,12 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       inputWrapperStyle,
       prefixStyle,
       onFieldPress,
+      inputFormat,
       onFocus,
       onBlur,
+      onChangeText,
+      onSelectionChange,
+      value,
       ...rest
     },
     ref,
@@ -74,6 +81,30 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     const theme = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+    const selectionRelease = useRef<number | null>(null);
+    const displayed = inputFormat ? inputFormat.format(value ?? "") : value;
+    const previousDisplay = useRef(displayed ?? "");
+    useEffect(() => { previousDisplay.current = displayed ?? ""; }, [displayed]);
+    useEffect(() => () => {
+      if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+    }, []);
+    const changeFormatted = (next: string) => {
+      if (!inputFormat) { onChangeText?.(next); return; }
+      const { raw, formatted, cursor } = formatInputEdit(previousDisplay.current, next, inputFormat);
+      previousDisplay.current = formatted;
+      if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+      setSelection({ start: cursor, end: cursor });
+      // Control selection just long enough for the formatted value to reach native.
+      // Leaving it controlled makes a later tap fight with the old cursor position.
+      selectionRelease.current = requestAnimationFrame(() => {
+        selectionRelease.current = requestAnimationFrame(() => {
+          setSelection(undefined);
+          selectionRelease.current = null;
+        });
+      });
+      onChangeText?.(raw);
+    };
 
     const hasError = !!error;
     const reduceMotion = useReducedMotion();
@@ -165,6 +196,10 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
 
           <RNTextInput
             ref={ref}
+            value={displayed}
+            selection={inputFormat && isFocused ? selection : undefined}
+            onSelectionChange={onSelectionChange}
+            onChangeText={changeFormatted}
             style={[
               styles.input,
               {
@@ -174,12 +209,17 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             ]}
             placeholderTextColor={theme.textMuted}
             secureTextEntry={isPassword && !isPasswordVisible}
+            autoCapitalize={isPassword ? "none" : undefined}
+            autoCorrect={isPassword ? false : undefined}
             onFocus={(e) => {
               setIsFocused(true);
               onFocus?.(e);
             }}
             onBlur={(e) => {
               setIsFocused(false);
+              if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+              selectionRelease.current = null;
+              setSelection(undefined);
               onBlur?.(e);
             }}
             {...rest}

@@ -1,13 +1,14 @@
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, plateInput } from "@/shared/lib/input-formats";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ConfirmationModal, CustomTextInput, ProfileAvatar } from "@/shared/ui";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Alert, Pressable as NativePressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Alert, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 import { uploadProfilePhoto } from "../../services/profile.api";
@@ -23,6 +24,11 @@ export function AccountEditScreen() {
   const [uploading, setUploading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [vehicleName, setVehicleName] = useState("");
+  const [touched, setTouched] = useState({ phone: false, plate: false });
+  const nameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const vehicleRef = useRef<TextInput>(null);
+  const plateRef = useRef<TextInput>(null);
   useEffect(() => {
     setFullName(`${profile.firstName} ${profile.lastName}`.trim());
     setVehicleName(`${profile.vehicleBrand} ${profile.vehicleModel}`.trim());
@@ -74,6 +80,9 @@ export function AccountEditScreen() {
     edit.changed ? setConfirm(true) : router.back();
   };
   const save = async () => {
+    if (!edit.valid) {
+      (edit.fieldErrors.firstName || edit.fieldErrors.lastName ? nameRef : edit.fieldErrors.phone ? phoneRef : edit.fieldErrors.vehicleBrand || edit.fieldErrors.vehicleModel ? vehicleRef : plateRef).current?.focus();
+    }
     if (await edit.save()) {
       Alert.alert("Account updated", "Your changes were saved.", [
         { text: "OK", onPress: () => router.back() },
@@ -135,6 +144,7 @@ export function AccountEditScreen() {
 
       <View style={styles.form}>
         <CustomTextInput
+          ref={nameRef}
           label="Full name"
           required
           value={fullName}
@@ -143,15 +153,17 @@ export function AccountEditScreen() {
           autoCapitalize="words"
         />
         <CustomTextInput
+          ref={phoneRef}
           label="Phone number"
           required
           prefix="+63"
           keyboardType="number-pad"
-          maxLength={12}
           placeholder="9123456789"
           value={edit.form.phone}
+          inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
           onChangeText={(value) => edit.setField("phone", value)}
-          error={edit.submitted ? edit.fieldErrors.phone : undefined}
+          error={edit.submitted || touched.phone ? edit.fieldErrors.phone : undefined}
+          onBlur={() => setTouched((state) => ({ ...state, phone: true }))}
         />
         <CustomTextInput
           label="Email"
@@ -160,6 +172,7 @@ export function AccountEditScreen() {
           editable={false}
         />
         <CustomTextInput
+          ref={vehicleRef}
           label="Vehicle"
           required
           value={vehicleName}
@@ -167,11 +180,13 @@ export function AccountEditScreen() {
           error={edit.submitted ? edit.fieldErrors.vehicleBrand || edit.fieldErrors.vehicleModel : undefined}
         />
         <CustomTextInput
+          ref={plateRef}
           label="Plate number"
           required
           value={edit.form.plateNumber}
-          onChangeText={(value) => edit.setField("plateNumber", value)}
-          error={edit.submitted ? edit.fieldErrors.plateNumber : undefined}
+          onChangeText={(value) => edit.setField("plateNumber", plateInput(value))}
+          error={edit.submitted || touched.plate ? edit.fieldErrors.plateNumber : undefined}
+          onBlur={() => setTouched((state) => ({ ...state, plate: true }))}
           autoCapitalize="characters"
         />
       </View>

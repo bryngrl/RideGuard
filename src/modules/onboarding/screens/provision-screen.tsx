@@ -5,6 +5,7 @@ import { auth } from "@/lib/firebase";
 import { useDeviceStore } from "@/modules/devices";
 import { claimDevice } from "../services/onboarding.api";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { buttonId as normalizeButtonId, formatButtonId, validButtonId } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
@@ -38,11 +39,15 @@ export default function ButtonProvisionScreen() {
 
     setButtonIdError("");
 
-    const cleanedButtonId = buttonId.trim().toUpperCase();
+    const cleanedButtonId = formatButtonId(buttonId);
 
     // validation
-    if (!cleanedButtonId) {
+    if (!buttonId) {
       setButtonIdError("This field is required.");
+      return;
+    }
+    if (!validButtonId(buttonId)) {
+      setButtonIdError("Incorrect format.");
       return;
     }
 
@@ -145,12 +150,17 @@ export default function ButtonProvisionScreen() {
               label="Button ID"
               required
               labelStyle={{ color: BrandColors.primary }}
-              placeholder="e.g., BTN-071-XKD"
+              placeholder="e.g., ABC-123-XYZ"
               autoCapitalize="characters"
+              autoCorrect={false}
               value={buttonId}
+              inputFormat={{ normalize: normalizeButtonId, format: formatButtonId }}
               error={buttonIdError}
+              onBlur={() => {
+                if (buttonId && !validButtonId(buttonId)) setButtonIdError("Incorrect format.");
+              }}
               onChangeText={(text) => {
-                setButtonId(text.toUpperCase());
+                setButtonId(text);
 
                 if (buttonIdError) {
                   setButtonIdError("");

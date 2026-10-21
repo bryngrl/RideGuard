@@ -4,6 +4,7 @@ import { Button } from "@/shared/ui/button";
 import { styles } from "./emergency-contact-step-screen.styles";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
@@ -66,7 +67,7 @@ export default function RegisterStepThreeScreen() {
       if (!store.emergencyPhone.trim()) {
         setEmergencyPhoneError("Please enter a phone number.");
         isValid = false;
-      } else if (!/^9\d{9}$/.test(store.emergencyPhone.trim())) {
+      } else if (!validNationalMobile(store.emergencyPhone.trim())) {
         setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
         isValid = false;
       }
@@ -200,13 +201,13 @@ export default function RegisterStepThreeScreen() {
               prefix="+63"
               keyboardType="phone-pad"
               value={store.emergencyPhone}
+              inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
               error={emergencyPhoneError}
-              maxLength={10}
+              onBlur={() => {
+                if (store.emergencyPhone && !validNationalMobile(store.emergencyPhone)) setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
+              }}
               onChangeText={(text) => {
-                const digitsOnly = text.replace(/\D/g, "");
-                const formattedPhone = digitsOnly.replace(/^0+/, "");
-
-                store.updateDraft({ emergencyPhone: formattedPhone });
+                store.updateDraft({ emergencyPhone: text });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
