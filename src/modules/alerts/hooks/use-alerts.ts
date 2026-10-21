@@ -10,8 +10,8 @@ import { alertTimeValue } from "../services/alerts.mapper";
 import { useAlertsStore } from "../store/alerts.store";
 import type { AlertFields } from "../types/alert.types";
 
-// The backend status a tab reads. "unread" is a client-side filter over the
-// active list (active + unseen), not a separate backend status.
+// The backend returns both archive states. "unread" filters active alerts
+// locally, not through a separate backend status.
 export type AlertListStatus = "active" | "archived";
 
 // Refetch the visible list this often while the screen is focused, so a change
@@ -19,18 +19,18 @@ export type AlertListStatus = "active" | "archived";
 // user doing anything. Matches the ~60s backend pass cadence.
 const VISIBLE_REFRESH_MS = 60_000;
 
-/** True when an entity still belongs in the given server list. */
+/** True when an entity belongs in the selected view. */
 function matchesStatus(alert: AlertFields, status: AlertListStatus): boolean {
   if (alert.isFalseAlarm) return false;
   return status === "archived" ? alert.isArchived : !alert.isArchived;
 }
 
 /**
- * Owns one tab's list: it fetches that status from the backend, keeps its own
- * pagination cursor and ordered membership (separate from the other tab), and
+ * Owns one view's list: it pages through saved alerts, keeps its own
+ * pagination cursor and ordered membership, and
  * refreshes on focus, on foreground, every 60s while visible, and whenever the
- * auto-archive preference changes. Membership comes from the server so an alert
- * that moved to the other list drops out on the next refresh; a brand-new
+ * auto-archive preference changes. Membership uses the returned isArchived
+ * field, so an alert that moves lists drops out on refresh; a brand-new
  * realtime alert is still shown immediately on the active list.
  *
  * The store holds alert *entities* (so seen/false-alarm/archive updates reflect
@@ -42,37 +42,62 @@ export function useAlertsList(status: AlertListStatus) {
   const mergeAlerts = useAlertsStore((state) => state.mergeAlerts);
   const listRefreshNonce = useAlertsStore((state) => state.listRefreshNonce);
 
-  // Server-authoritative membership for this status, in page order.
+  // IDs matching this view, in page order.
   const [ids, setIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const cursorRef = useRef<string | null>(null);
+  const cursorStatusRef = useRef(status);
   const hasMoreRef = useRef(true);
   const isFetchingRef = useRef(false);
+  const fetchingStatusRef = useRef<AlertListStatus | null>(null);
+  const requestIdRef = useRef(0);
+  const currentStatusRef = useRef(status);
+  currentStatusRef.current = status;
 
   const fetchPage = useCallback(
     async (mode: "reset" | "more") => {
-      if (!user || isFetchingRef.current) return;
+      if (!user || (isFetchingRef.current && fetchingStatusRef.current === status)) return;
+      if (mode === "more" && cursorStatusRef.current !== status) return;
       if (mode === "more" && (!hasMoreRef.current || !cursorRef.current)) return;
 
+      const requestId = ++requestIdRef.current;
       isFetchingRef.current = true;
-      if (mode === "reset") setIsRefreshing(true);
+      fetchingStatusRef.current = status;
+      if (mode === "reset") {
+        cursorStatusRef.current = status;
+        cursorRef.current = null;
+        hasMoreRef.current = true;
+        setIsRefreshing(true);
+      }
       else setIsLoadingMore(true);
 
       try {
         const token = await user.getIdToken();
-        const page = await getSavedAlerts(token, {
-          status,
-          limit: ALERTS_PAGE_SIZE,
-          cursor: mode === "more" ? (cursorRef.current ?? undefined) : undefined,
-        });
+        const pageIds: string[] = [];
+        let cursor = mode === "more" ? cursorRef.current : null;
+        let nextCursor: string | null = null;
 
-        // Entities first, so rendering by ID always finds its data.
-        mergeAlerts(page.alerts);
-        const pageIds = page.alerts
-          .map((alert) => alert.alertId)
-          .filter((id): id is string => typeof id === "string");
+        // The API does not accept a status query. Continue through its pages
+        // until this view has enough matches or there are no more records.
+        do {
+          const page = await getSavedAlerts(token, {
+            limit: ALERTS_PAGE_SIZE,
+            cursor: cursor ?? undefined,
+          });
+          if (requestIdRef.current !== requestId || currentStatusRef.current !== status) return;
+
+          mergeAlerts(page.alerts);
+          pageIds.push(
+            ...page.alerts
+              .filter((alert) => matchesStatus(alert, status))
+              .map((alert) => alert.alertId)
+              .filter((id): id is string => typeof id === "string"),
+          );
+          nextCursor = page.nextCursor === cursor ? null : page.nextCursor;
+          cursor = nextCursor;
+        } while (pageIds.length < ALERTS_PAGE_SIZE && nextCursor);
 
         setIds((previous) =>
           mode === "reset"
@@ -80,22 +105,23 @@ export function useAlertsList(status: AlertListStatus) {
             : [...previous, ...pageIds.filter((id) => !previous.includes(id))],
         );
 
-        cursorRef.current = page.nextCursor;
-        hasMoreRef.current = page.nextCursor !== null;
+        cursorRef.current = nextCursor;
+        hasMoreRef.current = nextCursor !== null;
       } catch (error) {
         console.error(`[Alerts] Failed to load ${status} alerts:`, error);
       } finally {
-        isFetchingRef.current = false;
-        if (mode === "reset") setIsRefreshing(false);
-        else setIsLoadingMore(false);
+        if (requestIdRef.current === requestId) {
+          isFetchingRef.current = false;
+          fetchingStatusRef.current = null;
+          if (mode === "reset") setIsRefreshing(false);
+          else setIsLoadingMore(false);
+        }
       }
     },
     [user, status, mergeAlerts],
   );
 
   const refresh = useCallback(() => {
-    cursorRef.current = null;
-    hasMoreRef.current = true;
     void fetchPage("reset");
   }, [fetchPage]);
 

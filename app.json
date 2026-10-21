@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "runtimeVersion": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logos/official-logo.png",
+    "icon": "./assets/images/app/rideguard-square-icon.png",
     "scheme": "rideguard",
     "userInterfaceStyle": "automatic",
     "plugins": [
@@ -37,16 +37,16 @@
       "expo-video"
     ],
     "ios": {
-      "icon": "./assets/images/logos/official-logo.png"
+      "icon": "./assets/images/app/rideguard-square-ios-icon.png"
     },
     "android": {
       "package": "com.rideguard.app",
       "googleServicesFile": "./google-services.json",
       "predictiveBackGestureEnabled": false,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/logos/official-logo.png",
-        "monochromeImage": "./assets/images/logos/official-logo.png"
+        "backgroundColor": "#000000",
+        "foregroundImage": "./assets/images/app/rideguard-square-icon.png",
+        "monochromeImage": "./assets/images/app/rideguard-adaptive-monochrome.png"
       }
     },
     "web": {
