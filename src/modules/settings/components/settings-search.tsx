@@ -17,6 +17,10 @@ export function SettingsSearch({ active, onOpen, onClose }: { active: boolean; o
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const input = useRef<TextInput>(null);
+  const openingContacts = useRef(false);
+  useFocusEffect(useCallback(() => {
+    openingContacts.current = false;
+  }, []));
   const { query, setQuery, results, history, add, clear } = useSettingsSearch();
   const recent = history.filter((item) => settingsRows.some((row) => row.title === item));
 
@@ -45,11 +49,16 @@ export function SettingsSearch({ active, onOpen, onClose }: { active: boolean; o
 
   const openResult = (title: string, route?: string) => {
     if (!route) return;
+    if (route === "/contact") {
+      if (openingContacts.current) return;
+      openingContacts.current = true;
+    }
     add(title);
     Keyboard.dismiss();
     // Keep search visible beneath the pushed screen. Closing it first briefly
     // reveals the Settings list during the navigation transition.
-    router.push(route as never);
+    if (route === "/contact") router.navigate(route as never);
+    else router.push(route as never);
   };
 
   return (

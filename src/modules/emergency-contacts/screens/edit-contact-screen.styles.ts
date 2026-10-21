@@ -52,20 +52,6 @@ export const styles = StyleSheet.create({
 
   deleteText: {},
 
-  dropdownItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-
-  dropdownMenu: {
-    borderTopWidth: 0,
-    borderWidth: 1.5,
-    marginTop: -Spacing.one,
-  },
-
   editContainer: {
     flex: 1,
     width: "100%",
@@ -73,10 +59,6 @@ export const styles = StyleSheet.create({
 
   formContainer: {
     width: "100%",
-  },
-
-  headerCancel: {
-    fontWeight: "600",
   },
 
   headerEdit: {},
@@ -132,12 +114,6 @@ export const styles = StyleSheet.create({
 
   relationship: {
     marginTop: Spacing.one,
-  },
-
-  relationshipDropdown: {
-    paddingBottom: Spacing.two,
-    position: "relative",
-    zIndex: 10,
   },
 
   saveButton: {

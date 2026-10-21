@@ -18,16 +18,8 @@ import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet"
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./edit-contact-screen.styles";
+import { RelationshipPicker } from "../components/relationship-picker";
 import { deleteContact, updateContact } from "../services/contacts.api";
-
-const RELATIONSHIPS = [
-  { label: "Parent", value: "Parent" },
-  { label: "Sibling", value: "Sibling" },
-  { label: "Spouse", value: "Spouse" },
-  { label: "Child", value: "Child" },
-  { label: "Friend", value: "Friend" },
-  { label: "Other", value: "Other" },
-];
 
 type ConfirmationType = "discard" | "delete" | null;
 
@@ -62,7 +54,6 @@ export function EditContactScreen() {
   );
   const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
 
-  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [contactNameError, setContactNameError] = useState("");
   const [phoneNumberError, setPhoneNumberError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
@@ -196,7 +187,6 @@ export function EditContactScreen() {
     setContactNameError("");
     setPhoneNumberError("");
     setRelationshipError("");
-    setIsRelationshipOpen(false);
     setIsEditing(false);
   };
 
@@ -223,7 +213,6 @@ export function EditContactScreen() {
     if (!validateForm()) {
       if (!contactName.trim()) nameRef.current?.focus();
       else if (!validNationalMobile(phoneNumber)) phoneRef.current?.focus();
-      else setIsRelationshipOpen(true);
       return;
     }
     if (!contactId) return;
@@ -236,7 +225,7 @@ export function EditContactScreen() {
         relationship: relationship.trim(),
         photoAsset,
       });
-      router.replace({
+      router.dismissTo({
         pathname: "/contact" as any,
         params: { notification: "success", message: "Saved successfully" },
       });
@@ -262,7 +251,7 @@ export function EditContactScreen() {
     setIsLoading(true);
     try {
       await deleteContact(contactId);
-      router.replace({
+      router.dismissTo({
         pathname: "/contact" as any,
         params: { notification: "success", message: "Deleted successfully" },
       });
@@ -423,63 +412,14 @@ export function EditContactScreen() {
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
-          <View style={styles.relationshipDropdown}>
-            <View>
-                <CustomTextInput
-                  onFieldPress={() => setIsRelationshipOpen((previous) => !previous)}
-                  label="Relationship"
-                  required
-                  value={relationship}
-                  error={relationshipError}
-                  editable={false}
-                  rightIcon={
-                    <Ionicons
-                      name={isRelationshipOpen ? "caret-up" : "caret-down"}
-                      size={12}
-                      color={theme.textMuted}
-                    />
-                  }
-                  containerStyle={{ paddingBottom: 0 }}
-                />
-            </View>
-
-            {isRelationshipOpen && (
-              <View
-                style={[
-                  styles.dropdownMenu,
-                  {
-                    backgroundColor: theme.inputBackground,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                {RELATIONSHIPS.map((item) => (
-                  <Pressable
-                    key={item.value}
-                    style={styles.dropdownItem}
-                    feedbackRadius={0}
-                    onPress={() => {
-                      setRelationship(item.value);
-                      setIsRelationshipOpen(false);
-                      if (relationshipError) setRelationshipError("");
-                    }}
-                  >
-                    <Text style={[Typography.input, { color: theme.text }]}>
-                      {item.label}
-                    </Text>
-
-                    {relationship === item.value && (
-                      <Ionicons
-                        name="checkmark"
-                        size={20}
-                        color={theme.primary}
-                      />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
+          <RelationshipPicker
+            value={relationship}
+            error={relationshipError}
+            onChange={(value) => {
+              setRelationship(value);
+              setRelationshipError("");
+            }}
+          />
         </View>
 
         <View style={styles.actions}>
@@ -520,23 +460,7 @@ export function EditContactScreen() {
       contentFlush
       contentStyle={{ flexGrow: 1 }}
       rightAction={
-        isEditing ? (
-          <Pressable
-            onPress={handleCancelEditing}
-            disabled={isLoading}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel editing"
-          >
-            <Text
-              style={[
-                Typography.button,
-                styles.headerCancel,
-                { color: theme.primary },
-              ]}
-            />
-          </Pressable>
-        ) : (
+        isEditing ? null : (
           <Pressable
             onPress={handleEditPress}
             disabled={isLoading}

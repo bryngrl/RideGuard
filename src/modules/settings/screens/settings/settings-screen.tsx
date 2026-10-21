@@ -7,8 +7,8 @@ import {
   ProfileAvatar,
   getProfileDisplayName,
 } from "@/shared/ui";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import Animated, { Easing, FadeIn, FadeOut, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SettingsSearch } from "../../components/settings-search";
@@ -24,6 +24,10 @@ const TITLE_BLOCK_HEIGHT = SETTINGS_TITLE_LINE_HEIGHT + Spacing.two;
 export function SettingsScreen() {
   const colors = useTheme();
   const router = useRouter();
+  const openingContacts = useRef(false);
+  useFocusEffect(useCallback(() => {
+    openingContacts.current = false;
+  }, []));
   const { profile } = useProfile();
   const logout = useLogout();
   const [searchOpen, setSearchOpen] = useState(false);
@@ -87,7 +91,15 @@ export function SettingsScreen() {
                   key={row.id}
                   row={row}
                   showDivider={index < rows.length - 1}
-                  onPress={() => router.push(row.route as never)}
+                  onPress={() => {
+                    if (row.route === "/contact") {
+                      if (openingContacts.current) return;
+                      openingContacts.current = true;
+                      router.navigate(row.route as never);
+                    } else {
+                      router.push(row.route as never);
+                    }
+                  }}
                 />
               ))}
           </SettingsSection>

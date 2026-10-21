@@ -1,10 +1,10 @@
-import { BorderRadius, Spacing } from "@/shared/theme";
+import { Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
   actions: {
     marginTop: "auto",
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.four,
     paddingTop: Spacing.four,
   },
 
@@ -24,20 +24,8 @@ export const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-  },
-
-  dropdownItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-
-  dropdownMenu: {
-    borderTopWidth: 0,
-    borderWidth: 1.5,
-    marginTop: -Spacing.one,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.four,
   },
 
   formContainer: {
@@ -61,12 +49,6 @@ export const styles = StyleSheet.create({
   profileImagePreview: {
     height: "100%",
     width: "100%",
-  },
-
-  relationshipDropdown: {
-    paddingBottom: Spacing.two,
-    position: "relative",
-    zIndex: 10,
   },
 
   saveButton: {

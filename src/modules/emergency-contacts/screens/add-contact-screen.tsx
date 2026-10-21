@@ -1,31 +1,22 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
-import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
-import { Alert, Image, Text, TextInput, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { Alert, BackHandler, Image, Keyboard, Text, TextInput, View } from "react-native";
 
 import HelpIcon from "@/assets/icons/actions/help.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
+import { formatLocalMobile, localMobile, validLocalMobile } from "@/shared/lib/input-formats";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { createContact } from "../services/contacts.api";
+import { createContact, listContacts } from "../services/contacts.api";
+import { RelationshipPicker } from "../components/relationship-picker";
 import { styles } from "./add-contact-screen.styles";
-
-const RELATIONSHIPS = [
-  { label: "Parent", value: "Parent" },
-  { label: "Sibling", value: "Sibling" },
-  { label: "Spouse", value: "Spouse" },
-  { label: "Child", value: "Child" },
-  { label: "Friend", value: "Friend" },
-  { label: "Other", value: "Other" },
-];
 
 export function AddContactScreen() {
   const router = useRouter();
@@ -41,10 +32,11 @@ export function AddContactScreen() {
   const [phoneNumberError, setPhoneNumberError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
 
-  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const savingRef = useRef(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
@@ -73,6 +65,7 @@ export function AddContactScreen() {
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
       setPhotoAsset(result.assets[0]);
+      setPhotoFailed(false);
     }
   };
 
@@ -97,6 +90,7 @@ export function AddContactScreen() {
     if (!result.canceled && result.assets.length > 0) {
       setProfileImage(result.assets[0].uri);
       setPhotoAsset(result.assets[0]);
+      setPhotoFailed(false);
     }
   };
 
@@ -126,8 +120,8 @@ export function AddContactScreen() {
     if (!trimmedPhone) {
       setPhoneNumberError("Please enter a phone number.");
       isValid = false;
-    } else if (!validNationalMobile(trimmedPhone)) {
-      setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+    } else if (!validLocalMobile(trimmedPhone)) {
+      setPhoneNumberError("Enter a valid 11-digit mobile number.");
       isValid = false;
     }
 
@@ -140,26 +134,29 @@ export function AddContactScreen() {
   };
 
   const handleSave = async () => {
-    if (isLoading) return;
+    if (savingRef.current) return;
 
     const isValid = validateForm();
 
     if (!isValid) {
       if (!contactName.trim()) nameRef.current?.focus();
-      else if (!validNationalMobile(phoneNumber)) phoneRef.current?.focus();
-      else setIsRelationshipOpen(true);
+      else if (!validLocalMobile(phoneNumber)) phoneRef.current?.focus();
       return;
     }
 
     try {
+      savingRef.current = true;
       setIsLoading(true);
+      Keyboard.dismiss();
+      const existing = await listContacts();
+      if (existing.length >= 5) throw new Error("You can have up to five emergency contacts.");
       await createContact({
         name: contactName.trim(),
-        phone: `+63${phoneNumber}`,
+        phone: `+63${phoneNumber.slice(1)}`,
         relationship: relationship.trim(),
         photoAsset,
       });
-      router.replace({
+      router.dismissTo({
         pathname: "/contact" as any,
         params: {
           notification: "success",
@@ -174,9 +171,30 @@ export function AddContactScreen() {
         error?.message || "Failed to save emergency contact.",
       );
     } finally {
+      savingRef.current = false;
       setIsLoading(false);
     }
   };
+
+  const handleCancel = () => {
+    if (savingRef.current) return;
+    if (contactName.trim() || phoneNumber || relationship || photoAsset) {
+      Alert.alert("Discard changes?", "Your new contact has not been saved.", [
+        { text: "Keep editing", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: () => router.back() },
+      ]);
+      return;
+    }
+    router.back();
+  };
+
+  useFocusEffect(useCallback(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleCancel();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [contactName, phoneNumber, relationship, photoAsset, router]));
 
   const handleHelp = () => {
     Alert.alert(
@@ -189,7 +207,9 @@ export function AddContactScreen() {
     <PageLayout
       title="New contact"
       scrollable
+      contentFlush
       contentStyle={{ flexGrow: 1 }}
+      onBack={handleCancel}
       rightAction={
         <Pressable
           onPress={handleHelp}
@@ -210,10 +230,11 @@ export function AddContactScreen() {
             accessibilityRole="button"
             accessibilityLabel="Add contact photo"
           >
-            {profileImage ? (
+            {profileImage && !photoFailed ? (
               <Image
                 source={{ uri: profileImage }}
                 style={styles.profileImagePreview}
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
               <ProfilePlaceholder width={96} height={96} />
@@ -264,13 +285,12 @@ export function AddContactScreen() {
             label="Phone number"
             ref={phoneRef}
             required
-            prefix="+63"
             keyboardType="phone-pad"
             value={phoneNumber}
-            inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
+            inputFormat={{ normalize: localMobile, format: formatLocalMobile }}
             error={phoneNumberError}
             onBlur={() => {
-              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+              if (phoneNumber && !validLocalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 11-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
             containerStyle={{
@@ -278,68 +298,14 @@ export function AddContactScreen() {
             }}
           />
 
-          <View style={styles.relationshipDropdown}>
-            <View>
-                <CustomTextInput
-                  onFieldPress={() => setIsRelationshipOpen((previous) => !previous)}
-                  label="Relationship"
-                  required
-                  value={relationship}
-                  error={relationshipError}
-                  editable={false}
-                  rightIcon={
-                    <Ionicons
-                      name={isRelationshipOpen ? "caret-up" : "caret-down"}
-                      size={12}
-                      color={theme.textMuted}
-                    />
-                  }
-                  containerStyle={{
-                    paddingBottom: 0,
-                  }}
-                />
-            </View>
-
-            {isRelationshipOpen && (
-              <View
-                style={[
-                  styles.dropdownMenu,
-                  {
-                    backgroundColor: theme.inputBackground,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                {RELATIONSHIPS.map((item) => (
-                  <Pressable
-                    key={item.value}
-                    style={styles.dropdownItem}
-                    feedbackRadius={0}
-                    onPress={() => {
-                      setRelationship(item.value);
-                      setIsRelationshipOpen(false);
-
-                      if (relationshipError) {
-                        setRelationshipError("");
-                      }
-                    }}
-                  >
-                    <Text style={[Typography.input, { color: theme.text }]}>
-                      {item.label}
-                    </Text>
-
-                    {relationship === item.value && (
-                      <Ionicons
-                        name="checkmark"
-                        size={20}
-                        color={theme.primary}
-                      />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
+          <RelationshipPicker
+            value={relationship}
+            error={relationshipError}
+            onChange={(value) => {
+              setRelationship(value);
+              setRelationshipError("");
+            }}
+          />
         </View>
 
         <View style={styles.actions}>
@@ -354,11 +320,7 @@ export function AddContactScreen() {
           />
 
           <Pressable
-            onPress={() => {
-              if (!isLoading) {
-                router.back();
-              }
-            }}
+            onPress={handleCancel}
             disabled={isLoading}
             style={styles.cancelButton}
           >
