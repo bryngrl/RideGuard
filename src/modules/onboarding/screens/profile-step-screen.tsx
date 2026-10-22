@@ -4,6 +4,7 @@ import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/sha
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
@@ -132,7 +133,7 @@ export default function RegisterScreen() {
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
-          <View style={styles.buttonContainer}>
+          <KeyboardHiddenView style={styles.buttonContainer}>
             <Button
               title="Next"
               variant="primary"
@@ -141,7 +142,7 @@ export default function RegisterScreen() {
               style={{ width: "48%" }}
               onPress={handleNextStep}
             />
-          </View>
+          </KeyboardHiddenView>
         </View>
       </View>
     </KeyboardAvoidingWrapper>

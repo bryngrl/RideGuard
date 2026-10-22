@@ -11,6 +11,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { formatLocalMobile, localMobile, validLocalMobile } from "@/shared/lib/input-formats";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/shared/ui/text-input";
@@ -308,7 +309,7 @@ export function AddContactScreen() {
           />
         </View>
 
-        <View style={styles.actions}>
+        <KeyboardHiddenView style={styles.actions}>
           <Button
             title="Save"
             variant="primary"
@@ -334,7 +335,7 @@ export function AddContactScreen() {
               Cancel
             </Text>
           </Pressable>
-        </View>
+        </KeyboardHiddenView>
       </View>
 
       <PhotoOptionsBottomSheet

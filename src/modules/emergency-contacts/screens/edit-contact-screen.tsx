@@ -11,6 +11,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
@@ -422,7 +423,7 @@ export function EditContactScreen() {
           />
         </View>
 
-        <View style={styles.actions}>
+        <KeyboardHiddenView style={styles.actions}>
           <Button
             title="Save"
             variant="primary"
@@ -448,7 +449,7 @@ export function EditContactScreen() {
               Cancel
             </Text>
           </Pressable>
-        </View>
+        </KeyboardHiddenView>
       </View>
     );
   };

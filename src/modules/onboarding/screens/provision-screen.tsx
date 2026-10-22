@@ -9,6 +9,7 @@ import { buttonId as normalizeButtonId, formatButtonId, validButtonId } from "@/
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
@@ -206,7 +207,7 @@ export default function ButtonProvisionScreen() {
             </View>
           </View>
 
-          <View style={styles.buttonContainer}>
+          <KeyboardHiddenView style={styles.buttonContainer}>
             <Button
               title="Connect"
               variant="primary"
@@ -215,7 +216,7 @@ export default function ButtonProvisionScreen() {
               onPress={handleConnect}
               isLoading={isLoading}
             />
-          </View>
+          </KeyboardHiddenView>
         </View>
 
         <LoadingModal

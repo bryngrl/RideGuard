@@ -5,6 +5,7 @@ import { formatNationalMobile, nationalMobile, plateInput } from "@/shared/lib/i
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ConfirmationModal, CustomTextInput, ProfileAvatar } from "@/shared/ui";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -226,7 +227,7 @@ export function AccountEditScreen() {
           {edit.error}
         </Text>
       )}
-      <View style={styles.buttons}>
+      <KeyboardHiddenView style={styles.buttons}>
         <Pressable
           onPress={cancel}
           disabled={edit.saving || savingPhoto || pickingPhoto}
@@ -248,7 +249,7 @@ export function AccountEditScreen() {
             {edit.saving || savingPhoto ? "Saving..." : "Save"}
           </Text>
         </Pressable>
-      </View>
+      </KeyboardHiddenView>
       <ConfirmationModal
         visible={confirm}
         title="Discard changes?"

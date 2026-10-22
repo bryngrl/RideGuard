@@ -8,6 +8,7 @@ import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/sha
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 import { CustomTextInput } from "@/shared/ui/text-input";
@@ -281,7 +282,7 @@ export default function RegisterStepThreeScreen() {
               )}
             </View>
 
-            <View style={styles.buttonContainer}>
+            <KeyboardHiddenView style={styles.buttonContainer}>
               <Button
                 title="Back"
                 variant="ghost"
@@ -303,7 +304,7 @@ export default function RegisterStepThreeScreen() {
                 style={{ width: "48%" }}
                 onPress={hasAnyInput ? handleSubmit : handleSkipPress}
               />
-            </View>
+            </KeyboardHiddenView>
           </View>
         </View>
       </KeyboardAvoidingWrapper>

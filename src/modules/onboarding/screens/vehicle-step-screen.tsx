@@ -5,6 +5,7 @@ import { Spacing, Typography } from "@/shared/theme";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
@@ -138,7 +139,7 @@ export default function RegisterStepTwoScreen() {
             containerStyle={{ paddingBottom: Spacing.two }}
           />
 
-          <View style={styles.buttonContainer}>
+          <KeyboardHiddenView style={styles.buttonContainer}>
             <Button
               title="Back"
               variant="ghost"
@@ -160,7 +161,7 @@ export default function RegisterStepTwoScreen() {
               style={{ width: "48%" }}
               onPress={handleNextStep}
             />
-          </View>
+          </KeyboardHiddenView>
         </View>
       </View>
     </KeyboardAvoidingWrapper>
