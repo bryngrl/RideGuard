@@ -94,6 +94,14 @@ export function ContactListScreen() {
       title="Emergency contacts"
       scrollable={false}
       contentFlush
+      overlay={
+        <NotificationSheet
+          visible={showNotification}
+          message={message ?? ""}
+          type={notification === "error" ? "error" : "success"}
+          onHide={handleNotificationHide}
+        />
+      }
       rightAction={contacts.length < 5 ? (
         <Pressable
           onPress={handleAddContact}
@@ -107,13 +115,6 @@ export function ContactListScreen() {
         </Pressable>
       ) : null}
     >
-      <NotificationSheet
-        visible={showNotification}
-        message={message ?? ""}
-        type={notification === "error" ? "error" : "success"}
-        onHide={handleNotificationHide}
-      />
-
       <View style={styles.contactContent}>
         {loadError ? (
           <View style={styles.errorState}>

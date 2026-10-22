@@ -23,7 +23,7 @@ export const styles = StyleSheet.create({
   loadingState: { alignItems: "center", flex: 1, gap: Spacing.two, justifyContent: "center" },
   errorState: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: Spacing.four },
   limitMessage: { marginBottom: Spacing.two },
-  listScroll: { flex: 1 },
+  listScroll: { flex: 1, marginHorizontal: -Spacing.four },
   listContent: { paddingBottom: Spacing.four },
   title: {
     marginTop: Spacing.three,

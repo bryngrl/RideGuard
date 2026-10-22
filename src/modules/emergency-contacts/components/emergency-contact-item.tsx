@@ -8,14 +8,12 @@ import { Spacing, Typography } from "@/shared/theme";
 interface EmergencyContactItemProps {
   name: string;
   phoneNumber: string;
-  relationship?: string;
   profileImage?: string;
 }
 
 export function EmergencyContactItem({
   name,
   phoneNumber,
-  relationship,
   profileImage,
 }: EmergencyContactItemProps) {
   const colors = useTheme();
@@ -41,6 +39,7 @@ export function EmergencyContactItem({
         <Text
           style={[
             Typography.medium,
+            styles.name,
             {
               color: colors.text,
             },
@@ -61,11 +60,6 @@ export function EmergencyContactItem({
         >
           {displayPhone}
         </Text>
-        {relationship ? (
-          <Text style={[Typography.bodySmall, styles.relationship, { color: colors.textMuted }]} numberOfLines={1}>
-            {relationship}
-          </Text>
-        ) : null}
       </View>
     </View>
   );
@@ -90,10 +84,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
+  name: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+
   phone: {
     fontSize: 14,
     marginTop: 2,
   },
   initial: { fontFamily: "Geist-SemiBold" },
-  relationship: { marginTop: 2 },
 });

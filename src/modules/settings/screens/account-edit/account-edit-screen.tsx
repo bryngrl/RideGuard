@@ -5,11 +5,12 @@ import { formatNationalMobile, nationalMobile, plateInput } from "@/shared/lib/i
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ConfirmationModal, CustomTextInput, ProfileAvatar } from "@/shared/ui";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, BackHandler, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Alert, BackHandler, Linking, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 import { uploadProfilePhoto } from "../../services/profile.api";
@@ -23,7 +24,9 @@ export function AccountEditScreen() {
   const savedName = `${profile.firstName} ${profile.lastName}`.trim();
   const [confirm, setConfirm] = useState(false);
   const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [showPhotoOptions, setShowPhotoOptions] = useState(false);
   const [pickingPhoto, setPickingPhoto] = useState(false);
+  const pickingPhotoRef = useRef(false);
   const [savingPhoto, setSavingPhoto] = useState(false);
   const savingRef = useRef(false);
   const [fullName, setFullName] = useState("");
@@ -81,7 +84,7 @@ export function AccountEditScreen() {
     edit.setField("vehicleModel", model);
   };
   const cancel = () => {
-    if (savingRef.current || pickingPhoto) return;
+    if (savingRef.current || pickingPhotoRef.current) return;
     edit.changed || photoAsset ? setConfirm(true) : router.back();
   };
   useFocusEffect(useCallback(() => {
@@ -92,7 +95,7 @@ export function AccountEditScreen() {
     return () => subscription.remove();
   }, [edit.changed, photoAsset, pickingPhoto, router]));
   const save = async () => {
-    if (savingRef.current || pickingPhoto || (!edit.changed && !photoAsset)) return;
+    if (savingRef.current || pickingPhotoRef.current || showPhotoOptions || (!edit.changed && !photoAsset)) return;
     savingRef.current = true;
     try {
       if (edit.changed && !(await edit.save())) {
@@ -121,22 +124,40 @@ export function AccountEditScreen() {
       setSavingPhoto(false);
     }
   };
-  const changePhoto = async () => {
-    if (pickingPhoto || savingRef.current) return;
+  const changePhoto = () => {
+    if (showPhotoOptions || pickingPhotoRef.current || savingRef.current) return;
+    setShowPhotoOptions(true);
+  };
+  const pickPhoto = async (source: "camera" | "gallery") => {
+    if (pickingPhotoRef.current || savingRef.current) return;
+    pickingPhotoRef.current = true;
     setPickingPhoto(true);
     try {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      const permission = source === "camera"
+        ? await ImagePicker.requestCameraPermissionsAsync()
+        : await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!permission.granted) {
-        Alert.alert("Photo access required", "Allow photo library access to choose a profile photo.");
+        Alert.alert(
+          source === "camera" ? "Camera permission required" : "Photo library permission required",
+          source === "camera" ? "Allow camera access to take a photo." : "Allow photo library access to choose a photo.",
+          [
+            { text: "Cancel", style: "cancel" },
+            { text: "Open settings", onPress: () => { void Linking.openSettings(); } },
+          ],
+        );
         return;
       }
-      const result = await ImagePicker.launchImageLibraryAsync({
+      const options: ImagePicker.ImagePickerOptions = {
         mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8,
-      });
-      if (!result.canceled && result.assets[0]) setPhotoAsset(result.assets[0]);
+      };
+      const result = source === "camera"
+        ? await ImagePicker.launchCameraAsync(options)
+        : await ImagePicker.launchImageLibraryAsync(options);
+      if (!result.canceled && result.assets[0]?.uri) setPhotoAsset(result.assets[0]);
     } catch (error) {
-      Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert(source === "camera" ? "Could not take photo" : "Could not choose photo", error instanceof Error ? error.message : "Please try again.");
     } finally {
+      pickingPhotoRef.current = false;
       setPickingPhoto(false);
     }
   };
@@ -160,7 +181,7 @@ export function AccountEditScreen() {
             <NativePressable
               onPress={changePhoto}
               disabled={pickingPhoto || savingPhoto || edit.saving}
-              style={styles.photoLink}
+              style={({ pressed }) => [styles.photoLink, { opacity: pressed ? 0.6 : 1 }]}
               hitSlop={Spacing.two}
               accessibilityRole="button"
               accessibilityLabel="Change profile picture"
@@ -190,7 +211,7 @@ export function AccountEditScreen() {
           required
           prefix="+63"
           keyboardType="number-pad"
-          placeholder="9123456789"
+          placeholder="9XX XXX XXXX"
           value={edit.form.phone}
           inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
           onChangeText={(value) => edit.setField("phone", value)}
@@ -264,6 +285,12 @@ export function AccountEditScreen() {
           router.back();
         }}
         onSecondaryPress={() => setConfirm(false)}
+      />
+      <PhotoOptionsBottomSheet
+        visible={showPhotoOptions}
+        onClose={() => setShowPhotoOptions(false)}
+        onTakePhoto={() => { void pickPhoto("camera"); }}
+        onChoosePhoto={() => { void pickPhoto("gallery"); }}
       />
     </SettingsPageLayout>
   );

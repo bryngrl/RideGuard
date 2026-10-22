@@ -1,4 +1,4 @@
-import { Spacing } from "@/shared/theme";
+import { BorderRadius, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -9,13 +9,17 @@ export const styles = StyleSheet.create({
   },
 
   addPhotoText: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.three,
   },
 
   cancelButton: {
     alignItems: "center",
+    borderRadius: BorderRadius.sm,
     justifyContent: "center",
-    paddingVertical: Spacing.three,
+    marginTop: Spacing.two,
+    minHeight: 40,
+    paddingVertical: Spacing.two,
+    width: "100%",
   },
 
   cancelText: {
@@ -24,11 +28,12 @@ export const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.five,
   },
 
   formContainer: {
+    gap: Spacing.two,
     width: "100%",
   },
 

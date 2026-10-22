@@ -2,14 +2,14 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, BackHandler, Image, Keyboard, Text, TextInput, View } from "react-native";
+import { Alert, BackHandler, Image, Keyboard, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
 import HelpIcon from "@/assets/icons/actions/help.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { formatLocalMobile, localMobile, validLocalMobile } from "@/shared/lib/input-formats";
-import { Spacing, Typography } from "@/shared/theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
+import { Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { PageLayout } from "@/shared/ui/page-layout";
@@ -37,61 +37,72 @@ export function AddContactScreen() {
   const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const savingRef = useRef(false);
+  const pickingPhotoRef = useRef(false);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
   const [photoFailed, setPhotoFailed] = useState(false);
 
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   const handleAddPhoto = () => {
+    if (showPhotoOptions || pickingPhotoRef.current || savingRef.current) return;
     setShowPhotoOptions(true);
   };
 
   const handleTakePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert(
-        "Camera permission required",
-        "Please allow camera access in your device settings to take a photo.",
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      setProfileImage(result.assets[0].uri);
-      setPhotoAsset(result.assets[0]);
-      setPhotoFailed(false);
+    if (pickingPhotoRef.current || savingRef.current) return;
+    pickingPhotoRef.current = true;
+    setPickingPhoto(true);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Camera permission required", "Allow camera access to take a photo.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open settings", onPress: () => { void Linking.openSettings(); } },
+        ]);
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setProfileImage(result.assets[0].uri);
+        setPhotoAsset(result.assets[0]);
+        setPhotoFailed(false);
+      }
+    } catch (error) {
+      Alert.alert("Could not take photo", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      pickingPhotoRef.current = false;
+      setPickingPhoto(false);
     }
   };
 
   const handleChoosePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert(
-        "Photo library permission required",
-        "Please allow photo library access in your device settings.",
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-
-    if (!result.canceled && result.assets.length > 0) {
-      setProfileImage(result.assets[0].uri);
-      setPhotoAsset(result.assets[0]);
-      setPhotoFailed(false);
+    if (pickingPhotoRef.current || savingRef.current) return;
+    pickingPhotoRef.current = true;
+    setPickingPhoto(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Photo library permission required", "Allow photo library access to choose a photo.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open settings", onPress: () => { void Linking.openSettings(); } },
+        ]);
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setProfileImage(result.assets[0].uri);
+        setPhotoAsset(result.assets[0]);
+        setPhotoFailed(false);
+      }
+    } catch (error) {
+      Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      pickingPhotoRef.current = false;
+      setPickingPhoto(false);
     }
   };
 
@@ -121,8 +132,8 @@ export function AddContactScreen() {
     if (!trimmedPhone) {
       setPhoneNumberError("Please enter a phone number.");
       isValid = false;
-    } else if (!validLocalMobile(trimmedPhone)) {
-      setPhoneNumberError("Enter a valid 11-digit mobile number.");
+    } else if (!validNationalMobile(trimmedPhone)) {
+      setPhoneNumberError("Enter a valid 10-digit mobile number.");
       isValid = false;
     }
 
@@ -135,13 +146,13 @@ export function AddContactScreen() {
   };
 
   const handleSave = async () => {
-    if (savingRef.current) return;
+    if (savingRef.current || pickingPhotoRef.current || showPhotoOptions) return;
 
     const isValid = validateForm();
 
     if (!isValid) {
       if (!contactName.trim()) nameRef.current?.focus();
-      else if (!validLocalMobile(phoneNumber)) phoneRef.current?.focus();
+      else if (!validNationalMobile(phoneNumber)) phoneRef.current?.focus();
       return;
     }
 
@@ -153,7 +164,7 @@ export function AddContactScreen() {
       if (existing.length >= 5) throw new Error("You can have up to five emergency contacts.");
       await createContact({
         name: contactName.trim(),
-        phone: `+63${phoneNumber.slice(1)}`,
+        phone: `+63${phoneNumber}`,
         relationship: relationship.trim(),
         photoAsset,
       });
@@ -161,12 +172,10 @@ export function AddContactScreen() {
         pathname: "/contact" as any,
         params: {
           notification: "success",
-          message: "Saved successfully",
+          message: "Contact added successfully",
         },
       });
     } catch (error: any) {
-      console.error("EMERGENCY CONTACT SUBMISSION ERROR:", error);
-
       Alert.alert(
         "Error",
         error?.message || "Failed to save emergency contact.",
@@ -178,7 +187,7 @@ export function AddContactScreen() {
   };
 
   const handleCancel = () => {
-    if (savingRef.current) return;
+    if (savingRef.current || pickingPhotoRef.current) return;
     if (contactName.trim() || phoneNumber || relationship || photoAsset) {
       Alert.alert("Discard changes?", "Your new contact has not been saved.", [
         { text: "Keep editing", style: "cancel" },
@@ -242,9 +251,10 @@ export function AddContactScreen() {
             )}
           </Pressable>
 
-          <Pressable
+          <NativePressable
             onPress={handleAddPhoto}
             hitSlop={8}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             accessibilityRole="button"
             accessibilityLabel={
               profileImage ? "Change contact photo" : "Add new photo"
@@ -259,7 +269,7 @@ export function AddContactScreen() {
             >
               {profileImage ? "Change photo" : "Add new photo"}
             </Text>
-          </Pressable>
+          </NativePressable>
         </View>
 
         <View style={styles.formContainer}>
@@ -277,26 +287,22 @@ export function AddContactScreen() {
                 setContactNameError("");
               }
             }}
-            containerStyle={{
-              paddingBottom: Spacing.two,
-            }}
           />
 
           <CustomTextInput
             label="Phone number"
             ref={phoneRef}
             required
+            prefix="+63"
             keyboardType="phone-pad"
+            placeholder="9XX XXX XXXX"
             value={phoneNumber}
-            inputFormat={{ normalize: localMobile, format: formatLocalMobile }}
+            inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneNumberError}
             onBlur={() => {
-              if (phoneNumber && !validLocalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 11-digit mobile number.");
+              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
-            containerStyle={{
-              paddingBottom: Spacing.two,
-            }}
           />
 
           <RelationshipPicker
@@ -320,10 +326,10 @@ export function AddContactScreen() {
             style={styles.saveButton}
           />
 
-          <Pressable
+          <NativePressable
             onPress={handleCancel}
-            disabled={isLoading}
-            style={styles.cancelButton}
+            disabled={isLoading || pickingPhoto}
+            style={({ pressed }) => [styles.cancelButton, { opacity: pressed ? 0.6 : 1 }]}
           >
             <Text
               style={[
@@ -334,7 +340,7 @@ export function AddContactScreen() {
             >
               Cancel
             </Text>
-          </Pressable>
+          </NativePressable>
         </KeyboardHiddenView>
       </View>
 

@@ -119,6 +119,7 @@ export default function RegisterScreen() {
             prefix="+63"
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
+            placeholder="9XX XXX XXXX"
             value={phone}
             inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneError}
