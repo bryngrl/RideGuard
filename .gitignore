@@ -42,6 +42,8 @@ hs_err_pid*.log
 .env*.local
 .env.development
 .env.production
+.env.bak
+.env.*.bak
 
 # typescript
 *.tsbuildinfo

@@ -2,6 +2,12 @@
 
 This app uses Expo SDK 57 and React Native. Requirements for local development: Node.js 22.13 or newer, Java 17, Android SDK 36, and an Android phone with a USB data cable. Gradle may download additional build tools and NDK components on the first build.
 
+## Android builds
+
+If EAS Build is unavailable or the Expo build quota is exhausted, follow [Build an Android APK locally](docs/LOCAL_ANDROID_BUILD.md). It uses Gradle on your computer and no EAS build credits.
+
+For shared releases and OTA updates, follow [the team workflow](docs/OTA_AND_TEAM_WORKFLOW.md).
+
 For local development, copy `.env.example` to `.env` and obtain the Firebase configuration from the team. Firebase and Google sign-in cloud settings must remain valid. Downloading a standalone APK does not require a local `.env` file.
 
 ## Standalone QA app

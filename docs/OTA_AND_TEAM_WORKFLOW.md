@@ -228,6 +228,8 @@ This sends the update to compatible production builds.
 
 Use this process when the change includes native code or native configuration.
 
+If EAS Build is unavailable or its cloud build quota is exhausted, use [the local Android APK guide](LOCAL_ANDROID_BUILD.md). It covers Gradle commands, local environment settings, signing, installation, and AI agent instructions.
+
 This repository contains an `android/` folder. Some `app.json` changes must also be applied to the native Android project. Ask the release lead if you are not sure whether the native files are in sync.
 
 ### 1. Update the app and runtime version
