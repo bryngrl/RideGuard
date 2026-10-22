@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { SymbolView } from "expo-symbols";
 import { PropsWithChildren, useState } from "react";
-import { Pressable, StyleSheet } from "react-native";
+import { StyleSheet } from "react-native";
 import Animated, { FadeIn } from "react-native-reanimated";
 
 import { ThemedText } from "@/components/themed-text";
@@ -18,10 +19,7 @@ export function Collapsible({
   return (
     <ThemedView>
       <Pressable
-        style={({ pressed }) => [
-          styles.heading,
-          pressed && styles.pressedHeading,
-        ]}
+        style={styles.heading}
         onPress={() => setIsOpen((value) => !value)}
       >
         <ThemedView type="backgroundElement" style={styles.button}>
@@ -56,9 +54,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
-  },
-  pressedHeading: {
-    opacity: 0.7,
   },
   button: {
     width: Spacing.four,

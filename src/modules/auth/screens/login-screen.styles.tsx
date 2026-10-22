@@ -1,105 +1,101 @@
 import { StyleSheet } from "react-native";
 
-import {
-  BrandColors,
-  FontFamily,
-  MaxContentWidth,
-  Spacing,
-  Typography,
-} from "@/shared/theme";
+import { BrandColors, FontFamily, Spacing, Typography } from "@/shared/theme";
+import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE } from "@/shared/ui/back-arrow-icon";
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
   content: {
-    flex: 1,
+    flexGrow: 1,
     width: "100%",
-    maxWidth: MaxContentWidth,
+    maxWidth: 440,
     alignSelf: "center",
-    justifyContent: "space-between",
-    paddingTop: Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.five,
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.two,
+    paddingBottom: Spacing.four,
   },
-
-  heroWrapper: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
+  backButton: { width: BACK_ARROW_TOUCH_SIZE, height: BACK_ARROW_TOUCH_SIZE, marginLeft: BACK_ARROW_TOUCH_LEFT - Spacing.five, alignItems: "center", justifyContent: "center" },
+  brand: { alignSelf: "flex-start", marginTop: Spacing.six, marginBottom: Spacing.four },
+  introSection: {
+    alignItems: "flex-start",
+    marginBottom: Spacing.four,
   },
-
-  heroRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 0,
+  formSection: {
+    width: "100%",
+    flexGrow: 1,
   },
-
-  brandNameContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginLeft: -15,
-    marginTop: 25,
-    marginRight: 15,
-    zIndex: 1,
-  },
-
-  brandNameText: {
-    fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 34,
-    lineHeight: 40,
+  title: {
+    ...Typography.h1,
     color: BrandColors.primary,
-    letterSpacing: -0.5,
   },
-
-  cursor: {
-    fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 32,
-    color: BrandColors.accent,
-  },
-
-  bottomSection: {
-    width: "100%",
-    gap: Spacing.four,
-  },
-
-  textGroup: {
-    gap: Spacing.one,
-    alignItems: "center",
-  },
-
   subtitle: {
-    ...Typography.body,
+    ...Typography.bodySmall,
+    marginTop: Spacing.two,
+  },
+  fields: {
+    gap: Spacing.three,
+  },
+  field: {
+    marginBottom: 0,
+  },
+  inputWrapper: {
+    minHeight: 46,
+  },
+  input: {
+    paddingVertical: Spacing.two,
     fontSize: 15,
-    lineHeight: 22,
-    textAlign: "center",
   },
-
-  buttonGroup: {
-    width: "100%",
-    paddingTop: Spacing.half,
+  forgotButton: {
+    alignSelf: "flex-end",
+    paddingVertical: Spacing.one,
   },
-
+  forgotText: {
+    ...Typography.bodySmall,
+    fontFamily: FontFamily.geistMedium,
+    color: BrandColors.accent,
+    textDecorationLine: "underline",
+  },
+  loginButton: {
+    height: 42,
+    marginTop: Spacing.four,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.three,
+    marginTop: Spacing.five,
+    marginBottom: Spacing.four,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    ...Typography.bodySmall,
+    fontFamily: FontFamily.geistMedium,
+  },
+  googleButton: {
+    height: 44,
+  },
   legalContainer: {
     alignItems: "center",
     paddingHorizontal: Spacing.two,
+    marginTop: "auto",
+    paddingTop: Spacing.four,
   },
-
   legalText: {
     ...Typography.bodySmall,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 11,
+    lineHeight: 16,
     textAlign: "center",
   },
-
   legalLink: {
     ...Typography.bodySmall,
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: "600",
+    fontSize: 11,
+    lineHeight: 16,
+    color: BrandColors.accent,
     textDecorationLine: "underline",
   },
 });

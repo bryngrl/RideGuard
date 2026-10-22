@@ -19,6 +19,7 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+*.keystore
 
 # iOS
 ios/Podfile.lock
@@ -31,6 +32,7 @@ ios/HuniLive.xcodeproj/*.pbxproj
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+hs_err_pid*.log
 
 # macOS
 .DS_Store

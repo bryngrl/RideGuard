@@ -28,6 +28,16 @@ export interface AlertFields {
   // and weapon-only alerts (media never implies a violence threat).
   videoUrl?: string | null;
   timeStamp: string;
+  // Backend alert-creation time; the auto-archive deadline is measured from
+  // this, not the event timeStamp. Legacy payloads fall back to timeStamp.
+  createdAt: string;
   isFalseAlarm: boolean;
   isSeen: boolean;
+  // Auto-archive state. isArchived defaults false for legacy payloads.
+  isArchived: boolean;
+  // When the backend archived it (ISO), else null.
+  archivedAt: string | null;
+  // Server-derived deadline (createdAt + preference), or null when archiving is
+  // off. Authoritative for an active alert; null once archived.
+  archiveAt: string | null;
 }

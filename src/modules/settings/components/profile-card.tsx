@@ -1,10 +1,11 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { normalizePhoneNumber } from "@/shared/lib/phone-utils";
+import { formatDisplayPhoneNumber } from "@/shared/lib/phone-utils";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ProfileAvatar, getProfileDisplayName } from "@/shared/ui";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 import Animated, {
   interpolate,
@@ -35,30 +36,30 @@ export function ProfileCard({
   }));
 
   return (
-    <Pressable onPress={onPress} style={styles.wrapper}>
-      <Animated.View style={[styles.card, front]}>
+    <Pressable onPress={onPress} style={styles.wrapper} feedbackEnabled={false} accessibilityRole="button" accessibilityLabel="Flip profile card">
+      <Animated.View style={[styles.card, { borderColor: colors.border }, front]}>
         <CardContent profile={profile} />
       </Animated.View>
-      <Animated.View style={[styles.card, back]}>
+      <Animated.View style={[styles.card, { borderColor: colors.border }, back]}>
         <LinearGradient
           colors={[colors.contactGradientStart, colors.contactGradientEnd]}
           style={styles.gradient}
         >
           <View style={styles.backContent}>
-            <Text style={[Typography.h3, { color: colors.text }]}>
-              {firstName ? `${firstName}'s Vehicle` : "Your Vehicle"}
+            <Text numberOfLines={1} style={[styles.backTitle, { color: colors.text }]}>
+              {firstName ? `${firstName}’s vehicle` : "Your vehicle"}
             </Text>
-            <Text style={[Typography.bodySmall, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.backDetail, { color: colors.text }]}>
               {`${profile.vehicleBrand} ${profile.vehicleModel}`.trim() ||
                 "No vehicle added"}
             </Text>
-            <Text style={[Typography.bodySmall, { color: colors.text }]}>
+            <Text numberOfLines={1} style={[styles.backDetail, { color: colors.text }]}>
               {profile.plateNumber || "No plate number"}
             </Text>
           </View>
 
           <View style={styles.logoRow}>
-            <MainLogo width={28} height={28} />
+            <MainLogo width={22} height={30} />
           </View>
         </LinearGradient>
       </Animated.View>
@@ -78,70 +79,68 @@ function CardContent({ profile }: { profile: SettingsProfile }) {
         <ProfileAvatar
           name={getProfileDisplayName(profile.firstName, profile.lastName)}
           photoUrl={profile.photoUrl}
-          size={88}
+          size={92}
           textStyle={Typography.h1}
         />
 
-        <View
-          style={[styles.divider, { backgroundColor: colors.textMuted + "40" }]}
-        />
         <View style={styles.copy}>
-          <Text style={[Typography.h3, { color: colors.text }]}>
+          <Text numberOfLines={1} style={[Typography.bodyLarge, styles.name, { color: colors.text }]}>
             {getProfileDisplayName(profile.firstName, profile.lastName)}
           </Text>
-          <Text style={[Typography.bodySmall, { color: colors.text }]}>
-            {profile.phone
-              ? `${normalizePhoneNumber(profile.phone)}`
-              : "No phone number"}
+          <Text numberOfLines={1} style={[Typography.bodySmall, styles.supportingText, { color: colors.text }]}>
+            {profile.phone ? formatDisplayPhoneNumber(profile.phone) : "No phone number"}
           </Text>
-          <Text style={[Typography.bodySmall, { color: colors.text }]}>
+          <Text numberOfLines={1} style={[Typography.bodySmall, styles.supportingText, { color: colors.text }]}>
             {profile.email || "No email address"}
           </Text>
         </View>
       </View>
 
       <View style={styles.logoRow}>
-        <MainLogo width={28} height={28} />
+        <MainLogo width={22} height={30} />
       </View>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: { minHeight: 150 },
+  wrapper: { height: 148 },
   card: {
     ...StyleSheet.absoluteFill,
     backfaceVisibility: "hidden",
-    borderRadius: BorderRadius.xl,
+    borderRadius: BorderRadius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
   gradient: {
     flex: 1,
     padding: Spacing.four,
-    justifyContent: "space-between",
   },
   content: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "flex-start",
-    gap: Spacing.two,
-  },
-  divider: {
-    width: 0,
-    height: "70%",
+    gap: Spacing.five,
   },
   backContent: {
     flex: 1,
-    justifyContent: "center",
+    gap: Spacing.half,
+    paddingLeft: Spacing.two,
+    paddingTop: Spacing.two,
   },
+  backTitle: { ...Typography.bodyLarge, fontFamily: "Geist-SemiBold", lineHeight: 22 },
+  backDetail: { ...Typography.bodySmall, fontSize: 12, lineHeight: 16 },
   copy: {
-    gap: 2,
+    gap: 0,
     flex: 1,
+    paddingRight: Spacing.two,
   },
+  name: { fontFamily: "Geist-SemiBold" },
+  supportingText: { fontSize: 13 },
   logoRow: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    marginTop: Spacing.one,
+    position: "absolute",
+    right: Spacing.three,
+    bottom: Spacing.three,
   },
 });

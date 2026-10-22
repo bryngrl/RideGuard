@@ -1,10 +1,14 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { Button } from "@/shared/ui/button";
 import { styles } from "./emergency-contact-step-screen.styles";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 import { CustomTextInput } from "@/shared/ui/text-input";
@@ -12,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Alert, Text, View } from "react-native";
 import { ProfilePayload, submitProfile } from "../services/onboarding.api";
 import { useOnboardingStore } from "../store/onboarding.store";
 
@@ -64,7 +68,7 @@ export default function RegisterStepThreeScreen() {
       if (!store.emergencyPhone.trim()) {
         setEmergencyPhoneError("Please enter a phone number.");
         isValid = false;
-      } else if (!/^9\d{9}$/.test(store.emergencyPhone.trim())) {
+      } else if (!validNationalMobile(store.emergencyPhone.trim())) {
         setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
         isValid = false;
       }
@@ -198,22 +202,22 @@ export default function RegisterStepThreeScreen() {
               prefix="+63"
               keyboardType="phone-pad"
               value={store.emergencyPhone}
+              inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
               error={emergencyPhoneError}
-              maxLength={10}
+              onBlur={() => {
+                if (store.emergencyPhone && !validNationalMobile(store.emergencyPhone)) setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
+              }}
               onChangeText={(text) => {
-                const digitsOnly = text.replace(/\D/g, "");
-                const formattedPhone = digitsOnly.replace(/^0+/, "");
-
-                store.updateDraft({ emergencyPhone: formattedPhone });
+                store.updateDraft({ emergencyPhone: text });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
             />
 
             <View style={styles.relationshipDropdown}>
-              <Pressable onPress={() => setIsRelationshipOpen((prev) => !prev)}>
-                <View pointerEvents="none">
+              <View>
                   <CustomTextInput
+                    onFieldPress={() => setIsRelationshipOpen((prev) => !prev)}
                     label="Relationship"
                     required
                     value={store.relationship}
@@ -229,8 +233,7 @@ export default function RegisterStepThreeScreen() {
                     }
                     containerStyle={{ paddingBottom: 0 }}
                   />
-                </View>
-              </Pressable>
+              </View>
 
               {isRelationshipOpen && (
                 <View
@@ -253,6 +256,7 @@ export default function RegisterStepThreeScreen() {
                     <Pressable
                       key={item.value}
                       style={styles.dropdownItem}
+                      feedbackRadius={0}
                       onPress={() => {
                         store.updateDraft({
                           relationship: item.value,
@@ -278,13 +282,13 @@ export default function RegisterStepThreeScreen() {
               )}
             </View>
 
-            <View style={styles.buttonContainer}>
+            <KeyboardHiddenView style={styles.buttonContainer}>
               <Button
                 title="Back"
                 variant="ghost"
                 fullWidth={false}
                 leftIcon={
-                  <Ionicons name="chevron-back" size={16} color={theme.text} />
+                  <BackArrowIcon color={theme.text} />
                 }
                 textStyle={{ color: theme.text }}
                 onPress={() => router.back()}
@@ -300,7 +304,7 @@ export default function RegisterStepThreeScreen() {
                 style={{ width: "48%" }}
                 onPress={hasAnyInput ? handleSubmit : handleSkipPress}
               />
-            </View>
+            </KeyboardHiddenView>
           </View>
         </View>
       </KeyboardAvoidingWrapper>

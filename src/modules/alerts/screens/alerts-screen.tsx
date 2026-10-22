@@ -1,19 +1,48 @@
+import { Ionicons } from "@expo/vector-icons";
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BrandColors, Typography } from "@/shared/theme";
-import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, SectionList, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ActivityIndicator,
+  BackHandler,
+  RefreshControl,
+  SectionList,
+  Text,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAbly } from "@/shared/hooks/use-ably";
-import { useAlertsStore } from "../store/alerts.store";
+import { END_REACHED_THRESHOLD } from "../constants";
+import { useAlertsList, type AlertListStatus } from "../hooks/use-alerts";
 import { AlertItem } from "../components/alert-item";
 import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
 import type { AlertFields, AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alerts-screen.styles";
 
-// Tab Types
-type TabFilter = "all" | "unread";
+type TabFilter = "active" | "unread" | "archived";
+
+const FILTERS: { key: TabFilter; label: string }[] = [
+  { key: "active", label: "Active" },
+  { key: "unread", label: "Unread" },
+  { key: "archived", label: "Archived" },
+];
+
+// Active and Unread share the non-archived view; Unread keeps unseen rows.
+// Archived uses the same saved-alerts API and the returned archive flag.
+const TAB_STATUS: Record<TabFilter, AlertListStatus> = {
+  active: "active",
+  unread: "active",
+  archived: "archived",
+};
 
 // Date Grouping Helper
 function getDateLabel(isoDate: string): string {
@@ -66,21 +95,50 @@ function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
 export function AlertsScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const [filter, setFilter] = useState<TabFilter>("all");
+  const [filter, setFilter] = useState<TabFilter>("active");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuTop, setMenuTop] = useState(68);
+  const reducedMotion = useReducedMotion();
+  const menuProgress = useSharedValue(0);
+  const selectedFilter = FILTERS.find((item) => item.key === filter)!;
 
-  // Mount realtime subscription
-  useAbly();
+  useEffect(() => {
+    menuProgress.value = reducedMotion
+      ? Number(menuOpen)
+      : withTiming(Number(menuOpen), {
+          duration: menuOpen ? 180 : 150,
+          easing: Easing.out(Easing.cubic),
+        });
+  }, [menuOpen, menuProgress, reducedMotion]);
 
-  // Get raw alerts from store
-  const alerts = useAlertsStore((state) => state.alerts);
+  const menuMotion = useAnimatedStyle(() => ({
+    opacity: menuProgress.value,
+    transform: [{ translateY: (1 - menuProgress.value) * -6 }],
+  }));
 
-  // Filter based on filter selection
+  useFocusEffect(useCallback(() => () => setMenuOpen(false), []));
+  useEffect(() => {
+    if (!menuOpen) return;
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      setMenuOpen(false);
+      return true;
+    });
+    return () => subscription.remove();
+  }, [menuOpen]);
+
+  // The selected view loads saved alerts with its own cursor and the existing
+  // periodic/focus/foreground refresh (see useAlertsList).
+  const { visibleAlerts, isRefreshing, isLoadingMore, hasMore, refresh, loadMore } =
+    useAlertsList(TAB_STATUS[filter]);
+
+  // Unread filters the active view to unseen rows. Archive membership is
+  // already resolved by the hook.
   const filtered = useMemo(() => {
     if (filter === "unread") {
-      return alerts.filter((a) => !a.isSeen);
+      return visibleAlerts.filter((a) => !a.isSeen);
     }
-    return alerts;
-  }, [alerts, filter]);
+    return visibleAlerts;
+  }, [visibleAlerts, filter]);
 
   // Group alerts by date
   const sections = useMemo<AlertSection[]>(() => {
@@ -99,67 +157,79 @@ export function AlertsScreen() {
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={["top"]}
     >
-      {/* HEADER */}
-      <View style={styles.header}>
+      {menuOpen && (
+        <Pressable
+          style={styles.dismissLayer}
+          onPress={() => setMenuOpen(false)}
+          feedbackEnabled={false}
+          accessibilityLabel="Close alert filters"
+        />
+      )}
+      <View style={styles.header} pointerEvents="box-none">
         <Text style={[Typography.largeTitle, { color: theme.text }]}>
           Alerts
         </Text>
-      </View>
-
-      {/* TABS */}
-      <View style={styles.tabRow}>
-        <Pressable
-          onPress={() => setFilter("all")}
-          style={[
-            styles.tab,
-            filter === "all"
-              ? [styles.tabActive, { backgroundColor: BrandColors.primary }]
-              : [styles.tabInactive, { borderColor: theme.border }],
-          ]}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: filter === "all" }}
+        <View
+          style={styles.filterAnchor}
+          onLayout={(event) => {
+            const { y, height } = event.nativeEvent.layout;
+            setMenuTop(y + height + 6);
+          }}
         >
-          <Text
-            style={[
-              Typography.bodySmall,
-              styles.tabText,
-              {
-                color:
-                  filter === "all" ? BrandColors.secondary : theme.text,
-                fontWeight: filter === "all" ? "600" : "400",
-              },
-            ]}
+          <Pressable
+            onPress={() => setMenuOpen((open) => !open)}
+            style={styles.filterButton}
+            feedbackRadius={20}
+            feedbackBehindContent
+            accessibilityRole="button"
+            accessibilityLabel={`Filter alerts: ${selectedFilter.label}`}
+            accessibilityState={{ expanded: menuOpen }}
           >
-            All
-          </Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setFilter("unread")}
-          style={[
-            styles.tab,
-            filter === "unread"
-              ? [styles.tabActive, { backgroundColor: BrandColors.primary }]
-              : [styles.tabInactive, { borderColor: theme.border }],
-          ]}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: filter === "unread" }}
-        >
-          <Text
-            style={[
-              Typography.bodySmall,
-              styles.tabText,
-              {
-                color:
-                  filter === "unread" ? BrandColors.secondary : theme.text,
-                fontWeight: filter === "unread" ? "600" : "400",
-              },
-            ]}
-          >
-            Unread
-          </Text>
-        </Pressable>
+            <Text style={[Typography.bodySmall, styles.filterLabel]} numberOfLines={1}>
+              {selectedFilter.label}
+            </Text>
+            <Ionicons
+              name={menuOpen ? "chevron-up" : "chevron-down"}
+              size={14}
+              color={BrandColors.primary}
+            />
+          </Pressable>
+        </View>
       </View>
+      <Animated.View
+        pointerEvents={menuOpen ? "auto" : "none"}
+        accessibilityElementsHidden={!menuOpen}
+        importantForAccessibility={menuOpen ? "auto" : "no-hide-descendants"}
+        style={[styles.menu, { top: menuTop }, menuMotion]}
+      >
+        <View style={styles.menuSurface}>
+          {FILTERS.map((option, index) => {
+            const selected = filter === option.key;
+            return (
+              <Pressable
+                key={option.key}
+                onPress={() => {
+                  setMenuOpen(false);
+                  if (!selected) setFilter(option.key);
+                }}
+                style={[
+                  styles.menuItem,
+                  index > 0 && styles.menuItemBorder,
+                  selected && styles.menuItemSelected,
+                ]}
+                feedbackBehindContent
+                accessibilityRole="menuitem"
+                accessibilityState={{ selected }}
+              >
+                <Text style={[Typography.bodySmall, styles.menuItemText]}>
+                  {option.label}
+                </Text>
+                {selected && <Ionicons name="checkmark" size={18} color={BrandColors.primary} />}
+              </Pressable>
+            );
+          })}
+        </View>
+      </Animated.View>
 
       {/* Alert Sections List */}
       <SectionList
@@ -168,6 +238,17 @@ export function AlertsScreen() {
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={theme.textMuted}
+          />
+        }
+        onEndReached={() => {
+          if (hasMore && !isLoadingMore) loadMore();
+        }}
+        onEndReachedThreshold={END_REACHED_THRESHOLD}
         renderSectionHeader={({ section }) => (
           <Text
             style={[
@@ -185,10 +266,19 @@ export function AlertsScreen() {
         SectionSeparatorComponent={() => (
           <View style={styles.sectionSeparator} />
         )}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator
+              style={styles.footerSpinner}
+              size="small"
+              color={theme.textMuted}
+            />
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={[Typography.medium, { color: theme.textInactive }]}>
-              No alerts to show.
+            <Text style={[Typography.medium, { color: theme.textMuted }]}>
+              {filter === "unread" ? "No unread alerts." : filter === "archived" ? "No archived alerts." : "No active alerts yet."}
             </Text>
           </View>
         }

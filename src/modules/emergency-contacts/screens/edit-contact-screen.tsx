@@ -1,14 +1,17 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, Image, Pressable, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { Alert, BackHandler, Image, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
@@ -16,15 +19,8 @@ import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet"
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./edit-contact-screen.styles";
-
-const RELATIONSHIPS = [
-  { label: "Parent", value: "Parent" },
-  { label: "Sibling", value: "Sibling" },
-  { label: "Spouse", value: "Spouse" },
-  { label: "Child", value: "Child" },
-  { label: "Friend", value: "Friend" },
-  { label: "Other", value: "Other" },
-];
+import { RelationshipPicker } from "../components/relationship-picker";
+import { deleteContact, updateContact } from "../services/contacts.api";
 
 type ConfirmationType = "discard" | "delete" | null;
 
@@ -52,17 +48,24 @@ export function EditContactScreen() {
     normalizePhoneNumber(initialPhoneNumber ?? ""),
   );
   const [relationship, setRelationship] = useState(initialRelationship ?? "");
+  const nameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
   const [profileImage, setProfileImage] = useState<string | null>(
     initialProfileImage || null,
   );
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
+  const pickingPhotoRef = useRef(false);
+  const savingRef = useRef(false);
 
-  const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [contactNameError, setContactNameError] = useState("");
   const [phoneNumberError, setPhoneNumberError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeConfirmation, setActiveConfirmation] =
     useState<ConfirmationType>(null);
+  const [discardLeaving, setDiscardLeaving] = useState(false);
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [notificationType, setNotificationType] = useState<"success" | "error">(
@@ -71,62 +74,82 @@ export function EditContactScreen() {
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
   const handlePhotoPress = () => {
-    if (isLoading) return;
+    if (isLoading || pickingPhotoRef.current || showPhotoOptions) return;
     setShowPhotoOptions(true);
   };
 
   const handleTakePhoto = async () => {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (pickingPhotoRef.current || savingRef.current) return;
+    pickingPhotoRef.current = true;
+    setPickingPhoto(true);
+    try {
+      const permission = await ImagePicker.requestCameraPermissionsAsync();
 
-    if (!permission.granted) {
-      Alert.alert(
-        "Camera permission required",
-        "Please allow camera access in your device settings to take a photo.",
-      );
-      return;
-    }
+      if (!permission.granted) {
+        Alert.alert("Camera permission required", "Allow camera access to take a photo.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open settings", onPress: () => { void Linking.openSettings(); } },
+        ]);
+        return;
+      }
 
-    const result = await ImagePicker.launchCameraAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      setProfileImage(result.assets[0].uri);
+      if (!result.canceled && result.assets[0]?.uri) {
+        setProfileImage(result.assets[0].uri);
+        setPhotoAsset(result.assets[0]);
+        setPhotoFailed(false);
+      }
+    } catch (error) {
+      Alert.alert("Could not take photo", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      pickingPhotoRef.current = false;
+      setPickingPhoto(false);
     }
   };
 
   const handleChoosePhoto = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (pickingPhotoRef.current || savingRef.current) return;
+    pickingPhotoRef.current = true;
+    setPickingPhoto(true);
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    if (!permission.granted) {
-      Alert.alert(
-        "Photo library permission required",
-        "Please allow photo library access in your device settings.",
-      );
-      return;
-    }
+      if (!permission.granted) {
+        Alert.alert("Photo library permission required", "Allow photo library access to choose a photo.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Open settings", onPress: () => { void Linking.openSettings(); } },
+        ]);
+        return;
+      }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
 
-    if (!result.canceled && result.assets.length > 0) {
-      setProfileImage(result.assets[0].uri);
+      if (!result.canceled && result.assets[0]?.uri) {
+        setProfileImage(result.assets[0].uri);
+        setPhotoAsset(result.assets[0]);
+        setPhotoFailed(false);
+      }
+    } catch (error) {
+      Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      pickingPhotoRef.current = false;
+      setPickingPhoto(false);
     }
   };
 
   const handlePhoneChange = (text: string) => {
-    const digitsOnly = text.replace(/\D/g, "");
-    const formattedPhone = digitsOnly.replace(/^0+/, "");
-    const limitedPhone = formattedPhone.slice(0, 10);
-
-    setPhoneNumber(limitedPhone);
+    setPhoneNumber(text);
 
     if (phoneNumberError) {
       setPhoneNumberError("");
@@ -151,7 +174,7 @@ export function EditContactScreen() {
     if (!trimmedPhone) {
       setPhoneNumberError("Please enter a phone number.");
       isValid = false;
-    } else if (!/^9\d{9}$/.test(trimmedPhone)) {
+    } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Please enter a valid 10-digit mobile number.");
       isValid = false;
     }
@@ -173,13 +196,11 @@ export function EditContactScreen() {
     const initialName = initialContactName ?? "";
     const initialPhone = normalizePhoneNumber(initialPhoneNumber ?? "");
     const initialRelationshipValue = initialRelationship ?? "";
-    const initialImage = initialProfileImage || null;
-
     return (
-      contactName !== initialName ||
+      contactName.trim() !== initialName.trim() ||
       phoneNumber !== initialPhone ||
-      relationship !== initialRelationshipValue ||
-      profileImage !== initialImage
+      relationship.trim() !== initialRelationshipValue.trim() ||
+      photoAsset !== null
     );
   };
 
@@ -188,16 +209,18 @@ export function EditContactScreen() {
     setPhoneNumber(normalizePhoneNumber(initialPhoneNumber ?? ""));
     setRelationship(initialRelationship ?? "");
     setProfileImage(initialProfileImage || null);
+    setPhotoFailed(false);
+    setPhotoAsset(null);
     setContactNameError("");
     setPhoneNumberError("");
     setRelationshipError("");
-    setIsRelationshipOpen(false);
     setIsEditing(false);
   };
 
   const handleCancelEditing = () => {
-    if (isLoading) return;
+    if (isLoading || pickingPhoto) return;
     if (hasChanges()) {
+      setDiscardLeaving(false);
       setActiveConfirmation("discard");
       return;
     }
@@ -207,40 +230,60 @@ export function EditContactScreen() {
   const handleConfirmDiscard = () => {
     setActiveConfirmation(null);
     resetForm();
+    if (discardLeaving) router.back();
+    setDiscardLeaving(false);
   };
 
   const handleCancelConfirmation = () => {
     setActiveConfirmation(null);
+    setDiscardLeaving(false);
   };
 
+  const handleBack = () => {
+    if (savingRef.current || pickingPhoto) return;
+    if (isEditing && hasChanges()) {
+      setDiscardLeaving(true);
+      setActiveConfirmation("discard");
+      return;
+    }
+    router.back();
+  };
+  useFocusEffect(useCallback(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      handleBack();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [contactName, phoneNumber, relationship, photoAsset, isEditing, pickingPhoto, router]));
+
   const handleSave = async () => {
-    if (isLoading) return;
-    if (!validateForm()) return;
+    if (savingRef.current || pickingPhoto || !hasChanges()) return;
+    if (!validateForm()) {
+      if (!contactName.trim()) nameRef.current?.focus();
+      else if (!validNationalMobile(phoneNumber)) phoneRef.current?.focus();
+      return;
+    }
+    if (!contactId) return;
 
     try {
+      savingRef.current = true;
       setIsLoading(true);
-
-      const updatedContact = {
-        id: contactId ?? "",
+      await updateContact(contactId, {
         name: contactName.trim(),
-        phoneNumber: formatPhoneNumber(phoneNumber),
+        phone: `+63${phoneNumber}`,
         relationship: relationship.trim(),
-        profileImage: profileImage ?? "",
-      };
-
-      console.log("DEMO UPDATED CONTACT:", updatedContact);
-
-      setIsEditing(false);
-      setIsRelationshipOpen(false);
-      setNotificationMessage("Changed saved successfully");
-      setNotificationType("success");
-      setShowNotification(true);
+        photoAsset,
+      });
+      router.dismissTo({
+        pathname: "/contact" as any,
+        params: { notification: "success", message: "Contact updated successfully" },
+      });
     } catch (error) {
-      console.error("CONTACT UPDATE ERROR:", error);
-      setNotificationMessage("Failed to save contact");
+      setNotificationMessage(error instanceof Error ? error.message : "Failed to save contact");
       setNotificationType("error");
       setShowNotification(true);
     } finally {
+      savingRef.current = false;
       setIsLoading(false);
     }
   };
@@ -250,34 +293,39 @@ export function EditContactScreen() {
     setActiveConfirmation("delete");
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (isLoading) return;
-
     setActiveConfirmation(null);
+    if (!contactId) return;
     setIsLoading(true);
-
-    router.replace({
-      pathname: "/contact" as any,
-      params: {
-        notification: "success",
-        message: "Deleted successfully",
-        deletedContactId: contactId ?? "",
-      },
-    });
+    try {
+      await deleteContact(contactId);
+      router.dismissTo({
+        pathname: "/contact" as any,
+        params: { notification: "success", message: "Deleted successfully" },
+      });
+    } catch (error) {
+      setNotificationMessage(error instanceof Error ? error.message : "Failed to delete contact");
+      setNotificationType("error");
+      setShowNotification(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderPreview = () => {
     return (
       <View style={styles.previewContainer}>
         <View style={styles.profileSection}>
-          <View style={styles.profileImage}>
-            {profileImage ? (
+          <View style={[styles.profileImage, styles.previewImage]}>
+            {profileImage && !photoFailed ? (
               <Image
                 source={{ uri: profileImage }}
                 style={styles.profileImagePreview}
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
-              <ProfilePlaceholder width={96} height={96} />
+              <ProfilePlaceholder width={120} height={120} />
             )}
           </View>
 
@@ -328,7 +376,7 @@ export function EditContactScreen() {
 
             <Text
               style={[
-                Typography.medium,
+                Typography.button,
                 styles.deleteText,
                 { color: BrandColors.error },
               ]}
@@ -353,19 +401,21 @@ export function EditContactScreen() {
               profileImage ? "Change contact photo" : "Add contact photo"
             }
           >
-            {profileImage ? (
+            {profileImage && !photoFailed ? (
               <Image
                 source={{ uri: profileImage }}
                 style={styles.profileImagePreview}
+                onError={() => setPhotoFailed(true)}
               />
             ) : (
-              <ProfilePlaceholder width={96} height={96} />
+              <ProfilePlaceholder width={112} height={112} />
             )}
           </Pressable>
 
-          <Pressable
+          <NativePressable
             onPress={handlePhotoPress}
             hitSlop={8}
+            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
             accessibilityRole="button"
             accessibilityLabel={
               profileImage ? "Change contact photo" : "Add contact photo"
@@ -380,129 +430,77 @@ export function EditContactScreen() {
             >
               {profileImage ? "Change photo" : "Add new photo"}
             </Text>
-          </Pressable>
+          </NativePressable>
         </View>
 
         <View style={styles.formContainer}>
           <CustomTextInput
             label="Contact name"
+            ref={nameRef}
             required
             value={contactName}
             error={contactNameError}
-            inputWrapperStyle={styles.pillInput}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
               if (contactNameError) setContactNameError("");
             }}
-            containerStyle={{ paddingBottom: Spacing.two }}
           />
 
           <CustomTextInput
             label="Phone number"
+            ref={phoneRef}
             required
             prefix="+63"
-            prefixStyle={{
-              color: theme.textMuted,
-              fontWeight: "400",
-            }}
             keyboardType="phone-pad"
+            placeholder="9XX XXX XXXX"
             value={phoneNumber}
+            inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneNumberError}
-            maxLength={10}
-            inputWrapperStyle={styles.pillInput}
+            onBlur={() => {
+              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+            }}
             onChangeText={handlePhoneChange}
-            containerStyle={{ paddingBottom: Spacing.two }}
           />
 
-          <View style={styles.relationshipDropdown}>
-            <Pressable
-              onPress={() => setIsRelationshipOpen((previous) => !previous)}
-            >
-              <View pointerEvents="none">
-                <CustomTextInput
-                  label="Relationship"
-                  required
-                  value={relationship}
-                  error={relationshipError}
-                  editable={false}
-                  inputWrapperStyle={styles.pillInput}
-                  rightIcon={
-                    <Ionicons
-                      name={isRelationshipOpen ? "caret-up" : "caret-down"}
-                      size={12}
-                      color={theme.textMuted}
-                    />
-                  }
-                  containerStyle={{ paddingBottom: 0 }}
-                />
-              </View>
-            </Pressable>
-
-            {isRelationshipOpen && (
-              <View
-                style={[
-                  styles.dropdownMenu,
-                  {
-                    backgroundColor: theme.inputBackground,
-                    borderColor: theme.border,
-                  },
-                ]}
-              >
-                {RELATIONSHIPS.map((item) => (
-                  <Pressable
-                    key={item.value}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setRelationship(item.value);
-                      setIsRelationshipOpen(false);
-                      if (relationshipError) setRelationshipError("");
-                    }}
-                  >
-                    <Text style={[Typography.input, { color: theme.text }]}>
-                      {item.label}
-                    </Text>
-
-                    {relationship === item.value && (
-                      <Ionicons
-                        name="checkmark"
-                        size={20}
-                        color={theme.primary}
-                      />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
-            )}
-          </View>
+          <RelationshipPicker
+            value={relationship}
+            error={relationshipError}
+            onChange={(value) => {
+              setRelationship(value);
+              setRelationshipError("");
+            }}
+          />
         </View>
 
-        <View style={styles.actions}>
+        <KeyboardHiddenView style={styles.actions}>
           <Button
             title="Save"
             variant="primary"
             size="md"
             fullWidth
             isLoading={isLoading}
+            disabled={!hasChanges() || pickingPhoto || isLoading}
             onPress={handleSave}
             style={styles.saveButton}
           />
 
-          <Pressable
+          <NativePressable
             onPress={handleCancelEditing}
             disabled={isLoading}
-            style={styles.cancelButton}
+            style={({ pressed }) => [styles.cancelButton, { opacity: pressed ? 0.6 : 1 }]}
           >
             <Text
               style={[
-                Typography.bodySmall,
+                Typography.button,
                 styles.cancelText,
                 { color: theme.text },
               ]}
             >
               Cancel
             </Text>
-          </Pressable>
-        </View>
+          </NativePressable>
+        </KeyboardHiddenView>
       </View>
     );
   };
@@ -510,55 +508,37 @@ export function EditContactScreen() {
   return (
     <PageLayout
       title={isEditing ? "Edit contact" : "Contact information"}
+      onBack={handleBack}
       scrollable
       contentFlush
       contentStyle={{ flexGrow: 1 }}
+      overlay={
+        <NotificationSheet
+          visible={showNotification}
+          message={notificationMessage}
+          type={notificationType}
+          onHide={() => setShowNotification(false)}
+        />
+      }
       rightAction={
-        isEditing ? (
-          <Pressable
-            onPress={handleCancelEditing}
-            disabled={isLoading}
-            hitSlop={10}
-            accessibilityRole="button"
-            accessibilityLabel="Cancel editing"
-          >
-            <Text
-              style={[
-                Typography.bodySmall,
-                styles.headerCancel,
-                { color: theme.primary },
-              ]}
-            />
-          </Pressable>
-        ) : (
+        isEditing ? null : (
           <Pressable
             onPress={handleEditPress}
             disabled={isLoading}
-            hitSlop={10}
+            style={{ width: 40, height: 40, alignItems: "center", justifyContent: "center" }}
+            feedbackRadius={16}
+            feedbackInsets={Spacing.one}
+            feedbackBehindContent
+            hitSlop={Spacing.one}
             accessibilityRole="button"
             accessibilityLabel="Edit emergency contact"
           >
-            <Text
-              style={[
-                Typography.medium,
-                styles.headerEdit,
-                { color: theme.primary },
-              ]}
-            >
-              Edit
-            </Text>
+            <Text style={[Typography.button, { color: theme.accent }]}>Edit</Text>
           </Pressable>
         )
       }
     >
-      <NotificationSheet
-        visible={showNotification}
-        message={notificationMessage}
-        type={notificationType}
-        onHide={() => setShowNotification(false)}
-      />
-
-      <View style={styles.pageContent}>
+      <View style={[styles.pageContent, isEditing ? styles.editPageContent : styles.previewPageContent]}>
         <LinearGradient
           colors={["#FFFFFF", "#E5EDFC"]}
           start={{ x: 0.5, y: 0 }}
@@ -637,5 +617,6 @@ function formatPhoneNumber(phone: string) {
     return phone;
   }
 
-  return `+63${normalized}`;
+  const local = `0${normalized}`;
+  return `${local.slice(0, 4)} ${local.slice(4, 7)} ${local.slice(7)}`;
 }

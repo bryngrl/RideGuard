@@ -1,56 +1,60 @@
-import { Spacing } from "@/shared/theme";
+import { BorderRadius, BrandColors, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  // Empty
-  emptyState: {
-    alignItems: "center",
-    paddingTop: 60,
-  },
-
-  // Header
+  container: { flex: 1 },
+  dismissLayer: { ...StyleSheet.absoluteFill, zIndex: 2 },
   header: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingBottom: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
+    zIndex: 3,
   },
-
-  // Section list
-  listContent: {
-    paddingBottom: Spacing.six ?? 32,
-    paddingHorizontal: Spacing.four,
-  },
-  sectionHeader: {
-    marginBottom: Spacing.one,
-    marginTop: Spacing.two,
-  },
-  sectionSeparator: {
-    height: Spacing.one,
-  },
-  tab: {
-    borderRadius: 20,
-    paddingHorizontal: Spacing.four,
-    paddingVertical: 6,
-  },
-  tabActive: {
-    // background set inline
-  },
-  tabInactive: {
-    borderWidth: 1,
-  },
-
-  // Tabs
-  tabRow: {
+  filterAnchor: { flexShrink: 0, marginLeft: Spacing.two },
+  filterButton: {
+    alignItems: "center",
+    backgroundColor: BrandColors.secondary,
+    borderColor: BrandColors.primary,
+    borderRadius: BorderRadius.full,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     gap: Spacing.two,
-    paddingBottom: Spacing.three,
-    paddingHorizontal: Spacing.four,
+    justifyContent: "space-between",
+    minHeight: 34,
+    minWidth: 76,
+    paddingHorizontal: Spacing.three,
   },
-  tabText: {
-    fontSize: 13,
+  filterLabel: { color: BrandColors.primary, flexShrink: 1 },
+  menu: {
+    backgroundColor: BrandColors.secondary,
+    borderRadius: BorderRadius.lg,
+    elevation: 7,
+    minWidth: 168,
+    position: "absolute",
+    right: 0,
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    zIndex: 4,
   },
+  menuSurface: { borderRadius: BorderRadius.lg, overflow: "hidden" },
+  menuItem: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    minHeight: 44,
+    paddingHorizontal: Spacing.three,
+  },
+  menuItemBorder: { borderTopColor: "#E9EDF2", borderTopWidth: StyleSheet.hairlineWidth },
+  menuItemSelected: { backgroundColor: "#F8FAFC" },
+  menuItemText: { color: BrandColors.primary, marginRight: Spacing.two },
+  listContent: { paddingBottom: Spacing.six, paddingHorizontal: Spacing.four },
+  sectionHeader: { marginBottom: Spacing.one, marginTop: Spacing.two },
+  sectionSeparator: { height: Spacing.one },
+  footerSpinner: { paddingVertical: Spacing.four },
+  emptyState: { alignItems: "center", paddingHorizontal: Spacing.three, paddingTop: 60 },
 });

@@ -1,2 +1,2 @@
-import { RetentionScreen } from "@/modules/settings";
-export default RetentionScreen;
+import { AutoArchiveScreen } from "@/modules/settings";
+export default AutoArchiveScreen;

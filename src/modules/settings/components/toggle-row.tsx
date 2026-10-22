@@ -28,7 +28,7 @@ export function ToggleRow({
           </Text>
         )}
       </View>
-      <ToggleSwitch value={value} onChange={onChange} disabled={disabled} />
+      <ToggleSwitch value={value} onChange={onChange} disabled={disabled} accessibilityLabel={title} />
     </View>
   );
 }

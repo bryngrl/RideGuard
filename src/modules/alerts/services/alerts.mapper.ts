@@ -49,8 +49,8 @@ function normalizeVideoUrl(input: unknown): string | null {
 export function getSnapshotUris(
   imageUrl: string | string[] | null | undefined,
 ): string[] {
-  if (typeof imageUrl === "string") return [imageUrl];
-  return imageUrl ?? [];
+  const uris = typeof imageUrl === "string" ? [imageUrl] : (imageUrl ?? []);
+  return uris.filter((uri) => typeof uri === "string" && uri.trim() !== "");
 }
 
 /**
@@ -71,15 +71,23 @@ export function parseAlertFields(input: unknown): AlertFields | null {
   }
   if (typeof data.message !== "string") return null;
 
+  const timeStamp = normalizeTimeStamp(data.timeStamp);
+  // Legacy payloads carry no createdAt; fall back to the event timeStamp.
+  const createdAt = normalizeTimeStamp(data.createdAt) || timeStamp;
+
   return {
     alertId,
     deviceId: data.deviceId,
     message: data.message,
     imageUrl: normalizeImageUrl(data.imageUrl),
     videoUrl: normalizeVideoUrl(data.videoUrl),
-    timeStamp: normalizeTimeStamp(data.timeStamp),
+    timeStamp,
+    createdAt,
     isFalseAlarm: data.isFalseAlarm === true,
     isSeen: data.isSeen === true,
+    isArchived: data.isArchived === true,
+    archivedAt: normalizeTimeStamp(data.archivedAt) || null,
+    archiveAt: normalizeTimeStamp(data.archiveAt) || null,
   };
 }
 
@@ -149,6 +157,50 @@ export function formatRelativeDay(timeStamp: string): string {
   if (dayDiff === 0) return "Today";
   if (dayDiff === 1) return "Yesterday";
   return date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+/** Concise human duration, e.g. "2 days", "5 hours", "12 minutes" (min 1). */
+function formatDuration(ms: number): string {
+  const days = Math.floor(ms / 86_400_000);
+  if (days >= 1) return `${days} day${days === 1 ? "" : "s"}`;
+  const hours = Math.floor(ms / 3_600_000);
+  if (hours >= 1) return `${hours} hour${hours === 1 ? "" : "s"}`;
+  const minutes = Math.max(1, Math.floor(ms / 60_000));
+  return `${minutes} minute${minutes === 1 ? "" : "s"}`;
+}
+
+/**
+ * Detail-screen archive status line. Prefers the server-derived `archiveAt`;
+ * for a fresh realtime alert that lacks it, falls back to createdAt plus the
+ * loaded preference for a tentative countdown. The phone clock never changes
+ * persisted archive status — this is display only.
+ */
+export function getArchiveStatusLabel(
+  alert: Pick<
+    AlertFields,
+    "isArchived" | "archivedAt" | "archiveAt" | "createdAt"
+  >,
+  autoArchiveHours: number | null,
+  now: number = Date.now(),
+): string {
+  if (alert.isArchived) {
+    const when = alert.archivedAt ? formatRelativeDay(alert.archivedAt) : "";
+    return when ? `Archived ${when}` : "Archived";
+  }
+
+  let deadline = alert.archiveAt ? new Date(alert.archiveAt).getTime() : NaN;
+  if (Number.isNaN(deadline) && autoArchiveHours != null) {
+    const created = new Date(alert.createdAt).getTime();
+    if (!Number.isNaN(created)) {
+      deadline = created + autoArchiveHours * 3_600_000;
+    }
+  }
+
+  if (Number.isNaN(deadline)) return "Auto archive is off";
+
+  const remaining = deadline - now;
+  if (remaining <= 0) return "Archiving soon";
+  return `Archives in ${formatDuration(remaining)}`;
 }
 
 export function getAlertDetectionType(message: string): AlertDetectionType {

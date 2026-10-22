@@ -1,48 +1,45 @@
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatLocalMobile, localMobile, validLocalMobile } from "@/shared/lib/input-formats";
 import { Spacing, Typography } from "@/shared/theme";
 
 interface EmergencyContactItemProps {
   name: string;
   phoneNumber: string;
+  profileImage?: string;
 }
 
 export function EmergencyContactItem({
   name,
   phoneNumber,
+  profileImage,
 }: EmergencyContactItemProps) {
   const colors = useTheme();
+  const [photoFailed, setPhotoFailed] = useState(false);
+  useEffect(() => setPhotoFailed(false), [profileImage]);
 
-  const initial = name.trim().charAt(0).toUpperCase();
+  const localNumber = localMobile(phoneNumber);
+  const displayPhone = validLocalMobile(localNumber) ? formatLocalMobile(localNumber) : phoneNumber;
 
   return (
     <View style={styles.container}>
-      <View
-        style={[
-          styles.avatar,
-          {
-            backgroundColor: colors.backgroundSelected,
-          },
-        ]}
-      >
-        <Text
-          style={[
-            Typography.bodyLarge,
-            styles.initial,
-            {
-              color: colors.text,
-            },
-          ]}
-        >
-          {initial}
-        </Text>
-      </View>
+      {profileImage && !photoFailed ? (
+        <Image source={{ uri: profileImage }} style={styles.avatar} onError={() => setPhotoFailed(true)} />
+      ) : (
+        <View style={[styles.avatar, { backgroundColor: colors.backgroundSelected }]}>
+          <Text style={[Typography.bodyLarge, styles.initial, { color: colors.text }]}>
+            {name.trim().charAt(0).toUpperCase()}
+          </Text>
+        </View>
+      )}
 
       <View style={styles.info}>
         <Text
           style={[
             Typography.medium,
+            styles.name,
             {
               color: colors.text,
             },
@@ -61,7 +58,7 @@ export function EmergencyContactItem({
             },
           ]}
         >
-          {phoneNumber}
+          {displayPhone}
         </Text>
       </View>
     </View>
@@ -71,12 +68,11 @@ export function EmergencyContactItem({
 const styles = StyleSheet.create({
   avatar: {
     alignItems: "center",
-    borderRadius: 9999,
+    borderRadius: 24,
     height: 48,
     justifyContent: "center",
     width: 48,
   },
-
   container: {
     alignItems: "center",
     flexDirection: "row",
@@ -88,12 +84,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  initial: {
-    fontFamily: "Geist-SemiBold",
+  name: {
+    fontSize: 16,
+    lineHeight: 24,
   },
 
   phone: {
     fontSize: 14,
     marginTop: 2,
   },
+  initial: { fontFamily: "Geist-SemiBold" },
 });

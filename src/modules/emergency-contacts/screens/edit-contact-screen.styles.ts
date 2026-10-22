@@ -9,7 +9,7 @@ export const styles = StyleSheet.create({
   },
 
   addPhotoText: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.three,
   },
 
   cancelButton: {
@@ -30,8 +30,10 @@ export const styles = StyleSheet.create({
   },
 
   contactName: {
+    fontSize: 28,
     fontWeight: "700",
-    marginTop: Spacing.four,
+    lineHeight: 34,
+    marginTop: Spacing.three,
   },
 
   deleteButton: {
@@ -52,34 +54,19 @@ export const styles = StyleSheet.create({
 
   deleteText: {},
 
-  dropdownItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-
-  dropdownMenu: {
-    borderTopWidth: 0,
-    borderWidth: 1.5,
-    marginTop: -Spacing.one,
-  },
-
   editContainer: {
     flex: 1,
     width: "100%",
   },
 
+  editPageContent: {
+    paddingTop: Spacing.six,
+  },
+
   formContainer: {
+    gap: Spacing.two,
     width: "100%",
   },
-
-  headerCancel: {
-    fontWeight: "600",
-  },
-
-  headerEdit: {},
 
   pageBackground: {
     ...StyleSheet.absoluteFill,
@@ -104,12 +91,9 @@ export const styles = StyleSheet.create({
   },
 
   phoneNumber: {
+    fontSize: 18,
+    lineHeight: 26,
     marginTop: Spacing.one,
-  },
-
-  pillInput: {
-    borderColor: "#ffffffff",
-    borderRadius: BorderRadius.full,
   },
 
   previewContainer: {
@@ -117,13 +101,23 @@ export const styles = StyleSheet.create({
     width: "100%",
   },
 
+  previewImage: {
+    borderRadius: 60,
+    height: 120,
+    width: 120,
+  },
+
+  previewPageContent: {
+    paddingTop: Spacing.six,
+  },
+
   profileImage: {
     alignItems: "center",
-    borderRadius: 48,
-    height: 96,
+    borderRadius: 56,
+    height: 112,
     justifyContent: "center",
     overflow: "hidden",
-    width: 96,
+    width: 112,
   },
 
   profileImagePreview: {
@@ -136,13 +130,9 @@ export const styles = StyleSheet.create({
   },
 
   relationship: {
+    fontSize: 17,
+    lineHeight: 24,
     marginTop: Spacing.one,
-  },
-
-  relationshipDropdown: {
-    paddingBottom: Spacing.two,
-    position: "relative",
-    zIndex: 10,
   },
 
   saveButton: {

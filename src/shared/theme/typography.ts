@@ -27,7 +27,7 @@ export const Typography = {
     fontFamily: FontFamily.geistSemiBold,
   },
   h3: {
-    fontSize: 18,
+    fontSize: 20,
     lineHeight: 24,
     fontFamily: FontFamily.geistSemiBold,
   },
@@ -49,8 +49,8 @@ export const Typography = {
     fontFamily: FontFamily.geistRegular,
   },
   bodySmall: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
     fontFamily: FontFamily.geistRegular,
   },
 
@@ -67,9 +67,9 @@ export const Typography = {
     fontFamily: FontFamily.geistMedium,
   },
   input: {
-    fontSize: 16,
+    fontSize: 15,
     lineHeight: 22,
-    fontFamily: FontFamily.geistRegular,
+    fontFamily: FontFamily.geistMedium,
   },
   caption: {
     fontSize: 12,

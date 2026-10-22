@@ -3,12 +3,14 @@ import {
   isValidPhoneNumber,
   normalizePhoneNumber,
 } from "@/shared/lib/phone-utils";
+import { validPlateInput } from "@/shared/lib/input-formats";
 import { useEffect, useState } from "react";
 import { updateProfile, updateVehicle } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
 
-// The photo isn't editable here, so the draft form omits it.
+// Photo uploads have a separate endpoint, so the text draft omits it.
 type EditableProfile = Omit<SettingsProfile, "photoUrl">;
+const editableFields = ["firstName", "lastName", "phone", "vehicleBrand", "vehicleModel", "plateNumber"] as const;
 
 function normalizeProfile(profile: EditableProfile): EditableProfile {
   return {
@@ -30,42 +32,60 @@ export function useAccountEdit(profile: SettingsProfile) {
   const [form, setForm] = useState(initialProfile);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const normalizedForm = normalizeProfile(form);
+  const changedFields = editableFields.filter(
+    (field) =>
+      normalizedForm[field] !== initialProfile[field],
+  );
+  const changed = changedFields.length > 0;
   useEffect(() => {
+    // A profile refresh must not replace fields the user is already editing.
+    if (changed) return;
     const normalizedProfile = normalizeProfile(profile);
     setInitialProfile(normalizedProfile);
     setForm(normalizedProfile);
-  }, [profile]);
-
-  const normalizedForm = normalizeProfile(form);
-  const changed = Object.keys(initialProfile).some(
-    (field) =>
-      normalizedForm[field as keyof EditableProfile] !==
-      initialProfile[field as keyof EditableProfile],
-  );
+  }, [changed, profile.firstName, profile.lastName, profile.phone, profile.email, profile.vehicleBrand, profile.vehicleModel, profile.plateNumber]);
   const phoneValid = isValidPhoneNumber(normalizedForm.phone);
-  const valid = Boolean(
-    normalizedForm.firstName && normalizedForm.lastName && phoneValid,
-  );
-  const setField = (field: keyof EditableProfile, value: string) =>
+  const fieldErrors = {
+    firstName: !changedFields.includes("firstName") || normalizedForm.firstName ? undefined : "Enter your first name.",
+    lastName: !changedFields.includes("lastName") || normalizedForm.lastName ? undefined : "Enter your last name.",
+    phone: !changedFields.includes("phone") ? undefined : !normalizedForm.phone
+      ? "Enter your mobile number."
+      : phoneValid ? undefined : "Enter a valid 10-digit Philippine mobile number.",
+    vehicleBrand: !changedFields.includes("vehicleBrand") || normalizedForm.vehicleBrand ? undefined : "Enter your vehicle brand.",
+    vehicleModel: !changedFields.includes("vehicleModel") || normalizedForm.vehicleModel ? undefined : "Enter your vehicle model.",
+    plateNumber: !changedFields.includes("plateNumber") ? undefined : !normalizedForm.plateNumber
+      ? "Enter your plate number." : validPlateInput(normalizedForm.plateNumber) ? undefined : "Enter a valid vehicle plate number.",
+  };
+  const valid = Object.values(fieldErrors).every((message) => !message);
+  const setField = (field: keyof EditableProfile, value: string) => {
+    setError("");
     setForm((current) => ({
       ...current,
       [field]: field === "phone" ? normalizePhoneNumber(value) : value,
     }));
+  };
   const save = async () => {
-    if (!changed || !valid || saving) return;
+    setSubmitted(true);
+    if (!changed || !valid || saving) return false;
     setSaving(true);
     setError("");
     try {
-      await updateProfile({
-        firstName: normalizedForm.firstName,
-        lastName: normalizedForm.lastName,
-        phone: normalizedForm.phone,
-      });
-      await updateVehicle({
-        vehicleBrand: normalizedForm.vehicleBrand,
-        vehicleModel: normalizedForm.vehicleModel,
-        plateNumber: normalizedForm.plateNumber,
-      });
+      if (changedFields.some((field) => field === "firstName" || field === "lastName" || field === "phone")) {
+        await updateProfile({
+          firstName: normalizedForm.firstName,
+          lastName: normalizedForm.lastName,
+          phone: normalizedForm.phone,
+        });
+      }
+      if (changedFields.some((field) => field === "vehicleBrand" || field === "vehicleModel" || field === "plateNumber")) {
+        await updateVehicle({
+          vehicleBrand: normalizedForm.vehicleBrand,
+          vehicleModel: normalizedForm.vehicleModel,
+          plateNumber: normalizedForm.plateNumber,
+        });
+      }
       updateDraft({ ...normalizedForm });
       return true;
     } catch (cause) {
@@ -82,8 +102,10 @@ export function useAccountEdit(profile: SettingsProfile) {
     setField,
     changed,
     phoneValid,
+    fieldErrors,
+    submitted,
     valid,
-    canSave: changed && valid && !saving,
+    canSave: changed && !saving,
     saving,
     error,
     save,

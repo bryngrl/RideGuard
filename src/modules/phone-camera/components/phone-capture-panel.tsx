@@ -1,5 +1,6 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
@@ -84,12 +85,12 @@ export function PhoneCapturePanel({ capture }: { capture: PhoneCapture }) {
             accessibilityLabel={`Switch to ${otherLens === "front" ? "front" : "back"} camera`}
             disabled={active}
             onPress={() => capture.setLens(otherLens)}
-            style={({ pressed }) => [
+            style={[
               styles.flipButton,
               {
                 backgroundColor: colors.backgroundElement,
                 borderColor: colors.border,
-                opacity: active ? 0.5 : pressed ? 0.8 : 1,
+                opacity: active ? 0.5 : 1,
               },
             ]}
           >

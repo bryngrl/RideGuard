@@ -31,6 +31,11 @@ export function useAuth() {
       async (firebaseUser) => {
 
         if (!firebaseUser) {
+          // A local demo session deliberately has no Firebase user.
+          if (useAuthStore.getState().isDemo) {
+            setCheckingAuth(false);
+            return;
+          }
           setUser(null);
           setIsOldUser(null);
           setCheckingAuth(false);

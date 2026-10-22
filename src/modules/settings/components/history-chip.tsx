@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
 export function HistoryChip({
   value,
   onPress,

@@ -1,6 +1,8 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { StyleSheet, Text } from "react-native";
+import Animated, { FadeIn, FadeOut, useReducedMotion } from "react-native-reanimated";
 import { settingsIconMap } from "../config/icon-map";
 import type { SettingsRowDefinition } from "../types/settings.types";
 
@@ -49,26 +51,37 @@ export function SearchResultItem({
   onPress: () => void;
 }) {
   const colors = useTheme();
+  const reducedMotion = useReducedMotion();
   const Icon = settingsIconMap[row.iconKey];
 
   return (
-    <Pressable onPress={onPress} style={[styles.row, {}]}>
-      {Icon && <Icon width={24} height={24} />}
-      <Text style={[Typography.medium]}>
+    <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(150)} exiting={reducedMotion ? undefined : FadeOut.duration(100)}>
+    <Pressable
+      onPress={onPress}
+      style={styles.row}
+      feedbackRadius={0}
+      feedbackBehindContent
+      accessibilityRole="button"
+      accessibilityLabel={`${row.title}, ${row.section}`}
+    >
+      {Icon && <Icon width={20} height={20} />}
+      <Text style={[Typography.bodyLarge, styles.label]} numberOfLines={2}>
         {highlightMatch(row.title, query, colors.accent, colors.textMuted)}
       </Text>
     </Pressable>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    alignSelf: "flex-start",
+    marginHorizontal: -Spacing.four,
+    minHeight: 50,
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    gap: Spacing.three,
+    paddingHorizontal: Spacing.four + Spacing.two,
     paddingVertical: Spacing.two,
-    marginBottom: Spacing.two,
   },
+  label: { flex: 1 },
 });

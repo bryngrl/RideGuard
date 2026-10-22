@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { StyleSheet, View } from "react-native";
 
 import { Spacing } from "@/shared/theme";
 import type { EmergencyContact } from "../types/emergency-contact.types";
@@ -14,12 +15,20 @@ export function EmergencyContactList({
   onContactPress,
 }: EmergencyContactListProps) {
   return (
-    <View style={styles.container}>
+    <View>
       {contacts.map((contact) => (
-        <Pressable key={contact.id} onPress={() => onContactPress(contact)}>
+        <Pressable
+          key={contact.id}
+          onPress={() => onContactPress(contact)}
+          style={styles.row}
+          feedbackRadius={0}
+          accessibilityRole="button"
+          accessibilityLabel={`View ${contact.name}`}
+        >
           <EmergencyContactItem
             name={contact.name}
             phoneNumber={contact.phoneNumber}
+            profileImage={contact.profileImage}
           />
         </Pressable>
       ))}
@@ -28,7 +37,10 @@ export function EmergencyContactList({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: Spacing.three,
+  row: {
+    justifyContent: "center",
+    minHeight: 72,
+    paddingHorizontal: Spacing.five,
+    paddingVertical: Spacing.two,
   },
 });

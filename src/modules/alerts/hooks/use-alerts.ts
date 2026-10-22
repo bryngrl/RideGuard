@@ -1,138 +1,202 @@
-import { useRouter } from "expo-router";
+import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AppState } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 
-import { ALERTS_PAGE_SIZE, LOADED_MESSAGE_DURATION_MS } from "../constants";
+import { ALERTS_PAGE_SIZE } from "../constants";
 import { getSavedAlerts } from "../services/alerts.api";
-import {
-  alertTimeValue,
-  mapAlertFieldsToItem,
-} from "../services/alerts.mapper";
+import { alertTimeValue } from "../services/alerts.mapper";
 import { useAlertsStore } from "../store/alerts.store";
-import type { AlertItem } from "../types/alert.types";
+import type { AlertFields } from "../types/alert.types";
 
-export type AlertFilter = "all" | "unread";
+// The backend returns both archive states. "unread" filters active alerts
+// locally, not through a separate backend status.
+export type AlertListStatus = "active" | "archived";
+
+// Refetch the visible list this often while the screen is focused, so a change
+// made on another device (or the background archive pass) shows up without the
+// user doing anything. Matches the ~60s backend pass cadence.
+const VISIBLE_REFRESH_MS = 60_000;
+
+/** True when an entity belongs in the selected view. */
+function matchesStatus(alert: AlertFields, status: AlertListStatus): boolean {
+  if (alert.isFalseAlarm) return false;
+  return status === "archived" ? alert.isArchived : !alert.isArchived;
+}
 
 /**
- * Owns all the logic for the alerts list screen: loading pages, the All/Unread
- * filter, the "loading more / loaded" footer state, and opening an alert.
- * The screen just renders whatever this returns.
+ * Owns one view's list: it pages through saved alerts, keeps its own
+ * pagination cursor and ordered membership, and
+ * refreshes on focus, on foreground, every 60s while visible, and whenever the
+ * auto-archive preference changes. Membership uses the returned isArchived
+ * field, so an alert that moves lists drops out on refresh; a brand-new
+ * realtime alert is still shown immediately on the active list.
+ *
+ * The store holds alert *entities* (so seen/false-alarm/archive updates reflect
+ * live); this hook holds the ordered IDs for its status.
  */
-export function useAlerts() {
-  const router = useRouter();
-
+export function useAlertsList(status: AlertListStatus) {
   const user = useAuthStore((state) => state.user);
   const alerts = useAlertsStore((state) => state.alerts);
   const mergeAlerts = useAlertsStore((state) => state.mergeAlerts);
+  const listRefreshNonce = useAlertsStore((state) => state.listRefreshNonce);
 
-  const [filter, setFilter] = useState<AlertFilter>("all");
+  // IDs matching this view, in page order.
+  const [ids, setIds] = useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [showLoadedMessage, setShowLoadedMessage] = useState(false);
 
-  // Pagination bookkeeping kept in refs so the loader stays stable across pages.
   const cursorRef = useRef<string | null>(null);
+  const cursorStatusRef = useRef(status);
   const hasMoreRef = useRef(true);
   const isFetchingRef = useRef(false);
-  const initializedUidRef = useRef<string | null>(null);
-  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fetchingStatusRef = useRef<AlertListStatus | null>(null);
+  const requestIdRef = useRef(0);
+  const currentStatusRef = useRef(status);
+  currentStatusRef.current = status;
 
-  const loadAlerts = useCallback(
-    async (mode: "initial" | "more") => {
-      if (!user || isFetchingRef.current) return;
-      if (mode === "more" && (!hasMoreRef.current || !cursorRef.current))
-        return;
+  const fetchPage = useCallback(
+    async (mode: "reset" | "more") => {
+      if (!user || (isFetchingRef.current && fetchingStatusRef.current === status)) return;
+      if (mode === "more" && cursorStatusRef.current !== status) return;
+      if (mode === "more" && (!hasMoreRef.current || !cursorRef.current)) return;
 
+      const requestId = ++requestIdRef.current;
       isFetchingRef.current = true;
-      if (mode === "more") setIsLoadingMore(true);
+      fetchingStatusRef.current = status;
+      if (mode === "reset") {
+        cursorStatusRef.current = status;
+        cursorRef.current = null;
+        hasMoreRef.current = true;
+        setIsRefreshing(true);
+      }
+      else setIsLoadingMore(true);
 
       try {
         const token = await user.getIdToken();
-        const page = await getSavedAlerts(token, {
-          limit: ALERTS_PAGE_SIZE,
-          cursor:
-            mode === "more" ? (cursorRef.current ?? undefined) : undefined,
-        });
+        const pageIds: string[] = [];
+        let cursor = mode === "more" ? cursorRef.current : null;
+        let nextCursor: string | null = null;
 
-        // Merge by alertId so realtime updates and earlier pages aren't clobbered.
-        mergeAlerts(page.alerts);
-        cursorRef.current = page.nextCursor;
-        hasMoreRef.current = page.nextCursor !== null;
+        // The API does not accept a status query. Continue through its pages
+        // until this view has enough matches or there are no more records.
+        do {
+          const page = await getSavedAlerts(token, {
+            limit: ALERTS_PAGE_SIZE,
+            cursor: cursor ?? undefined,
+          });
+          if (requestIdRef.current !== requestId || currentStatusRef.current !== status) return;
 
-        if (mode === "more") {
-          setShowLoadedMessage(true);
-          if (successTimerRef.current) clearTimeout(successTimerRef.current);
-          successTimerRef.current = setTimeout(
-            () => setShowLoadedMessage(false),
-            LOADED_MESSAGE_DURATION_MS,
+          mergeAlerts(page.alerts);
+          pageIds.push(
+            ...page.alerts
+              .filter((alert) => matchesStatus(alert, status))
+              .map((alert) => alert.alertId)
+              .filter((id): id is string => typeof id === "string"),
           );
-        }
+          nextCursor = page.nextCursor === cursor ? null : page.nextCursor;
+          cursor = nextCursor;
+        } while (pageIds.length < ALERTS_PAGE_SIZE && nextCursor);
+
+        setIds((previous) =>
+          mode === "reset"
+            ? pageIds
+            : [...previous, ...pageIds.filter((id) => !previous.includes(id))],
+        );
+
+        cursorRef.current = nextCursor;
+        hasMoreRef.current = nextCursor !== null;
       } catch (error) {
-        console.error("Failed to load saved alerts:", error);
+        console.error(`[Alerts] Failed to load ${status} alerts:`, error);
       } finally {
-        isFetchingRef.current = false;
-        if (mode === "more") setIsLoadingMore(false);
+        if (requestIdRef.current === requestId) {
+          isFetchingRef.current = false;
+          fetchingStatusRef.current = null;
+          if (mode === "reset") setIsRefreshing(false);
+          else setIsLoadingMore(false);
+        }
       }
     },
-    [user, mergeAlerts],
+    [user, status, mergeAlerts],
   );
 
-  // Initial page load, once per signed-in user. Guarding on uid prevents the
-  // effect from re-firing (and re-fetching page 1) when the Firebase user
-  // reference changes on token refresh.
+  const refresh = useCallback(() => {
+    void fetchPage("reset");
+  }, [fetchPage]);
+
+  const loadMore = useCallback(() => {
+    void fetchPage("more");
+  }, [fetchPage]);
+
+  // Refresh when the preference changes (the save screen bumps the nonce).
   useEffect(() => {
-    if (!user) {
-      initializedUidRef.current = null;
-      return;
+    if (!user) return;
+    refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, status, listRefreshNonce]);
+
+  // Focus + foreground + periodic refresh, all bounded to "while this screen is
+  // visible": the interval and AppState listener are set up on focus and torn
+  // down on blur.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+
+      const interval = setInterval(refresh, VISIBLE_REFRESH_MS);
+      const subscription = AppState.addEventListener("change", (state) => {
+        if (state === "active") refresh();
+      });
+
+      return () => {
+        clearInterval(interval);
+        subscription.remove();
+      };
+    }, [refresh]),
+  );
+
+  // Resolve membership IDs to entities, keep only those still matching this
+  // status, and (for the active list) fold in realtime alerts not yet paged in.
+  const visibleAlerts = useMemo(() => {
+    const byId = new Map(
+      alerts
+        .filter((alert) => typeof alert.alertId === "string")
+        .map((alert) => [alert.alertId as string, alert]),
+    );
+
+    const seen = new Set<string>();
+    const resolved: AlertFields[] = [];
+
+    for (const id of ids) {
+      const alert = byId.get(id);
+      if (alert && matchesStatus(alert, status) && !seen.has(id)) {
+        resolved.push(alert);
+        seen.add(id);
+      }
     }
 
-    if (initializedUidRef.current === user.uid) return;
-    initializedUidRef.current = user.uid;
+    if (status === "active") {
+      // New alerts arrive over Ably before they appear in a fetched page.
+      for (const alert of alerts) {
+        const id = alert.alertId;
+        if (id && !seen.has(id) && matchesStatus(alert, status)) {
+          resolved.push(alert);
+          seen.add(id);
+        }
+      }
+    }
 
-    cursorRef.current = null;
-    hasMoreRef.current = true;
-    loadAlerts("initial");
-  }, [user, loadAlerts]);
-
-  // Clear any pending success-message timer on unmount.
-  useEffect(() => {
-    return () => {
-      if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    };
-  }, []);
-
-  // Load the next page as the list nears its end. The cursor / in-flight guards
-  // inside loadAlerts prevent over-fetching and duplicate requests.
-  const handleEndReached = useCallback(() => {
-    loadAlerts("more");
-  }, [loadAlerts]);
-
-  const visibleAlerts = useMemo(() => {
-    const items = [...alerts]
-      .sort((a, b) => alertTimeValue(b.timeStamp) - alertTimeValue(a.timeStamp))
-      .map(mapAlertFieldsToItem)
-      .filter((item): item is AlertItem => item !== null);
-
-    return filter === "unread" ? items.filter((item) => !item.read) : items;
-  }, [alerts, filter]);
-
-  const openAlertDetails = useCallback(
-    (item: AlertItem) => {
-      router.push({
-        pathname: "/alerts/[alertId]",
-        params: { alertId: item.alertId },
-      });
-    },
-    [router],
-  );
+    return resolved.sort(
+      (a, b) => alertTimeValue(b.timeStamp) - alertTimeValue(a.timeStamp),
+    );
+  }, [alerts, ids, status]);
 
   return {
     visibleAlerts,
-    filter,
-    setFilter,
+    isRefreshing,
     isLoadingMore,
-    showLoadedMessage,
-    handleEndReached,
-    openAlertDetails,
+    hasMore: hasMoreRef.current,
+    refresh,
+    loadMore,
   };
 }

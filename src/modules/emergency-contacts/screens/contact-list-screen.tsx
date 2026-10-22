@@ -1,13 +1,16 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import AddIcon from "@/assets/icons/arrows/cross.svg";
-import ContactIcon from "@/assets/icons/home/filled-contact.svg";
+import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Spacing, Typography } from "@/shared/theme";
+import { Typography } from "@/shared/theme";
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { EmergencyContactList } from "../components/emergency-contact-list";
+import { listContacts } from "../services/contacts.api";
 import type { EmergencyContact } from "../types/emergency-contact.types";
 import { styles } from "./contact-list-screen.styles";
 
@@ -15,76 +18,63 @@ export function ContactListScreen() {
   const colors = useTheme();
   const router = useRouter();
 
-  // DEMO CONTACT DATA
-  const [contacts, setContacts] = useState<EmergencyContact[]>([
-    {
-      id: "1",
-      name: "Jovilyn Esquerra",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "2",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "3",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-    {
-      id: "4",
-      name: "Name",
-      phoneNumber: "0912 345 6789",
-    },
-  ]);
+  const isDemo = useAuthStore((state) => state.isDemo);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const [loading, setLoading] = useState(!isDemo);
+  const [hasLoaded, setHasLoaded] = useState(isDemo);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const navigatingRef = useRef(false);
+
+  useFocusEffect(useCallback(() => {
+    navigatingRef.current = false;
+    if (isDemo) {
+      setHasLoaded(true);
+      setLoading(false);
+      return;
+    }
+    let active = true;
+    setLoading(true);
+    setLoadError(null);
+    listContacts().then((items) => {
+      if (active) {
+        setContacts(items);
+        setHasLoaded(true);
+      }
+    }).catch((error) => {
+      if (active) setLoadError(error instanceof Error ? error.message : "Unable to load contacts.");
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, [isDemo, retryCount]));
 
   const handleAddContact = () => {
+    if (navigatingRef.current || loading || !hasLoaded || contacts.length >= 5) return;
+    navigatingRef.current = true;
     router.push("/contact/add-contact" as any);
   };
 
   const handleContactPress = (contact: EmergencyContact) => {
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
     router.push({
       pathname: "/contact/edit-contact" as any,
       params: {
         contactId: contact.id,
         contactName: contact.name,
         phoneNumber: contact.phoneNumber,
+        relationship: contact.relationship ?? "",
+        profileImage: contact.profileImage ?? "",
       },
     });
   };
 
-  const { notification, message, updatedContact, deletedContactId } =
+  const { notification, message } =
     useLocalSearchParams<{
       notification?: "success" | "error";
       message?: string;
-      updatedContact?: string;
-      deletedContactId?: string;
     }>();
-
-  useEffect(() => {
-    if (!updatedContact) return;
-
-    try {
-      const updated = JSON.parse(updatedContact) as EmergencyContact;
-
-      setContacts((currentContacts) =>
-        currentContacts.map((contact) =>
-          contact.id === updated.id ? updated : contact,
-        ),
-      );
-    } catch (error) {
-      console.error("FAILED TO PARSE UPDATED CONTACT:", error);
-    }
-  }, [updatedContact]);
-
-  useEffect(() => {
-    if (!deletedContactId) return;
-
-    setContacts((currentContacts) =>
-      currentContacts.filter((contact) => contact.id !== deletedContactId),
-    );
-  }, [deletedContactId]);
 
   const [showNotification, setShowNotification] = useState(false);
 
@@ -96,8 +86,7 @@ export function ContactListScreen() {
 
   const handleNotificationHide = () => {
     setShowNotification(false);
-
-    router.replace("/contact" as any);
+    router.setParams({ notification: undefined, message: undefined });
   };
 
   return (
@@ -105,62 +94,72 @@ export function ContactListScreen() {
       title="Emergency contacts"
       scrollable={false}
       contentFlush
-      rightAction={
+      overlay={
+        <NotificationSheet
+          visible={showNotification}
+          message={message ?? ""}
+          type={notification === "error" ? "error" : "success"}
+          onHide={handleNotificationHide}
+        />
+      }
+      rightAction={contacts.length < 5 ? (
         <Pressable
           onPress={handleAddContact}
+          feedbackRadius={8}
           hitSlop={10}
           accessibilityRole="button"
           accessibilityLabel="Add emergency contact"
+          disabled={loading || !hasLoaded}
         >
           <AddIcon height={16} width={16} />
         </Pressable>
-      }
+      ) : null}
     >
-      <NotificationSheet
-        visible={showNotification}
-        message={message ?? ""}
-        type={notification === "error" ? "error" : "success"}
-        onHide={handleNotificationHide}
-      />
-
       <View style={styles.contactContent}>
-        {contacts.length === 0 ? (
-          <EmptyContacts colors={colors} />
+        {loadError ? (
+          <View style={styles.errorState}>
+            <Text accessibilityRole="alert" style={{ color: colors.error }}>{loadError}</Text>
+            <Pressable accessibilityRole="button" onPress={() => setRetryCount((count) => count + 1)} feedbackRadius={9999}>
+              <Text style={{ color: colors.primary, marginTop: 12 }}>Try again</Text>
+            </Pressable>
+          </View>
+        ) : loading && contacts.length === 0 ? (
+          <View style={styles.loadingState}>
+            <ActivityIndicator color={colors.primary} />
+            <Text style={{ color: colors.textMuted }}>Loading contacts…</Text>
+          </View>
+        ) : contacts.length === 0 ? (
+          <EmptyContacts colors={colors} onAdd={handleAddContact} />
         ) : (
-          <EmergencyContactList
-            contacts={contacts}
-            onContactPress={handleContactPress}
-          />
+          <>
+            {contacts.length >= 5 ? (
+              <Text style={[Typography.bodySmall, styles.limitMessage, { color: colors.textMuted }]}>
+                Five-contact limit reached. Edit or remove a contact to add another.
+              </Text>
+            ) : null}
+            <ScrollView style={styles.listScroll} contentContainerStyle={styles.listContent}>
+              <EmergencyContactList contacts={contacts} onContactPress={handleContactPress} />
+            </ScrollView>
+          </>
         )}
       </View>
     </PageLayout>
   );
 }
 
-function EmptyContacts({ colors }: { colors: ReturnType<typeof useTheme> }) {
+function EmptyContacts({ colors, onAdd }: { colors: ReturnType<typeof useTheme>; onAdd: () => void }) {
   return (
     <View style={styles.emptyContainer}>
-      <View
-        style={[
-          styles.iconContainer,
-          {
-            backgroundColor: colors.backgroundSelected,
-          },
-        ]}
-      >
-        <ContactIcon width={30} height={38} />
-      </View>
+      <ProfilePlaceholder width={112} height={112} />
 
       <Text
         style={[
           Typography.h3,
           styles.title,
-          {
-            color: colors.text,
-          },
+          { color: colors.textMuted },
         ]}
       >
-        No emergency contacts yet
+        No contacts
       </Text>
 
       <Text
@@ -172,9 +171,17 @@ function EmptyContacts({ colors }: { colors: ReturnType<typeof useTheme> }) {
           },
         ]}
       >
-        Add trusted contacts during setup so they can be notified when you send
-        an SOS alert.
+        Contacts you've added will appear here.
       </Text>
+      <Pressable
+        onPress={onAdd}
+        style={styles.emptyAction}
+        feedbackRadius={10}
+        accessibilityRole="button"
+        accessibilityLabel="Add new contact"
+      >
+        <Text style={[Typography.medium, { color: colors.accent }]}>Add new contact</Text>
+      </Pressable>
     </View>
   );
 }

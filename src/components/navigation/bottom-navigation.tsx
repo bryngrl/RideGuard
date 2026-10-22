@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { usePathname, useRouter } from "expo-router";
 import React from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -104,17 +105,23 @@ export function BottomNavigation() {
           return (
             <Pressable
               key={tab.label}
-              style={({ pressed }) => [
+              feedbackRadius={9999}
+              style={[
                 styles.tab,
-                pressed && styles.tabPressed,
+                isActive && {
+                  backgroundColor: colors.infoBackground,
+                },
               ]}
               onPress={() => handleNavigation(tab.route)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
             >
               <Icon width={16} height={16} />
 
               <Text
                 style={[
                   styles.label,
+                  isActive && styles.activeLabel,
                   {
                     color,
                   },
@@ -145,8 +152,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 9999,
 
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.one,
+    paddingHorizontal: Spacing.one,
   },
 
   tab: {
@@ -156,16 +163,16 @@ const styles = StyleSheet.create({
 
     gap: Spacing.one,
 
-    paddingVertical: Spacing.one,
+    borderRadius: 9999,
+    paddingVertical: Spacing.two + Spacing.half,
   },
 
-  tabPressed: {
-    opacity: 0.7,
-  },
 
   label: {
     ...Typography.bodySmall,
     textAlign: "center",
+  },
+  activeLabel: {
     fontWeight: 700,
   },
 });

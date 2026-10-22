@@ -3,10 +3,12 @@ import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { claimDevice, useDeviceStore } from "@/modules/devices";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { cameraId, formatCameraId, validCameraId } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -41,15 +43,15 @@ export function ProvisionCameraScreen() {
     if (isLoading) return;
 
     setDeviceIdError("");
-    const cleanedId = deviceId.trim().toUpperCase();
+    const cleanedId = formatCameraId(deviceId);
 
-    if (!cleanedId) {
+    if (!deviceId) {
       setDeviceIdError("This field is required.");
       return;
     }
 
-    if (!cleanedId.startsWith("CAM-")) {
-      setDeviceIdError("Please enter a valid Camera Device ID.");
+    if (!validCameraId(deviceId)) {
+      setDeviceIdError("Incorrect format.");
       return;
     }
 
@@ -153,12 +155,17 @@ export function ProvisionCameraScreen() {
               label="Device ID"
               required
               labelStyle={{ color: BrandColors.primary }}
-              placeholder="e.g., CAM-482-QLZ"
+              placeholder="e.g., ABC-123-XYZ"
               autoCapitalize="characters"
+              autoCorrect={false}
               value={deviceId}
+              inputFormat={{ normalize: cameraId, format: formatCameraId }}
               error={deviceIdError}
+              onBlur={() => {
+                if (deviceId && !validCameraId(deviceId)) setDeviceIdError("Incorrect format.");
+              }}
               onChangeText={(text) => {
-                setDeviceId(text.toUpperCase());
+                setDeviceId(text);
                 if (deviceIdError) setDeviceIdError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
@@ -188,7 +195,7 @@ export function ProvisionCameraScreen() {
             </View>
           </View>
 
-          <View style={styles.buttonContainer}>
+          <KeyboardHiddenView style={styles.buttonContainer}>
             <Button
               title="Connect"
               variant="primary"
@@ -208,7 +215,7 @@ export function ProvisionCameraScreen() {
                 style={{ marginTop: Spacing.two }}
               />
             )}
-          </View>
+          </KeyboardHiddenView>
         </View>
 
         <LoadingModal

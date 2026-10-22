@@ -1,5 +1,5 @@
 import type {
-  Retention,
+  AutoArchiveHours,
   SettingsProfile,
   ThemePreference,
 } from "../types/settings.types";
@@ -18,13 +18,15 @@ export const mockProfile: SettingsProfile = {
 
 // BACKEND: replace with GET /settings response defaults.
 export const mockSettings = {
-  retention: 48 as Retention,
+  // Default Never until the user explicitly chooses a period; the server is the
+  // source of truth and overwrites this on load.
+  autoArchiveHours: null as AutoArchiveHours,
   alertsEnabled: true,
   pushEnabled: true,
   soundEnabled: false,
   vibrationEnabled: false,
   locationInApp: true,
   locationWithContacts: true,
-  themePreference: "system" as ThemePreference,
+  themePreference: "light" as ThemePreference,
   searchHistory: [] as string[],
 };

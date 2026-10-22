@@ -55,7 +55,6 @@ export async function getSavedAlerts(
   if (options.cursor) {
     params.push(`cursor=${encodeURIComponent(options.cursor)}`);
   }
-
   const endpoint = params.length ? `/alerts?${params.join("&")}` : "/alerts";
 
   const envelope = await apiClient.get<StandardEnvelope<SavedAlertsData>>(

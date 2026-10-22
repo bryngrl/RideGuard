@@ -1,20 +1,32 @@
-// TODO: SVG ICON FOR EYE
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import React, { forwardRef, useState } from "react";
-import {
-  Pressable,
-  TextInput as RNTextInput,
-  TextInputProps as RNTextInputProps,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native";
+import React, { forwardRef, useEffect, useRef, useState, type PropsWithChildren } from "react";
+import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
+import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks";
-import { Spacing, Typography } from "@/shared/theme";
+import { formatInputEdit, type InputFormat } from "@/shared/lib/input-formats";
+import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
+
+function FieldPressTarget({
+  onPress,
+  label,
+  children,
+}: PropsWithChildren<{ onPress?: () => void; label?: string }>) {
+  return onPress ? (
+    <Pressable
+      onPress={onPress}
+      feedbackRadius={BorderRadius.full}
+      feedbackInsets={1}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+    >
+      {children}
+    </Pressable>
+  ) : (
+    <>{children}</>
+  );
+}
 
 export interface CustomTextInputProps extends RNTextInputProps {
   label?: string;
@@ -32,6 +44,9 @@ export interface CustomTextInputProps extends RNTextInputProps {
   labelStyle?: StyleProp<TextStyle>;
   inputWrapperStyle?: StyleProp<ViewStyle>;
   prefixStyle?: StyleProp<TextStyle>;
+  onFieldPress?: () => void;
+  /** Keep the form value raw while formatting only the visible input. */
+  inputFormat?: InputFormat;
 }
 
 export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
@@ -52,8 +67,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       labelStyle,
       inputWrapperStyle,
       prefixStyle,
+      onFieldPress,
+      inputFormat,
       onFocus,
       onBlur,
+      onChangeText,
+      onSelectionChange,
+      value,
       ...rest
     },
     ref,
@@ -61,8 +81,39 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     const theme = useTheme();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+    const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
+    const selectionRelease = useRef<number | null>(null);
+    const displayed = inputFormat ? inputFormat.format(value ?? "") : value;
+    const previousDisplay = useRef(displayed ?? "");
+    useEffect(() => { previousDisplay.current = displayed ?? ""; }, [displayed]);
+    useEffect(() => () => {
+      if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+    }, []);
+    const changeFormatted = (next: string) => {
+      if (!inputFormat) { onChangeText?.(next); return; }
+      const { raw, formatted, cursor } = formatInputEdit(previousDisplay.current, next, inputFormat);
+      previousDisplay.current = formatted;
+      if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+      setSelection({ start: cursor, end: cursor });
+      // Control selection just long enough for the formatted value to reach native.
+      // Leaving it controlled makes a later tap fight with the old cursor position.
+      selectionRelease.current = requestAnimationFrame(() => {
+        selectionRelease.current = requestAnimationFrame(() => {
+          setSelection(undefined);
+          selectionRelease.current = null;
+        });
+      });
+      onChangeText?.(raw);
+    };
 
     const hasError = !!error;
+    const reduceMotion = useReducedMotion();
+    const borderColor = useSharedValue<string>(theme.border);
+    useEffect(() => {
+      const color = hasError ? theme.error : isFocused ? theme.borderFocus : theme.border;
+      borderColor.value = reduceMotion ? color : withTiming(color, { duration: 140 });
+    }, [borderColor, hasError, isFocused, reduceMotion, theme.border, theme.borderFocus, theme.error]);
+    const focusStyle = useAnimatedStyle(() => ({ borderColor: borderColor.value }));
 
     return (
       <View style={[styles.container, containerStyle]}>
@@ -93,18 +144,21 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           </Text>
         )}
 
-        <View
+        <FieldPressTarget onPress={onFieldPress} label={label}>
+        <Animated.View
+          pointerEvents={onFieldPress ? "none" : "auto"}
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: "#F6F6F6",
-              borderColor: hasError
-                ? theme.error
-                : isFocused
-                  ? theme.borderFocus
-                  : theme.border,
+              backgroundColor: theme.backgroundElement,
             },
+            focusStyle,
             inputWrapperStyle,
+            rest.editable === false && styles.disabled,
+            hasError && {
+              backgroundColor: theme.inputErrorBackground,
+              borderColor: theme.error,
+            },
           ]}
         >
           {prefix && (
@@ -124,7 +178,11 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
                 style={[
                   styles.prefixText,
                   {
-                    color: theme.textMuted,
+                    color: hasError
+                      ? theme.error
+                      : isFocused
+                        ? theme.borderFocus
+                        : theme.textMuted,
                   },
                   prefixStyle,
                 ]}
@@ -138,6 +196,10 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
 
           <RNTextInput
             ref={ref}
+            value={displayed}
+            selection={inputFormat && isFocused ? selection : undefined}
+            onSelectionChange={onSelectionChange}
+            onChangeText={changeFormatted}
             style={[
               styles.input,
               {
@@ -147,12 +209,17 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             ]}
             placeholderTextColor={theme.textMuted}
             secureTextEntry={isPassword && !isPasswordVisible}
+            autoCapitalize={isPassword ? "none" : undefined}
+            autoCorrect={isPassword ? false : undefined}
             onFocus={(e) => {
               setIsFocused(true);
               onFocus?.(e);
             }}
             onBlur={(e) => {
               setIsFocused(false);
+              if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
+              selectionRelease.current = null;
+              setSelection(undefined);
               onBlur?.(e);
             }}
             {...rest}
@@ -161,11 +228,18 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           {isPassword ? (
             <Pressable
               onPress={() => setIsPasswordVisible((prev) => !prev)}
+              disabled={rest.editable === false}
               style={styles.eyeButton}
+              feedbackRadius={14}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                isPasswordVisible ? "Hide password" : "Show password"
+              }
+              accessibilityState={{ selected: isPasswordVisible, disabled: rest.editable === false }}
             >
               <Ionicons
-                name={isPasswordVisible ? "eye-off-outline" : "eye-outline"}
+                name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
                 size={20}
                 color="#767676"
               />
@@ -173,10 +247,11 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           ) : (
             rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>
           )}
-        </View>
+        </Animated.View>
+        </FieldPressTarget>
 
         {hasError ? (
-          <View style={styles.errorContainer}>
+          <Animated.View entering={reduceMotion ? undefined : FadeIn.duration(180)} style={styles.errorContainer}>
             <Ionicons
               name="alert-circle-outline"
               size={15}
@@ -185,6 +260,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             />
 
             <Text
+              accessibilityLiveRegion="polite"
               style={[
                 styles.errorText,
                 {
@@ -194,13 +270,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             >
               {error}
             </Text>
-          </View>
+          </Animated.View>
         ) : hint ? (
           <Text
             style={[
               styles.hintText,
               {
-                color: theme.textSecondary,
+                color: theme.textMuted,
               },
             ]}
           >
@@ -221,6 +297,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...Typography.bodySmall,
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: FontFamily.geistMedium,
     marginBottom: Spacing.two,
     marginLeft: Spacing.half,
   },
@@ -230,12 +309,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
-    minHeight: 50,
+    minHeight: 46,
   },
   input: {
     flex: 1,
     ...Typography.input,
-    paddingVertical: 12,
+    paddingVertical: Spacing.two,
   },
   leftIcon: {
     marginRight: Spacing.two,
@@ -245,6 +324,9 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: Spacing.one,
+  },
+  disabled: {
+    opacity: 0.6,
   },
   errorContainer: {
     flexDirection: "row",
@@ -257,12 +339,13 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...Typography.bodySmall,
-    fontSize: 12,
+    fontSize: 13,
     flex: 1,
   },
   hintText: {
     ...Typography.bodySmall,
-    fontSize: 12,
+    fontSize: 13,
+    lineHeight: 18,
     marginTop: Spacing.half,
     marginLeft: Spacing.half,
   },
@@ -279,7 +362,7 @@ const styles = StyleSheet.create({
   },
 
   prefixText: {
-    ...Typography.bodySmall,
-    fontWeight: "400",
+    ...Typography.input,
+    fontSize: 14,
   },
 });

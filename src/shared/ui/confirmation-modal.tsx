@@ -1,6 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Modal, StyleSheet, Text, View } from "react-native";
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -9,6 +10,7 @@ interface ConfirmationModalProps {
   primaryButtonText: string;
   secondaryButtonText: string;
   primaryButtonColor?: string;
+  maxWidth?: number;
   onPrimaryPress: () => void;
   onSecondaryPress: () => void;
 }
@@ -20,6 +22,7 @@ export function ConfirmationModal({
   primaryButtonText,
   primaryButtonColor,
   secondaryButtonText,
+  maxWidth,
   onPrimaryPress,
   onSecondaryPress,
 }: ConfirmationModalProps) {
@@ -39,6 +42,7 @@ export function ConfirmationModal({
             {
               backgroundColor: theme.card,
             },
+            maxWidth ? { maxWidth } : null,
           ]}
         >
           <Text
@@ -87,6 +91,8 @@ export function ConfirmationModal({
 
             <Pressable
               onPress={onPrimaryPress}
+              feedbackRadius={BorderRadius.full}
+              feedbackColor={theme.secondary}
               style={[
                 styles.primaryButton,
                 {

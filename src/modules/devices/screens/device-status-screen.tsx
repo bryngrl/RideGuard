@@ -1,11 +1,15 @@
-import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert, StyleSheet, Text, View } from "react-native";
 
+import { auth } from "@/lib/firebase";
 import { useTheme } from "@/shared/hooks";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
-import { PageLayout } from "@/shared/ui/page-layout";
+import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 
+import { releaseDevice } from "../services/devices.api";
 import { useDeviceStore } from "../store/devices.store";
 
 type DeviceStatus = {
@@ -19,7 +23,10 @@ type DeviceStatus = {
 export function DeviceStatusScreen() {
   const theme = useTheme();
   const router = useRouter();
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
+  const [deviceToDisconnect, setDeviceToDisconnect] = useState<DeviceStatus | null>(null);
 
   const devices: DeviceStatus[] = [
     {
@@ -43,6 +50,8 @@ export function DeviceStatusScreen() {
       type: "button",
     },
   ];
+  const focusedName = focus === "camera1" ? "Camera 1" : focus === "camera2" ? "Camera 2" : focus === "button" ? "Quick Button" : null;
+  if (focusedName) devices.sort((a, b) => Number(b.name === focusedName) - Number(a.name === focusedName));
 
   const handleDeviceAction = (device: DeviceStatus) => {
     const isConnected = Boolean(device.deviceId);
@@ -64,8 +73,49 @@ export function DeviceStatusScreen() {
     );
   };
 
+  const disconnectDevice = async (device: DeviceStatus) => {
+    if (disconnectingId) return;
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Sign in required", "Sign in to disconnect this device.");
+      return;
+    }
+
+    setDisconnectingId(device.deviceId);
+    try {
+      await releaseDevice(device.deviceId, await user.getIdToken(true));
+      const state = useDeviceStore.getState();
+      if (state.camera1DeviceId === device.deviceId) {
+        state.setCamera1DeviceId("");
+        state.setCamera1Activated(false);
+      }
+      if (state.camera2DeviceId === device.deviceId) {
+        state.setCamera2DeviceId("");
+        state.setCamera2Activated(false);
+      }
+      if (state.buttonDeviceId === device.deviceId) {
+        state.setButtonDeviceId("");
+        state.setButtonActivated(false);
+      }
+    } catch (error) {
+      Alert.alert(
+        "Could not disconnect",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setDisconnectingId(null);
+    }
+  };
+
+  const confirmDisconnect = () => {
+    if (!deviceToDisconnect || disconnectingId) return;
+    const device = deviceToDisconnect;
+    setDeviceToDisconnect(null);
+    void disconnectDevice(device);
+  };
+
   return (
-    <PageLayout title="Camera and quick button">
+    <SettingsPageLayout title="Camera and quick button">
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
@@ -80,7 +130,7 @@ export function DeviceStatusScreen() {
 
           return (
             <View key={device.name} style={styles.deviceSection}>
-              <Text style={[Typography.h3, { color: theme.text }]}>
+              <Text style={[Typography.h4, { color: theme.text }]}>
                 {device.name}
               </Text>
 
@@ -99,7 +149,12 @@ export function DeviceStatusScreen() {
                       },
                     ]}
                   />
-                  <Text style={[Typography.body, { color: theme.textMuted }]}>
+                  <Text
+                    style={[
+                      isConnected ? Typography.medium : Typography.body,
+                      { color: isConnected ? theme.success : theme.textMuted },
+                    ]}
+                  >
                     {isConnected ? "Connected" : "Not connected"}
                   </Text>
                 </View>
@@ -120,13 +175,37 @@ export function DeviceStatusScreen() {
                 title={actionTitle}
                 variant={isConnected ? "primary" : "outline"}
                 fullWidth
+                style={styles.action}
+                disabled={Boolean(disconnectingId)}
                 onPress={() => handleDeviceAction(device)}
               />
+              {isConnected && (
+                <Button
+                  title="Disconnect"
+                  variant="danger"
+                  fullWidth
+                  style={styles.disconnect}
+                  isLoading={disconnectingId === device.deviceId}
+                  disabled={Boolean(disconnectingId)}
+                  onPress={() => setDeviceToDisconnect(device)}
+                />
+              )}
             </View>
           );
         })}
       </View>
-    </PageLayout>
+      <ConfirmationModal
+        visible={deviceToDisconnect !== null}
+        title={`Disconnect ${deviceToDisconnect?.name ?? "device"}?`}
+        description="This device will no longer be linked to your account until you connect it again."
+        primaryButtonText="Disconnect"
+        secondaryButtonText="Cancel"
+        primaryButtonColor={theme.error}
+        maxWidth={320}
+        onPrimaryPress={confirmDisconnect}
+        onSecondaryPress={() => setDeviceToDisconnect(null)}
+      />
+    </SettingsPageLayout>
   );
 }
 
@@ -137,6 +216,8 @@ const styles = StyleSheet.create({
   deviceSection: {
     gap: Spacing.two,
   },
+  action: { marginTop: Spacing.two },
+  disconnect: { borderWidth: 1 },
   infoRow: {
     alignItems: "center",
     flexDirection: "row",

@@ -6,8 +6,7 @@ export default function SearchRoute() {
     <>
       <Stack.Screen
         options={{
-          presentation: "modal",
-          animation: "slide_from_bottom",
+          animation: "fade",
           headerShown: false,
         }}
       />
