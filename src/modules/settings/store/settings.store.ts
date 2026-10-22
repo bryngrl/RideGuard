@@ -108,7 +108,7 @@ export const useSettingsStore = create<SettingsState>()(
       // BACKEND SYNC: call updateLocationSharing after persisting this value.
       setLocationWithContacts: (locationWithContacts) =>
         set({ locationWithContacts }),
-      // BACKEND SYNC: call updateTheme after persisting this value.
+      // Persist the selected appearance on this device.
       setThemePreference: (themePreference) => set({ themePreference }),
       addSearchHistory: (value) =>
         set((state) => {
@@ -122,6 +122,14 @@ export const useSettingsStore = create<SettingsState>()(
     {
       name: "rideguard-settings-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persisted, version) => {
+        const saved = persisted && typeof persisted === "object" ? persisted as Partial<SettingsState> : {};
+        // The former default (system) was saved even when no choice was made.
+        return version < 1 && saved.themePreference === "system"
+          ? { ...saved, themePreference: "light" }
+          : saved;
+      },
       merge: (persisted, current) => {
         const saved = persisted && typeof persisted === "object" ? persisted as Partial<SettingsState> : {};
         const themePreference = saved.themePreference;
@@ -130,7 +138,7 @@ export const useSettingsStore = create<SettingsState>()(
           ...saved,
           themePreference: themePreference === "light" || themePreference === "dark" || themePreference === "system"
             ? themePreference
-            : "system",
+            : "light",
           isHydrated: false,
         };
       },
