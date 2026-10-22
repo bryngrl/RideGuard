@@ -1,5 +1,11 @@
 # RideGuard
 
+## Android builds
+
+If EAS Build is unavailable or the Expo build quota is exhausted, follow [Build an Android APK locally](docs/LOCAL_ANDROID_BUILD.md). It uses Gradle on your computer and no EAS build credits.
+
+For shared releases and OTA updates, follow [the team workflow](docs/OTA_AND_TEAM_WORKFLOW.md).
+
 Before cloning please check the npm and Node version:
 
 ```bash
