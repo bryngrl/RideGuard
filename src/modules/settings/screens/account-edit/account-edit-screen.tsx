@@ -6,9 +6,9 @@ import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { ConfirmationModal, CustomTextInput, ProfileAvatar } from "@/shared/ui";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import * as ImagePicker from "expo-image-picker";
-import { useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Alert, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, BackHandler, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 import { uploadProfilePhoto } from "../../services/profile.api";
@@ -21,7 +21,10 @@ export function AccountEditScreen() {
   const edit = useAccountEdit(profile);
   const savedName = `${profile.firstName} ${profile.lastName}`.trim();
   const [confirm, setConfirm] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
+  const [pickingPhoto, setPickingPhoto] = useState(false);
+  const [savingPhoto, setSavingPhoto] = useState(false);
+  const savingRef = useRef(false);
   const [fullName, setFullName] = useState("");
   const [vehicleName, setVehicleName] = useState("");
   const [touched, setTouched] = useState({ phone: false, plate: false });
@@ -30,9 +33,10 @@ export function AccountEditScreen() {
   const vehicleRef = useRef<TextInput>(null);
   const plateRef = useRef<TextInput>(null);
   useEffect(() => {
+    if (edit.changed) return;
     setFullName(`${profile.firstName} ${profile.lastName}`.trim());
     setVehicleName(`${profile.vehicleBrand} ${profile.vehicleModel}`.trim());
-  }, [profile.firstName, profile.lastName, profile.vehicleBrand, profile.vehicleModel]);
+  }, [edit.changed, profile.firstName, profile.lastName, profile.vehicleBrand, profile.vehicleModel]);
   const changeFullName = (value: string) => {
     setFullName(value);
     const trimmed = value.trim();
@@ -76,47 +80,74 @@ export function AccountEditScreen() {
     edit.setField("vehicleModel", model);
   };
   const cancel = () => {
-    if (edit.saving || uploading) return;
-    edit.changed ? setConfirm(true) : router.back();
+    if (savingRef.current || pickingPhoto) return;
+    edit.changed || photoAsset ? setConfirm(true) : router.back();
   };
+  useFocusEffect(useCallback(() => {
+    const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      cancel();
+      return true;
+    });
+    return () => subscription.remove();
+  }, [edit.changed, photoAsset, pickingPhoto, router]));
   const save = async () => {
-    if (!edit.valid) {
-      (edit.fieldErrors.firstName || edit.fieldErrors.lastName ? nameRef : edit.fieldErrors.phone ? phoneRef : edit.fieldErrors.vehicleBrand || edit.fieldErrors.vehicleModel ? vehicleRef : plateRef).current?.focus();
-    }
-    if (await edit.save()) {
-      Alert.alert("Account updated", "Your changes were saved.", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+    if (savingRef.current || pickingPhoto || (!edit.changed && !photoAsset)) return;
+    savingRef.current = true;
+    try {
+      if (edit.changed && !(await edit.save())) {
+        if (!edit.valid) {
+          (edit.fieldErrors.firstName || edit.fieldErrors.lastName ? nameRef : edit.fieldErrors.phone ? phoneRef : edit.fieldErrors.vehicleBrand || edit.fieldErrors.vehicleModel ? vehicleRef : plateRef).current?.focus();
+        }
+        return;
+      }
+      if (photoAsset) {
+        setSavingPhoto(true);
+        const uploaded = await uploadProfilePhoto(photoAsset);
+        setPhotoUrl(uploaded.photo_url);
+        setPhotoAsset(null);
+      }
+      router.dismissTo({
+        pathname: "/settings/account" as any,
+        params: {
+          notification: "success",
+          message: photoAsset ? "Photo saved successfully" : "Account updated successfully",
+        },
+      });
+    } catch (error) {
+      Alert.alert("Save failed", error instanceof Error ? error.message : "Please try again.");
+    } finally {
+      savingRef.current = false;
+      setSavingPhoto(false);
     }
   };
   const changePhoto = async () => {
-    if (uploading || edit.saving) return;
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert("Photo access required", "Allow photo library access to upload a profile photo.");
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    setUploading(true);
+    if (pickingPhoto || savingRef.current) return;
+    setPickingPhoto(true);
     try {
-      const uploaded = await uploadProfilePhoto(result.assets[0]);
-      setPhotoUrl(uploaded.photo_url);
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert("Photo access required", "Allow photo library access to choose a profile photo.");
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) setPhotoAsset(result.assets[0]);
     } catch (error) {
-      Alert.alert("Upload failed", error instanceof Error ? error.message : "Please try again.");
+      Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
     } finally {
-      setUploading(false);
+      setPickingPhoto(false);
     }
   };
+
+  const canSave = (edit.changed || photoAsset !== null) && !edit.saving && !savingPhoto && !pickingPhoto;
 
   return (
     <SettingsPageLayout title="Account" onBack={cancel} contentStyle={styles.content}>
       <View style={styles.profile}>
         <ProfileAvatar
           name={savedName || "R"}
-          photoUrl={profile.photoUrl}
+          photoUrl={photoAsset?.uri ?? profile.photoUrl}
           size={80}
           textStyle={Typography.h2}
         />
@@ -127,15 +158,15 @@ export function AccountEditScreen() {
           {!isDemo && (
             <NativePressable
               onPress={changePhoto}
-              disabled={uploading || edit.saving}
+              disabled={pickingPhoto || savingPhoto || edit.saving}
               style={styles.photoLink}
               hitSlop={Spacing.two}
               accessibilityRole="button"
               accessibilityLabel="Change profile picture"
-              accessibilityState={{ disabled: uploading || edit.saving, busy: uploading }}
+              accessibilityState={{ disabled: pickingPhoto || savingPhoto || edit.saving, busy: pickingPhoto }}
             >
               <Text style={[Typography.body, styles.linkText, { color: colors.accent }]}>
-                {uploading ? "Uploading photo..." : "Change photo"}
+                {pickingPhoto ? "Choosing photo..." : "Change photo"}
               </Text>
             </NativePressable>
           )}
@@ -198,7 +229,7 @@ export function AccountEditScreen() {
       <View style={styles.buttons}>
         <Pressable
           onPress={cancel}
-          disabled={edit.saving || uploading}
+          disabled={edit.saving || savingPhoto || pickingPhoto}
           style={[styles.cancel, { borderColor: colors.primary }]}
           feedbackRadius={BorderRadius.full}
           accessibilityRole="button"
@@ -206,28 +237,29 @@ export function AccountEditScreen() {
           <Text style={[Typography.button, { color: colors.primary }]}>Cancel</Text>
         </Pressable>
         <Pressable
-          disabled={!edit.canSave || uploading}
+          disabled={!canSave}
           onPress={save}
-          style={[styles.save, { backgroundColor: edit.canSave && !uploading ? colors.primary : colors.border }]}
+          style={[styles.save, { backgroundColor: canSave ? colors.primary : colors.border }]}
           feedbackRadius={BorderRadius.full}
           accessibilityRole="button"
-          accessibilityState={{ disabled: !edit.canSave || uploading, busy: edit.saving }}
+          accessibilityState={{ disabled: !canSave, busy: edit.saving || savingPhoto }}
         >
-          <Text style={[Typography.button, { color: edit.canSave && !uploading ? colors.textInverse : colors.buttonMuted }]}>
-            {edit.saving ? "Saving..." : "Save"}
+          <Text style={[Typography.button, { color: canSave ? colors.textInverse : colors.buttonMuted }]}>
+            {edit.saving || savingPhoto ? "Saving..." : "Save"}
           </Text>
         </Pressable>
       </View>
       <ConfirmationModal
         visible={confirm}
         title="Discard changes?"
-        description="Unsaved text edits will be lost. Profile picture changes are saved separately."
+        description="Your unsaved changes, including the selected photo, will be lost."
         primaryButtonText="Discard"
         secondaryButtonText="Keep editing"
         primaryButtonColor={colors.error}
         onPrimaryPress={() => {
           setConfirm(false);
           edit.reset();
+          setPhotoAsset(null);
           router.back();
         }}
         onSecondaryPress={() => setConfirm(false)}

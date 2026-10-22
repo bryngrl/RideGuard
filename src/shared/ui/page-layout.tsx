@@ -29,6 +29,7 @@ interface PageLayoutProps {
   headerTextColor?: string;
 
   rightAction?: ReactNode;
+  overlay?: ReactNode;
 }
 
 export function PageLayout({
@@ -45,6 +46,7 @@ export function PageLayout({
   dividerColor,
   headerTextColor,
   rightAction,
+  overlay,
 }: PageLayoutProps) {
   const theme = useTheme();
   const router = useRouter();
@@ -163,7 +165,12 @@ export function PageLayout({
       />
 
       {/* MAIN CONTENT */}
-      {renderContent()}
+      {overlay ? (
+        <View style={styles.contentFrame}>
+          {renderContent()}
+          {overlay}
+        </View>
+      ) : renderContent()}
 
       {/* OPTIONAL FOOTER */}
       {footer && (
@@ -184,6 +191,9 @@ export function PageLayout({
 }
 
 const styles = StyleSheet.create({
+  contentFrame: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },

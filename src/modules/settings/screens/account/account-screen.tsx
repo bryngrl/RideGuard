@@ -2,7 +2,9 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
-import { useRouter } from "expo-router";
+import { NotificationSheet } from "@/shared/ui/notification-sheet";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
 import { Text } from "react-native";
 import { ProfileCard } from "../../components/profile-card";
 import { useProfile } from "../../hooks/use-profile";
@@ -12,10 +14,33 @@ export function AccountScreen() {
   const colors = useTheme();
   const { profile, isLoading } = useProfile();
   const { progress, toggle } = useProfileFlip();
+  const { notification, message } = useLocalSearchParams<{
+    notification?: "success" | "error";
+    message?: string;
+  }>();
+  const [showNotification, setShowNotification] = useState(false);
+
+  useEffect(() => {
+    if (notification && message) setShowNotification(true);
+  }, [notification, message]);
+
+  const handleNotificationHide = () => {
+    setShowNotification(false);
+    router.setParams({ notification: undefined, message: undefined });
+  };
+
   return (
     <SettingsPageLayout
       title="Account"
       contentStyle={{ paddingTop: Spacing.five }}
+      overlay={
+        <NotificationSheet
+          visible={showNotification}
+          message={message ?? ""}
+          type={notification === "error" ? "error" : "success"}
+          onHide={handleNotificationHide}
+        />
+      }
       rightAction={
         <Pressable
           onPress={() => router.push("/settings/account/edit" as never)}
