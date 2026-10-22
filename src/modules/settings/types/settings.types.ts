@@ -28,6 +28,7 @@ export interface SettingsSnapshot {
 }
 
 export type SettingsRoute =
+  | "/mpin/manage"
   | "/devices"
   | "/settings/location"
   | "/settings/retention"
@@ -36,7 +37,10 @@ export type SettingsRoute =
   | "/contact"
   | "/privacy/privacy"
   | "/settings/digital-safety"
-  | "/settings/about";
+  | "/settings/terms-of-service"
+  | "/settings/about"
+  | "/settings/sos-preferences"
+  | "/settings/archives";
 
 export interface SettingsRowDefinition {
   id: string;

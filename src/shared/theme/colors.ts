@@ -28,6 +28,7 @@ export const Colors = {
     borderFocus: BrandColors.accent,
 
     inputBackground: "#FFFFFF",
+    inputErrorBackground: "#FFF6F6",
     buttonMuted: "#767676",
     switchOff: "#E2E4E8",
     radioMuted: "#8A8A8A",
@@ -79,6 +80,7 @@ export const Colors = {
     borderFocus: "#60A5FA",
 
     inputBackground: "#101A2F",
+    inputErrorBackground: "#392126",
     buttonMuted: "#64748B",
     switchOff: "#475569",
     radioMuted: "#94A3B8",

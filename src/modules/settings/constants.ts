@@ -1,19 +1,19 @@
 export { AUTO_ARCHIVE_OPTIONS, SETTINGS_COPY } from "./config/settings-copy";
 export const NOTIFICATION_COPY = {
-  flags: "Flags",
+  alertsHeading: "Alerts",
   alerts: "Alerts",
-  attackDetected: "Attack detected",
+  possibleThreat: "Possible weapon or violence detected",
   alwaysOn: "Always on",
   delivery: "Delivery",
   push: "Push notification",
-  sound: "Sound",
-  vibration: "Vibration",
 } as const;
 
 export const SETTINGS_SECTIONS = [
   {
-    title: "Safety and hardware",
+    title: "Safety & Monitoring",
     rows: [
+      { title: "SOS Preferences", icon: "sos", route: "/settings/sos-preferences" },
+      { title: "Emergency contacts", icon: "contact", route: "/contact" },
       { title: "Camera and quick button", icon: "camera", route: "/devices" },
       {
         title: "Location sharing",
@@ -25,29 +25,30 @@ export const SETTINGS_SECTIONS = [
         icon: "filmstrip",
         route: "/settings/retention",
       },
+      { title: "Archives", icon: "archive", route: "/settings/archives" },
     ],
   },
   {
-    title: "Preferences",
+    title: "App & Account",
     rows: [
+      { title: "MPIN", icon: "lock", route: "/mpin/manage" },
       { title: "Display", icon: "display", route: "/settings/display" },
       {
-        title: "Notifications",
+        title: "Notification",
         icon: "notification",
         route: "/settings/notifications",
       },
-      { title: "Emergency contacts", icon: "contact", route: "/contact" },
     ],
   },
   {
-    title: "General",
+    title: "Information",
     rows: [
-      { title: "Privacy policy", icon: "about", route: "/privacy/privacy" },
       {
-        title: "Digital safety",
-        icon: "about",
-        route: "/settings/digital-safety",
+        title: "Terms of Service",
+        icon: "terms",
+        route: "/settings/terms-of-service",
       },
+      { title: "Privacy Policy", icon: "privacy", route: "/privacy/privacy" },
       { title: "About", icon: "about", route: "/settings/about" },
     ],
   },

@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from "zustand/middleware";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 import { mockSettings } from "../config/mock-data";
+import { settingsRows } from "../config/settings-rows";
 import { getAutoArchive, updateAutoArchive } from "../services/settings.api";
 import type { AutoArchiveHours, ThemePreference } from "../types/settings.types";
 
@@ -107,20 +108,40 @@ export const useSettingsStore = create<SettingsState>()(
       // BACKEND SYNC: call updateLocationSharing after persisting this value.
       setLocationWithContacts: (locationWithContacts) =>
         set({ locationWithContacts }),
-      // BACKEND SYNC: call updateTheme after persisting this value.
+      // Persist the selected appearance on this device.
       setThemePreference: (themePreference) => set({ themePreference }),
       addSearchHistory: (value) =>
-        set((state) => ({
-          searchHistory: [
-            value,
-            ...state.searchHistory.filter((item) => item !== value),
-          ].slice(0, 6),
-        })),
+        set((state) => {
+          // Only known menu titles may be saved; never retain free-form input.
+          const title = settingsRows.find((row) => row.title === value)?.title;
+          if (!title) return state;
+          return { searchHistory: [title, ...state.searchHistory.filter((item) => item !== title)].slice(0, 6) };
+        }),
       clearSearchHistory: () => set({ searchHistory: [] }),
     }),
     {
       name: "rideguard-settings-storage",
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      migrate: (persisted, version) => {
+        const saved = persisted && typeof persisted === "object" ? persisted as Partial<SettingsState> : {};
+        // The former default (system) was saved even when no choice was made.
+        return version < 1 && saved.themePreference === "system"
+          ? { ...saved, themePreference: "light" }
+          : saved;
+      },
+      merge: (persisted, current) => {
+        const saved = persisted && typeof persisted === "object" ? persisted as Partial<SettingsState> : {};
+        const themePreference = saved.themePreference;
+        return {
+          ...current,
+          ...saved,
+          themePreference: themePreference === "light" || themePreference === "dark" || themePreference === "system"
+            ? themePreference
+            : "light",
+          isHydrated: false,
+        };
+      },
       onRehydrateStorage: () => () =>
         useSettingsStore.setState({ isHydrated: true }),
     },

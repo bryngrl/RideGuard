@@ -1,14 +1,7 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 // TODO: SVG Icon of Google
 import { Image } from "expo-image";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from "react-native";
+import { ActivityIndicator, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
@@ -33,15 +26,15 @@ export function GoogleButton({
 
   return (
     <Pressable
+      feedbackRadius={BorderRadius.full}
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      style={[
         styles.container,
         {
           backgroundColor: theme.card,
           borderColor: theme.border,
         },
-        pressed && !isDisabled && styles.pressed,
         isDisabled && styles.disabled,
         style,
       ]}
@@ -94,12 +87,7 @@ const styles = StyleSheet.create({
   title: {
     ...Typography.button,
     fontWeight: "600",
-    fontSize: 15,
     textAlign: "center",
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.985 }],
   },
   disabled: {
     opacity: 0.5,

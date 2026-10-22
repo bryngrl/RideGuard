@@ -1,13 +1,15 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
 import { BrandColors, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
+import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Text, View } from "react-native";
+import { useRef, useState } from "react";
+import { Text, TextInput, View } from "react-native";
 import { useOnboardingStore } from "../store/onboarding.store";
 import { styles } from "./profile-step-screen.styles";
 
@@ -19,6 +21,9 @@ export default function RegisterScreen() {
   const [lastNameError, setLastNameError] = useState("");
   const [firstNameError, setFirstNameError] = useState("");
   const [phoneError, setPhoneError] = useState("");
+  const lastNameRef = useRef<TextInput>(null);
+  const firstNameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
 
   const handleNextStep = () => {
     setLastNameError("");
@@ -40,11 +45,14 @@ export default function RegisterScreen() {
     if (!phone.trim()) {
       setPhoneError("Please enter your phone number.");
       isValid = false;
-    } else if (!/^9\d{9}$/.test(phone)) {
+    } else if (!validNationalMobile(phone)) {
       setPhoneError("Please enter a valid 10-digit Philippine mobile number.");
       isValid = false;
     }
-    if (!isValid) return;
+    if (!isValid) {
+      (!lastName.trim() ? lastNameRef : !firstName.trim() ? firstNameRef : phoneRef).current?.focus();
+      return;
+    }
     router.push("/(onboarding)/register/vehicle");
   };
 
@@ -75,11 +83,13 @@ export default function RegisterScreen() {
 
         <View style={styles.formContainer}>
           <CustomTextInput
+            ref={lastNameRef}
             label="Last Name"
             required
             labelStyle={{ color: BrandColors.primary }}
             value={lastName}
             error={lastNameError}
+            onBlur={() => { if (!lastName.trim()) setLastNameError("Please enter your last name."); }}
             onChangeText={(text) => {
               updateDraft({ lastName: text });
               if (lastNameError) setLastNameError("");
@@ -88,11 +98,13 @@ export default function RegisterScreen() {
           />
 
           <CustomTextInput
+            ref={firstNameRef}
             label="First Name"
             required
             labelStyle={{ color: BrandColors.primary }}
             value={firstName}
             error={firstNameError}
+            onBlur={() => { if (!firstName.trim()) setFirstNameError("Please enter your first name."); }}
             onChangeText={(text) => {
               updateDraft({ firstName: text });
               if (firstNameError) setFirstNameError("");
@@ -101,25 +113,28 @@ export default function RegisterScreen() {
           />
 
           <CustomTextInput
+            ref={phoneRef}
             label="Phone Number"
             required
             prefix="+63"
             labelStyle={{ color: BrandColors.primary }}
             keyboardType="phone-pad"
+            placeholder="9XX XXX XXXX"
             value={phone}
+            inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneError}
-            maxLength={10}
+            onBlur={() => {
+              if (!phone) setPhoneError("Please enter your phone number.");
+              else if (!validNationalMobile(phone)) setPhoneError("Please enter a valid 10-digit Philippine mobile number.");
+            }}
             onChangeText={(text) => {
-              const digitsOnly = text.replace(/\D/g, "");
-              const formattedPhone = digitsOnly.replace(/^0+/, "");
-
-              updateDraft({ phone: formattedPhone });
+              updateDraft({ phone: text });
 
               if (phoneError) setPhoneError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
-          <View style={styles.buttonContainer}>
+          <KeyboardHiddenView style={styles.buttonContainer}>
             <Button
               title="Next"
               variant="primary"
@@ -128,7 +143,7 @@ export default function RegisterScreen() {
               style={{ width: "48%" }}
               onPress={handleNextStep}
             />
-          </View>
+          </KeyboardHiddenView>
         </View>
       </View>
     </KeyboardAvoidingWrapper>

@@ -1,11 +1,12 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import SosIcon from "@/assets/icons/home/echo-sos.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useRouter } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-export function QuickActions() {
+export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
   const router = useRouter();
   const colors = useTheme();
 
@@ -15,49 +16,43 @@ export function QuickActions() {
     >
       <View style={styles.actions}>
         <Pressable
-          style={({ pressed }) => [
+          feedbackRadius={BorderRadius.full}
+          feedbackColor={BrandColors.secondary}
+          style={[
             styles.sosButton,
-            pressed && styles.actionPressed,
+            homeLayout && styles.homeSosButton,
           ]}
           onPress={() => router.push("/sos" as any)}
           accessibilityRole="button"
           accessibilityLabel="Open SOS emergency screen"
         >
-          <SosIcon width={15} height={15} />
-          <Text style={[Typography.caption, styles.sosButtonText]}>SOS</Text>
+          <SosIcon width={homeLayout ? 22 : 15} height={homeLayout ? 22 : 15} />
+          <Text style={[Typography.button, styles.sosButtonText]}>SOS</Text>
         </Pressable>
-
-        <Pressable
-          style={({ pressed }) => [
-            styles.contactsButton,
-            { borderColor: colors.primary },
-            pressed && styles.actionPressed,
-          ]}
-          onPress={() => router.push("/contact" as any)}
-          accessibilityRole="button"
-          accessibilityLabel="Open emergency contacts"
-        >
-          <ContactIcon width={13} height={16} />
-          <Text style={[Typography.caption, { color: colors.primary }]}>
-            Contacts
-          </Text>
-        </Pressable>
+        {!homeLayout && (
+          <Pressable
+            feedbackRadius={BorderRadius.full}
+            style={[styles.contactsButton, { borderColor: colors.primary }]}
+            onPress={() => router.push("/contact" as any)}
+            accessibilityRole="button"
+            accessibilityLabel="Open emergency contacts"
+          >
+            <ContactIcon width={13} height={16} />
+            <Text style={[Typography.button, { color: colors.primary }]}>Contacts</Text>
+          </Pressable>
+        )}
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  actionPressed: {
-    opacity: 0.75,
-  },
   container: {
     paddingHorizontal: Spacing.four,
     paddingVertical: Spacing.two,
   },
   actions: {
     alignItems: "center",
-    backgroundColor: "transparent",
     flexDirection: "row",
     gap: Spacing.one,
   },
@@ -80,6 +75,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 40,
     paddingHorizontal: Spacing.three,
+  },
+  homeSosButton: {
+    minHeight: 56,
+    width: "100%",
+    gap: Spacing.two,
   },
   sosButtonText: {
     color: BrandColors.secondary,

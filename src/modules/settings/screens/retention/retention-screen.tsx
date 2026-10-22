@@ -1,10 +1,9 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { PageLayout } from "@/shared/ui";
+import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { useEffect } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
-
 import { InfoNote } from "../../components/info-note";
 import { RadioOption } from "../../components/radio-option";
 import { AUTO_ARCHIVE_OPTIONS, SETTINGS_COPY } from "../../constants";
@@ -26,7 +25,7 @@ export function AutoArchiveScreen() {
   const isSaving = status === "saving";
 
   return (
-    <PageLayout title="Auto archive" contentStyle={styles.content}>
+    <SettingsPageLayout title="Auto archive" contentStyle={styles.content}>
       <Text style={[Typography.h3, { color: colors.text }]}>
         Archive old alerts
       </Text>
@@ -85,18 +84,18 @@ export function AutoArchiveScreen() {
           description={SETTINGS_COPY.flaggedIncidentsDescription}
         />
       </View>
-    </PageLayout>
+    </SettingsPageLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingTop: Spacing.three, flexGrow: 1 },
+  content: { flexGrow: 1 },
   description: {
     marginTop: Spacing.three,
     marginBottom: Spacing.four,
     maxWidth: 310,
   },
-  panel: { borderWidth: 1, borderRadius: 8, paddingHorizontal: Spacing.three },
+  panel: { borderWidth: StyleSheet.hairlineWidth, borderRadius: 8, paddingHorizontal: Spacing.three },
   statusRow: {
     flexDirection: "row",
     alignItems: "center",

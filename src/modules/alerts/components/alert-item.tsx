@@ -1,4 +1,5 @@
-import { Pressable, Text, View } from "react-native";
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { Text, View } from "react-native";
 
 import BothDetectedIcon from "@/assets/icons/alerts/both-detected.svg";
 import NoDetectedIcon from "@/assets/icons/alerts/no-detected.svg";
@@ -53,7 +54,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
     >
       <Pressable
         onPress={() => onPress(alert)}
-        style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+        style={styles.container}
         accessibilityRole="button"
         accessibilityLabel={`${alert.title}, ${alert.time}`}
       >

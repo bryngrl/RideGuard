@@ -1,27 +1,34 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { useEffect } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import Animated, {
     useAnimatedStyle,
+    useReducedMotion,
     useSharedValue,
-    withSpring,
+    withTiming,
 } from "react-native-reanimated";
 
 export function ToggleSwitch({
   value,
   onChange,
   disabled = false,
+  size = "compact",
+  accessibilityLabel,
 }: {
   value: boolean;
   onChange: (value: boolean) => void;
   disabled?: boolean;
+  size?: "compact" | "regular";
+  accessibilityLabel?: string;
 }) {
   const colors = useTheme();
+  const reducedMotion = useReducedMotion();
   const progress = useSharedValue(value ? 1 : 0);
 
   useEffect(() => {
-    progress.value = withSpring(value ? 1 : 0, { duration: 250 });
-  }, [progress, value]);
+    progress.value = reducedMotion ? (value ? 1 : 0) : withTiming(value ? 1 : 0, { duration: 160 });
+  }, [progress, value, reducedMotion]);
 
   const thumbStyle = useAnimatedStyle(() => ({
     // move to left more
@@ -29,9 +36,11 @@ export function ToggleSwitch({
   }));
 
   return (
-    <View style={styles.container}>
+    <View style={size === "compact" ? styles.compactContainer : styles.regularContainer}>
       <Pressable
+        feedbackRadius={20}
         accessibilityRole="switch"
+        accessibilityLabel={accessibilityLabel}
         accessibilityState={{ checked: value, disabled }}
         disabled={disabled}
         onPress={() => onChange(!value)}
@@ -62,8 +71,11 @@ export function ToggleSwitch({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    transform: [{ scale: 0.7 }], // 👈 Change this number here to shrink or grow it easily!
+  compactContainer: {
+    transform: [{ scale: 0.7 }],
+  },
+  regularContainer: {
+    justifyContent: "center",
   },
   track: {
     width: 60, // Original size kept intact

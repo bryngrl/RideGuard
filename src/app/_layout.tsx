@@ -7,9 +7,12 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { useReducedMotion } from "react-native-reanimated";
 import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import { useSettingsStore } from "@/modules/settings/store/settings.store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useMpinLifecycle } from "@/modules/mpin/hooks/use-mpin-lifecycle";
+import { MpinPrivacyCover } from "@/modules/mpin/components/mpin-privacy-cover";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,6 +28,7 @@ Notifications.setNotificationHandler({
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  const reduceMotion = useReducedMotion();
   const settingsHydrated = useSettingsStore((state) => state.isHydrated);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -38,12 +42,13 @@ export default function RootLayout() {
   useAuth();
   useAbly();
   usePushRegistration();
+  useMpinLifecycle();
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if ((fontsLoaded || fontError) && settingsHydrated) {
       SplashScreen.hideAsync();
     }
-  }, [fontsLoaded, fontError]);
+  }, [fontsLoaded, fontError, settingsHydrated]);
 
   if ((!fontsLoaded && !fontError) || !settingsHydrated) {
     return null;
@@ -53,7 +58,37 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-        <Stack screenOptions={{ headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(public)/welcome" options={{ animation: "fade" }} />
+          <Stack.Screen
+            name="(public)/sign-in"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right", animationTypeForReplace: "push" }}
+          />
+          <Stack.Screen
+            name="(public)/create-account"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="(public)/forgot-password"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="(public)/verify-code"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
+          />
+          <Stack.Screen name="(app)" options={{ animation: "fade" }} />
+          <Stack.Screen name="(mpin)/mpin" options={{ animation: reduceMotion ? "none" : "slide_from_right", gestureEnabled: false }} />
+          <Stack.Screen
+            name="(public)/new-password"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
+          />
+          <Stack.Screen
+            name="(public)/password-reset-success"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right", animationTypeForReplace: "push", gestureEnabled: false }}
+          />
+          <Stack.Screen name="(onboarding)/register" options={{ animation: "fade" }} />
+        </Stack>
+        <MpinPrivacyCover />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

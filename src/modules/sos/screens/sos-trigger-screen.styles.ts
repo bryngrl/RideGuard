@@ -64,10 +64,6 @@ export const styles = StyleSheet.create({
     zIndex: 2,
   },
 
-  sosButtonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.97 }],
-  },
 
   sosHint: {
     color: BrandColors.secondary,

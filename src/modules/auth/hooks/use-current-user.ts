@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/auth.store";
  */
 export function useCurrentUser() {
   const user = useAuthStore((state) => state.user);
+  const isDemo = useAuthStore((state) => state.isDemo);
   const [firstName, setFirstName] = useState<string | null>(null);
   const [lastName, setLastName] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function useCurrentUser() {
 
   useEffect(() => {
     if (!user) {
-      setFirstName(null);
+      setFirstName(isDemo ? "Demo" : null);
       setLastName(null);
       setPhotoUrl(null);
       return;
@@ -70,7 +71,7 @@ export function useCurrentUser() {
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, isDemo]);
 
   return { firstName, lastName, photoUrl, isLoading };
 }

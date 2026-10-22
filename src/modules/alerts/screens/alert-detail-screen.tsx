@@ -1,9 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import {
   ActivityIndicator,
   Image,
   Modal,
-  Pressable,
   Alert as RNAlert,
   AppState,
   FlatList,
@@ -237,6 +237,7 @@ function EvidencePreview({
       {hasVideo && mainUri && thumbnailLoaded && uris.length === 1 ? (
         <Pressable
           onPress={() => onOpenImage(0)}
+          feedbackRadius={9999}
           hitSlop={Spacing.two}
           accessibilityRole="button"
           accessibilityLabel="View image full screen"
@@ -357,7 +358,7 @@ export function AlertDetailScreen() {
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
-      "Flag as false alarm?",
+      "Mark as false alarm?",
       "This will mark the alert as a false alarm and notify your contacts if any were alerted.",
       [
         {
@@ -365,7 +366,7 @@ export function AlertDetailScreen() {
           style: "cancel",
         },
         {
-          text: "Flag",
+          text: "Mark as false alarm",
           style: "destructive",
           onPress: markAsFalseAlarm,
         },
@@ -382,7 +383,7 @@ export function AlertDetailScreen() {
       footer={
         !isFalseAlarm ? (
           <Button
-            title="Flag as false alarm"
+            title="Mark as false alarm"
             variant="danger"
             size="md"
             isLoading={isSubmitting}

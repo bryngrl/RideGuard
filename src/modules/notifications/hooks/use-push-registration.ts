@@ -1,7 +1,7 @@
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 
@@ -27,9 +27,13 @@ export function usePushRegistration() {
     }
 
     let cancelled = false;
+    let inFlight = false;
+    let retryCount = 0;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
     // Send a given FCM token to the backend for the current user.
     const register = async (fcmToken: string) => {
+      if (cancelled) return;
       try {
         const [installationId, firebaseToken] = await Promise.all([
           getInstallationId(),
@@ -45,14 +49,15 @@ export function usePushRegistration() {
           deviceName: Device.deviceName ?? undefined,
         });
 
-        registeredUidRef.current = user.uid;
+        if (!cancelled) registeredUidRef.current = user.uid;
       } catch (error) {
-        console.error("[Push] Failed to register push token:", error);
+        if (!cancelled) console.error("[Push] Failed to register push token:", error);
       }
     };
 
     const run = async () => {
-      if (registeredUidRef.current === user.uid) return;
+      if (cancelled || inFlight || registeredUidRef.current === user.uid) return;
+      inFlight = true;
 
       try {
         // Push tokens aren't available on simulators/emulators.
@@ -62,6 +67,7 @@ export function usePushRegistration() {
         }
 
         let { granted } = await Notifications.getPermissionsAsync();
+        if (cancelled) return;
         if (!granted) {
           granted = (await Notifications.requestPermissionsAsync()).granted;
         }
@@ -76,7 +82,24 @@ export function usePushRegistration() {
 
         await register(token.data);
       } catch (error) {
-        console.error("[Push] Registration flow failed:", error);
+        if (cancelled) return;
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes("SERVICE_NOT_AVAILABLE")) {
+          if (retryCount < 3) {
+            const delay = [5000, 15000, 30000][retryCount++];
+            console.log(`[Push] Service unavailable; retrying in ${delay / 1000}s.`);
+            retryTimer = setTimeout(() => {
+              retryTimer = null;
+              void run();
+            }, delay);
+          } else {
+            console.log("[Push] Service still unavailable; will retry when the app resumes.");
+          }
+        } else {
+          console.error("[Push] Registration flow failed:", error);
+        }
+      } finally {
+        inFlight = false;
       }
     };
 
@@ -95,10 +118,21 @@ export function usePushRegistration() {
         register(data);
       }
     });
+    const appStateSubscription = AppState.addEventListener("change", (state) => {
+      if (cancelled || inFlight || state !== "active" || registeredUidRef.current === user.uid) return;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+      retryCount = 0;
+      void run();
+    });
 
     return () => {
       cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
       subscription.remove();
+      appStateSubscription.remove();
     };
   }, [user]);
 }

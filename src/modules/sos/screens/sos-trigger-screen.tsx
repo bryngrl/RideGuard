@@ -1,8 +1,9 @@
-import { Typography } from "@/shared/theme";
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { BrandColors, Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { useRouter } from "expo-router";
 import { useEffect } from "react";
-import { Image, Pressable, Text, View } from "react-native";
+import { Image, Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -57,15 +58,14 @@ export function SosTriggerScreen() {
             <Animated.View style={[styles.pulseCircle, animatedPulseStyle]} />
 
             <Pressable
+              feedbackRadius={9999}
+              feedbackColor={BrandColors.secondary}
               onPress={handleSendSOS}
-              style={({ pressed }) => [
-                styles.sosButton,
-                pressed && styles.sosButtonPressed,
-              ]}
+              style={styles.sosButton}
               accessibilityRole="button"
               accessibilityLabel="Send SOS emergency alert"
             >
-              <Text style={[Typography.h2, styles.sosText]}>
+              <Text style={[Typography.button, styles.sosText]}>
                 Tap to{"\n"}send SOS
               </Text>
 

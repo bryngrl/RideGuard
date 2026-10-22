@@ -4,29 +4,30 @@ import { StyleSheet } from "react-native";
 export const styles = StyleSheet.create({
   contactContent: {
     flex: 1,
-    paddingHorizontal: Spacing.five,
-    paddingTop: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    paddingTop: Spacing.three,
   },
   description: {
-    maxWidth: 280,
+    maxWidth: 300,
     marginTop: Spacing.two,
     textAlign: "center",
+    fontSize: 12,
   },
   emptyContainer: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingBottom: Spacing.seven,
+    paddingBottom: Spacing.four,
   },
-  iconContainer: {
-    alignItems: "center",
-    borderRadius: 36,
-    height: 72,
-    justifyContent: "center",
-    width: 72,
-  },
+  emptyAction: { marginTop: Spacing.two, minHeight: 44, justifyContent: "center", paddingHorizontal: Spacing.two },
+  loadingState: { alignItems: "center", flex: 1, gap: Spacing.two, justifyContent: "center" },
+  errorState: { alignItems: "center", flex: 1, justifyContent: "center", paddingHorizontal: Spacing.four },
+  limitMessage: { marginBottom: Spacing.two },
+  listScroll: { flex: 1, marginHorizontal: -Spacing.four },
+  listContent: { paddingBottom: Spacing.four },
   title: {
     marginTop: Spacing.three,
     textAlign: "center",
+    fontSize: 16,
   },
 });

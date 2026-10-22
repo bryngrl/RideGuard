@@ -27,6 +27,6 @@ export const mockSettings = {
   vibrationEnabled: false,
   locationInApp: true,
   locationWithContacts: true,
-  themePreference: "system" as ThemePreference,
+  themePreference: "light" as ThemePreference,
   searchHistory: [] as string[],
 };

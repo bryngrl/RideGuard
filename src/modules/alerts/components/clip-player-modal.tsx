@@ -1,14 +1,8 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useEvent } from "expo";
 import { useVideoPlayer, VideoView } from "expo-video";
 import { useEffect } from "react";
-import {
-  ActivityIndicator,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, Modal, StyleSheet, Text, View } from "react-native";
 
 import { Spacing, Typography } from "@/shared/theme";
 

@@ -1,15 +1,9 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import React from "react";
-import {
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from "react-native";
+import { StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 
 export type CardSize = "small" | "large";
@@ -18,6 +12,7 @@ export type ConnectionState = "connected" | "disconnected";
 export interface CardProps {
   size: CardSize;
   title: string;
+  spacious?: boolean;
   icon?: React.ReactNode;
   connectionState?: ConnectionState;
   connectedIcon?: React.ReactNode;
@@ -39,11 +34,14 @@ export interface CardProps {
 
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
+  titleStyle?: StyleProp<TextStyle>;
+  subtitleStyle?: StyleProp<TextStyle>;
 }
 
 export function Card({
   size,
   title,
+  spacious = false,
   icon,
   connectionState,
   connectedIcon,
@@ -62,6 +60,8 @@ export function Card({
   onActionPress,
   onPress,
   style,
+  titleStyle,
+  subtitleStyle,
 }: CardProps) {
   const colors = useTheme();
   const isLarge = size === "large";
@@ -90,14 +90,14 @@ export function Card({
       accessibilityLabel={title}
       disabled={!onPress}
       onPress={onPress}
-      style={({ pressed }) => [
+      style={[
         styles.card,
         isLarge ? styles.largeCard : styles.smallCard,
+        !isLarge && spacious && styles.spaciousSmallCard,
         {
           backgroundColor: backgroundColor ?? colors.card,
           borderColor: borderColor ?? colors.border,
         },
-        pressed && onPress && styles.pressed,
         style,
       ]}
     >
@@ -106,8 +106,11 @@ export function Card({
         style={[
           styles.iconContainer,
           isLarge ? styles.largeIconContainer : styles.smallIconContainer,
+          !isLarge && spacious && styles.spaciousSmallIcon,
           !isLarge && {
-            backgroundColor: colors.backgroundSelected,
+            backgroundColor: spacious
+              ? colors.contactGradientEnd
+              : colors.backgroundSelected,
           },
           isLarge &&
             iconBackgroundColor && {
@@ -119,13 +122,22 @@ export function Card({
       </View>
 
       {/* TEXT CONTENT */}
-      <View style={[styles.copy, hasAction && styles.largeCopyWithAction]}>
+      <View
+        style={[
+          styles.copy,
+          hasAction && styles.largeCopyWithAction,
+          !isLarge && spacious && styles.spaciousCopy,
+        ]}
+      >
         {/* TITLE */}
         <Text
           style={[
             isLarge ? Typography.bodyLarge : Typography.bodySmall,
             styles.title,
+            isLarge && styles.largeTitle,
+            !isLarge && spacious && styles.spaciousSmallTitle,
             { color: titleColor ?? colors.text },
+            titleStyle,
           ]}
           numberOfLines={2}
         >
@@ -140,7 +152,10 @@ export function Card({
                 ? Typography.bodySmall
                 : [Typography.bodySmall, styles.smallSubtitle],
               styles.subtitle,
+              isLarge && styles.largeSubtitle,
+              !isLarge && spacious && styles.spaciousSmallSubtitle,
               { color: subtitleColor ?? colors.textMuted },
+              subtitleStyle,
             ]}
             numberOfLines={isLarge ? 3 : 1}
             adjustsFontSizeToFit
@@ -152,7 +167,7 @@ export function Card({
 
         {/* STATUS */}
         {status ? (
-          <View style={styles.statusRow}>
+          <View style={[styles.statusRow, !isLarge && spacious && styles.spaciousStatusRow]}>
             {displayStatusIcon ?? (
               <View
                 style={[
@@ -170,7 +185,14 @@ export function Card({
                   ? Typography.bodySmall
                   : [Typography.bodySmall, styles.smallStatusText],
                 styles.statusText,
-                { color: colors.textMuted },
+                !isLarge && spacious && styles.spaciousStatusText,
+                !isLarge && spacious && connectionState === "connected" && styles.connectedStatusText,
+                {
+                  color:
+                    !isLarge && spacious && connectionState === "connected"
+                      ? colors.success
+                      : colors.textMuted,
+                },
               ]}
               numberOfLines={1}
               adjustsFontSizeToFit
@@ -206,8 +228,9 @@ const styles = StyleSheet.create({
     minHeight: 96,
     flexDirection: "row",
     alignItems: "center",
-    padding: Spacing.three,
-    gap: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.five,
+    gap: Spacing.four,
   },
 
   smallCard: {
@@ -217,6 +240,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: Spacing.two,
     gap: Spacing.two,
+  },
+  spaciousSmallCard: {
+    alignItems: "flex-start",
+    paddingHorizontal: Spacing.three,
+    paddingTop: Spacing.three,
+    paddingBottom: Spacing.two + Spacing.one,
+    gap: Spacing.three + Spacing.half,
   },
 
   iconContainer: {
@@ -234,10 +264,17 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
   },
+  spaciousSmallIcon: {
+    width: 34,
+    height: 34,
+  },
 
   copy: {
     flex: 1,
     minWidth: 0,
+  },
+  spaciousCopy: {
+    marginTop: Spacing.one,
   },
 
   largeCopyWithAction: {
@@ -248,20 +285,45 @@ const styles = StyleSheet.create({
   title: {
     flexShrink: 1,
   },
+  largeTitle: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  spaciousSmallTitle: {
+    fontSize: 14,
+    lineHeight: 18,
+    fontFamily: FontFamily.geistMedium,
+  },
 
   subtitle: {
     marginTop: Spacing.half,
     flexShrink: 1,
+  },
+  largeSubtitle: {
+    fontSize: 13,
+    lineHeight: 20,
   },
 
   smallSubtitle: {
     fontSize: 10,
     lineHeight: 12,
   },
+  spaciousSmallSubtitle: {
+    fontSize: 11,
+    lineHeight: 14,
+    marginTop: Spacing.one,
+  },
 
   smallStatusText: {
     fontSize: 9,
     lineHeight: 11,
+  },
+  spaciousStatusText: {
+    fontSize: 11,
+    lineHeight: 14,
+  },
+  connectedStatusText: {
+    fontFamily: FontFamily.geistMedium,
   },
 
   statusRow: {
@@ -270,6 +332,10 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one,
     gap: Spacing.two,
     minWidth: 0,
+  },
+  spaciousStatusRow: {
+    marginTop: Spacing.two,
+    gap: Spacing.one,
   },
 
   statusDot: {
@@ -286,11 +352,9 @@ const styles = StyleSheet.create({
 
   actionButton: {
     marginTop: Spacing.two,
-    width: 90,
+    width: 82,
     alignSelf: "flex-start",
-  },
-  pressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.99 }],
+    borderWidth: 0.5,
+    paddingVertical: Spacing.one + Spacing.half,
   },
 });

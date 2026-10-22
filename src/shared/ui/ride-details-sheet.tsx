@@ -1,3 +1,4 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import React, { useEffect } from "react";
 
 import { useTheme } from "@/shared/hooks";
@@ -14,15 +15,7 @@ import {
 
 import { LinearGradient } from "expo-linear-gradient";
 
-import {
-  Modal,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  View,
-  ViewStyle,
-} from "react-native";
+import { Modal, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
 
 import Animated, {
   FadeIn,
@@ -133,10 +126,7 @@ export function RideDetailsSheet({
 
             <Pressable
               onPress={onClose}
-              style={({ pressed }) => [
-                styles.closeButton,
-                pressed && styles.pressed,
-              ]}
+              style={styles.closeButton}
               accessibilityRole="button"
               accessibilityLabel="Close ride details"
             >
@@ -485,7 +475,4 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
 
-  pressed: {
-    opacity: 0.6,
-  },
 });

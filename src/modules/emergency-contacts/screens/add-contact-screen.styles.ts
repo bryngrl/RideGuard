@@ -4,18 +4,22 @@ import { StyleSheet } from "react-native";
 export const styles = StyleSheet.create({
   actions: {
     marginTop: "auto",
-    paddingBottom: Spacing.two,
+    paddingBottom: Spacing.four,
     paddingTop: Spacing.four,
   },
 
   addPhotoText: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.three,
   },
 
   cancelButton: {
     alignItems: "center",
+    borderRadius: BorderRadius.sm,
     justifyContent: "center",
-    paddingVertical: Spacing.three,
+    marginTop: Spacing.two,
+    minHeight: 40,
+    paddingVertical: Spacing.two,
+    width: "100%",
   },
 
   cancelText: {
@@ -24,35 +28,18 @@ export const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-  },
-
-  dropdownItem: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.three,
-  },
-
-  dropdownMenu: {
-    borderTopWidth: 0,
-    borderWidth: 1.5,
-    marginTop: -Spacing.one,
+    paddingHorizontal: Spacing.five,
+    paddingTop: Spacing.five,
   },
 
   formContainer: {
+    gap: Spacing.two,
     width: "100%",
   },
 
   photoSection: {
     alignItems: "center",
     marginBottom: Spacing.five,
-  },
-
-  pillInput: {
-    backgroundColor: "#F6F6F6",
-    borderColor: "#D9D9D9",
-    borderRadius: BorderRadius.full,
   },
 
   profileImage: {
@@ -67,12 +54,6 @@ export const styles = StyleSheet.create({
   profileImagePreview: {
     height: "100%",
     width: "100%",
-  },
-
-  relationshipDropdown: {
-    paddingBottom: Spacing.two,
-    position: "relative",
-    zIndex: 10,
   },
 
   saveButton: {

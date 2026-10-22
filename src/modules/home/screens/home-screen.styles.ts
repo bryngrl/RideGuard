@@ -7,18 +7,23 @@ import {
 } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
+export const CAMERA_CARD_WIDTH = 166;
+export const CAMERA_CARD_GAP = Spacing.two;
+export const CAMERA_CAROUSEL_END_PADDING = Spacing.four;
+
 export const styles = StyleSheet.create({
   brand: {
     alignItems: "center",
     flexDirection: "row",
-    gap: Spacing.half,
   },
 
   brandName: {
     fontFamily: FontFamily.eloquiaExtraBold,
-    fontSize: 20,
+    fontSize: 24,
     letterSpacing: -0.8,
-    lineHeight: 24,
+    lineHeight: 26,
+    marginLeft: -2,
+    transform: [{ translateY: 7 }],
   },
 
   container: {
@@ -27,12 +32,14 @@ export const styles = StyleSheet.create({
 
   content: {
     flexGrow: 1,
-    paddingBottom: Spacing.two,
+    paddingTop: Spacing.five,
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.three,
   },
 
   currentRideContainer: {
     marginTop: Spacing.three,
-    marginBottom: Spacing.three,
+    gap: Spacing.one,
   },
 
   currentRideLabel: {
@@ -43,27 +50,60 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: Spacing.one,
+    minHeight: 28,
   },
 
   currentRideValue: {
     flex: 1,
-    fontWeight: "500",
     textAlign: "right",
   },
 
   deviceCards: {
-    marginTop: Spacing.two,
+    marginTop: Spacing.three + Spacing.half,
+    marginHorizontal: -Spacing.four,
+    overflow: "hidden",
     position: "relative",
     zIndex: 2,
   },
 
   deviceCardsScrollContent: {
-    gap: Spacing.one,
+    gap: CAMERA_CARD_GAP,
+    paddingLeft: Spacing.four,
+    paddingRight: CAMERA_CAROUSEL_END_PADDING,
   },
 
   deviceCardItem: {
-    width: 180,
+    width: CAMERA_CARD_WIDTH,
+  },
+  deviceCard: {
+    minHeight: 94,
+  },
+  monitoringCard: {
+    minHeight: 150,
+    borderRadius: BorderRadius.lg,
+  },
+  monitoringStateCard: {
+    minHeight: 112,
+  },
+  monitoringStateTitle: {
+    fontFamily: FontFamily.geistMedium,
+    fontSize: 18,
+    lineHeight: 24,
+  },
+  threatTitle: {
+    fontFamily: FontFamily.geistSemiBold,
+  },
+  monitoringStateSubtitle: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  monitoringCardGradient: {
+    position: "absolute",
+    top: Spacing.two,
+    bottom: Spacing.two,
+    left: Spacing.four,
+    right: Spacing.four,
+    borderRadius: BorderRadius.lg,
   },
   emptyRides: {
     alignItems: "center",
@@ -72,14 +112,12 @@ export const styles = StyleSheet.create({
     paddingBottom: Spacing.two,
   },
 
-  endRideButton: {
-    borderRadius: BorderRadius.full,
-    marginBottom: Spacing.two,
-    marginTop: Spacing.three,
-  },
 
   greeting: {
     alignItems: "flex-end",
+    flexShrink: 1,
+    marginLeft: Spacing.two,
+    maxWidth: "45%",
   },
 
   greetingHello: {
@@ -90,79 +128,59 @@ export const styles = StyleSheet.create({
 
   greetingName: {
     fontSize: 20,
-    lineHeight: 20,
+    lineHeight: 24,
+    textAlign: "right",
   },
 
   header: {
     alignItems: "center",
-    elevation: 10,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: Spacing.half,
-    paddingHorizontal: Spacing.two,
+    minHeight: 64,
+    marginBottom: Spacing.two,
+    paddingLeft: Spacing.two + Spacing.one,
     position: "relative",
     zIndex: 10,
   },
 
-  rideButton: {
-    borderRadius: BorderRadius.full,
-    marginTop: Spacing.three,
-  },
 
   statusGradient: {
-    height: 100,
+    height: 150,
     left: 0,
     position: "absolute",
     right: 0,
-    top: -40,
+    top: -100,
     zIndex: 0,
   },
 
   statusSection: {
-    elevation: 2,
-    paddingHorizontal: Spacing.five,
-    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.four,
+    paddingVertical: Spacing.two,
     position: "relative",
     zIndex: 2,
   },
-  statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 9999,
-    minWidth: 42,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-
-  statusBadgeText: {
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: "600",
-  },
 
   statusSectionWrapper: {
-    marginHorizontal: -Spacing.five,
+    marginHorizontal: -Spacing.four,
     position: "relative",
     zIndex: 1,
   },
 
   todaySection: {
     flex: 1,
-    minHeight: 86,
-    marginTop: Spacing.three,
+    marginTop: Spacing.five,
   },
   cameraWarning: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    marginTop: Spacing.two,
-    paddingLeft: Spacing.two,
-    gap: Spacing.one,
+    gap: Spacing.two,
+    marginBottom: Spacing.one,
   },
 
   cameraWarningText: {
     ...Typography.medium,
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.light.dangerHeader,
+    flexShrink: 1,
   },
 });

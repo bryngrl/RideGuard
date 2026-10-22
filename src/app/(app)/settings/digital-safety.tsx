@@ -1,2 +1,3 @@
-import { DigitalSafetyScreen } from "@/modules/settings";
-export default DigitalSafetyScreen;
+import { TermsScreen } from "@/modules/settings";
+
+export default TermsScreen;

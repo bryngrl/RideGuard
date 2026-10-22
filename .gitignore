@@ -32,6 +32,7 @@ ios/HuniLive.xcodeproj/*.pbxproj
 npm-debug.*
 yarn-debug.*
 yarn-error.*
+hs_err_pid*.log
 
 # macOS
 .DS_Store

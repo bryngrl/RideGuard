@@ -1,14 +1,6 @@
+import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import React from "react";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleProp,
-  StyleSheet,
-  Text,
-  TextStyle,
-  View,
-  ViewStyle,
-} from "react-native";
+import { ActivityIndicator, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
@@ -77,7 +69,7 @@ export function Button({
         return {
           container: {
             backgroundColor: "#FFFFFF",
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderColor: theme.primary,
           },
           text: {
@@ -136,7 +128,7 @@ export function Button({
             borderRadius: BorderRadius.lg,
           },
           text: {
-            ...Typography.bodySmall,
+            ...Typography.button,
             fontWeight: "700",
           },
           iconSize: 16,
@@ -151,7 +143,6 @@ export function Button({
           },
           text: {
             ...Typography.button,
-            fontSize: 16,
             fontWeight: "700",
           },
           iconSize: 22,
@@ -167,7 +158,6 @@ export function Button({
           },
           text: {
             ...Typography.button,
-            fontSize: 14,
           },
           iconSize: 18,
         };
@@ -179,15 +169,15 @@ export function Button({
 
   return (
     <Pressable
+      feedbackColor={variant === "primary" ? theme.secondary : undefined}
       onPress={onPress}
       disabled={isDisabled}
-      style={({ pressed }) => [
+      style={[
         styles.baseContainer,
         sizeStyles.container,
         variantStyles.container,
         fullWidth && styles.fullWidth,
         isDisabled && styles.disabledContainer,
-        pressed && !isDisabled && styles.pressed,
         style,
       ]}
       accessibilityRole="button"
@@ -256,10 +246,6 @@ const styles = StyleSheet.create({
   },
   baseText: {
     textAlign: "center",
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.985 }],
   },
   disabledContainer: {
     opacity: 0.5,
