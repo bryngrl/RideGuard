@@ -93,7 +93,7 @@ export const useSettingsStore = create<SettingsState>()(
 
       // Clear account-specific preference state on logout / account change.
       resetAutoArchive: () =>
-        set({ autoArchiveHours: null, autoArchiveStatus: "idle" }),
+        set({ autoArchiveHours: 24, autoArchiveStatus: "idle" }),
 
       // BACKEND SYNC: call updateNotifications after persisting this value.
       setAlertsEnabled: (alertsEnabled) => set({ alertsEnabled }),
