@@ -28,14 +28,12 @@ export default function VerifyCodeScreen() {
     destination?: string;
     expiresAt?: string;
     resendAt?: string;
-    preview?: string;
   }>();
   const destination = params.destination ?? "";
-  const preview = __DEV__ && params.preview === "1";
   const initialExpiry = Number(params.expiresAt);
   const initialResend = Number(params.resendAt);
   const [delivery, setDelivery] = useState<CodeDelivery | null>(
-    !preview && initialExpiry > Date.now() && initialResend > 0
+    initialExpiry > Date.now() && initialResend > 0
       ? { expiresAt: initialExpiry, resendAt: initialResend }
       : null,
   );
@@ -100,11 +98,6 @@ export default function VerifyCodeScreen() {
     }
     if (code.length !== CODE_LENGTH) {
       setError("Enter the complete six-digit code.");
-      return;
-    }
-    if (preview) {
-      setCode("");
-      router.push({ pathname: "/(public)/new-password", params: { preview: "1" } });
       return;
     }
     if (!delivery) {
@@ -198,9 +191,7 @@ export default function VerifyCodeScreen() {
                 ? "Your code is verified. Continue to create a new password."
                 : delivery
                 ? "An email was sent to the address connected to this account."
-                : preview
-                  ? "Design preview only. Enter any six digits to view the new-password design. No code is sent or verified."
-                  : "Code delivery is not connected yet."}
+                : "Code delivery is not connected yet."}
             </Text>
 
             {!verified && <VerificationCodeInput value={code} onChange={handleCodeChange}
@@ -217,7 +208,7 @@ export default function VerifyCodeScreen() {
               </Text>
             )}
             <Button
-              title={preview ? "Preview new password" : verified ? "Continue" : "Confirm"}
+              title={verified ? "Continue" : "Confirm"}
               onPress={handleConfirm}
               isLoading={isVerifying}
               disabled={isResending}

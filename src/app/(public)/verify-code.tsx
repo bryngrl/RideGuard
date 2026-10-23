@@ -1,3 +1,6 @@
-import VerifyCodeScreen from "@/modules/auth/screens/verify-code-screen";
+import { Redirect } from "expo-router";
 
-export default VerifyCodeScreen;
+// The backend sends Firebase password-reset links instead of OTP codes.
+export default function VerifyCodeRoute() {
+  return <Redirect href="/(public)/forgot-password" />;
+}

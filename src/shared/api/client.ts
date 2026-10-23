@@ -77,10 +77,14 @@ export class APIClient {
         }
       }
 
-      console.error("API ERROR:", {
-        status: response.status,
-        data,
-      });
+      // Azure and other gateways can return an HTML error page instead of
+      // the API's JSON envelope. Never surface that markup as an app message.
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("text/html") || /^\s*</.test(rawResponse)) {
+        message = response.status === 503
+          ? "The service is temporarily unavailable. Please try again shortly."
+          : "The server returned an unexpected response. Please try again.";
+      }
 
       throw new APIError(message, response.status, data);
     }

@@ -7,7 +7,7 @@ export interface ProfilePayload {
   brand: string;
   model: string;
   plate_number: string;
-  color?: string;
+  color: string;
   contact_name?: string;
   emergency_phone_number?: string;
   relationship?: string;

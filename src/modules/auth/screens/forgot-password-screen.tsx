@@ -1,6 +1,5 @@
-import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
-import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useState } from "react";
+import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import { Keyboard, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -8,9 +7,8 @@ import { Button } from "@/shared/ui/button";
 import { AuthFormLayout } from "@/shared/ui/auth-form-layout";
 import { CustomTextInput } from "@/shared/ui/text-input";
 
-import { RecoveryError, recoveryMessage, requestResetCode } from "../services/password-recovery";
+import { requestPasswordReset } from "../services/auth.api";
 import { styles } from "./forgot-password-screen.styles";
-import { usePasswordRecoveryStore } from "../store/password-recovery.store";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,12 +20,8 @@ export default function ForgotPasswordScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
-  const [previewAvailable, setPreviewAvailable] = useState(false);
-
-  // Starting over invalidates any previous verified token held in memory.
-  useFocusEffect(useCallback(() => {
-    usePasswordRecoveryStore.getState().clear();
-  }, []));
+  const [sent, setSent] = useState(false);
+  const sending = useRef(false);
 
   const trimmedEmail = email.trim();
   const emailError = !trimmedEmail
@@ -37,28 +31,21 @@ export default function ForgotPasswordScreen() {
       : undefined;
 
   const handleSend = async () => {
-    if (loading) return;
+    if (sending.current) return;
     setSubmitted(true);
     setRequestError(null);
-    setPreviewAvailable(false);
     if (emailError) return;
 
     Keyboard.dismiss();
+    sending.current = true;
     setLoading(true);
     try {
-      const delivery = await requestResetCode(trimmedEmail);
-      router.push({
-        pathname: "/(public)/verify-code",
-        params: {
-          destination: trimmedEmail,
-          expiresAt: String(delivery.expiresAt),
-          resendAt: String(delivery.resendAt),
-        },
-      });
+      await requestPasswordReset(trimmedEmail.toLowerCase());
+      setSent(true);
     } catch (error) {
-      setRequestError(recoveryMessage(error));
-      setPreviewAvailable(error instanceof RecoveryError && error.code === "unavailable");
+      setRequestError(error instanceof Error ? error.message : "Unable to send the reset link. Try again.");
     } finally {
+      sending.current = false;
       setLoading(false);
     }
   };
@@ -73,7 +60,7 @@ export default function ForgotPasswordScreen() {
     <AuthFormLayout
       variant="recovery"
       title="Find your account"
-      description="Please enter your email address to reset your password."
+      description="Enter your email address and we’ll send a password reset link."
       onBack={goBack}
     >
       <View style={styles.form}>
@@ -83,7 +70,7 @@ export default function ForgotPasswordScreen() {
           onChangeText={(value) => {
             setEmail(value);
             setRequestError(null);
-            setPreviewAvailable(false);
+            setSent(false);
           }}
           onBlur={() => setTouched(true)}
           error={touched || submitted ? emailError : undefined}
@@ -97,28 +84,18 @@ export default function ForgotPasswordScreen() {
           inputWrapperStyle={styles.inputWrapper}
         />
 
-        <Button title="Send code" onPress={handleSend} isLoading={loading} style={styles.sendButton} />
+        <Button title={sent ? "Send another link" : "Send reset link"} onPress={handleSend} isLoading={loading} style={styles.sendButton} />
+        {sent ? (
+          <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.text }]}>
+            If an account exists for this email, a Firebase password reset link has been sent. Open it to set a new password, then return to login.
+          </Text>
+        ) : null}
         {requestError && (
           <Text accessibilityRole="alert" style={[styles.feedback, { color: theme.error }]}>
             {requestError}
           </Text>
         )}
-        {__DEV__ && previewAvailable && (
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: "/(public)/verify-code",
-                params: { destination: trimmedEmail, preview: "1" },
-              })
-            }
-            style={styles.previewButton}
-            accessibilityRole="button"
-          >
-            <Text style={[styles.previewText, { color: theme.accent }]}>
-              Preview code screen (no code was sent)
-            </Text>
-          </Pressable>
-        )}
+        {sent ? <Button title="Back to login" variant="ghost" onPress={() => router.replace("/(public)/sign-in")} /> : null}
       </View>
     </AuthFormLayout>
   );

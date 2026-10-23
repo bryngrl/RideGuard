@@ -2,7 +2,8 @@ import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
-import { checkIsOldUser } from "../services/auth.api";
+import { APIError } from "@/shared/api/errors";
+import { checkIsOldUser, ensureEmailPasswordProfile } from "../services/auth.api";
 import { useAuthStore } from "../store/auth.store";
 
 export function useAuth() {
@@ -31,11 +32,13 @@ export function useAuth() {
       async (firebaseUser) => {
 
         if (!firebaseUser) {
-          // A local demo session deliberately has no Firebase user.
-          if (useAuthStore.getState().isDemo) {
-            setCheckingAuth(false);
-            return;
-          }
+          setUser(null);
+          setIsOldUser(null);
+          setCheckingAuth(false);
+          return;
+        }
+
+        if (firebaseUser.providerData.some((provider) => provider.providerId === "password") && !firebaseUser.emailVerified) {
           setUser(null);
           setIsOldUser(null);
           setCheckingAuth(false);
@@ -48,16 +51,18 @@ export function useAuth() {
           const firebaseToken =
             await firebaseUser.getIdToken();
 
-          const oldUser =
-            await checkIsOldUser(firebaseToken);
+          const oldUser = firebaseUser.providerData.some((provider) => provider.providerId === "password")
+            ? await ensureEmailPasswordProfile(firebaseUser)
+            : await checkIsOldUser(firebaseToken);
 
           setIsOldUser(oldUser);
           setUser(firebaseUser);
         } catch (error) {
-          console.error(
-            "Failed to check authenticated user:",
-            error,
-          );
+          if ((error instanceof APIError && error.status >= 500) || error instanceof TypeError) {
+            console.info("RideGuard API is temporarily unavailable.");
+          } else {
+            console.error("Failed to check authenticated user:", error);
+          }
 
           setUser(null);
           setIsOldUser(null);

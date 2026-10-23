@@ -24,14 +24,17 @@ export default function RegisterStepTwoScreen() {
   const [vehicleBrandError, setVehicleBrandError] = useState("");
   const [vehicleModelError, setVehicleModelError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
+  const [colorError, setColorError] = useState("");
   const brandRef = useRef<TextInput>(null);
   const modelRef = useRef<TextInput>(null);
   const plateRef = useRef<TextInput>(null);
+  const colorRef = useRef<TextInput>(null);
 
   const handleNextStep = () => {
     setVehicleBrandError("");
     setVehicleModelError("");
     setPlateNumberError("");
+    setColorError("");
 
     let isValid = true;
 
@@ -53,8 +56,13 @@ export default function RegisterStepTwoScreen() {
       isValid = false;
     }
 
+    if (!color.trim()) {
+      setColorError("Please enter your vehicle color.");
+      isValid = false;
+    }
+
     if (!isValid) {
-      (!vehicleBrand.trim() ? brandRef : !vehicleModel.trim() ? modelRef : plateRef).current?.focus();
+      (!vehicleBrand.trim() ? brandRef : !vehicleModel.trim() ? modelRef : !plateNumber.trim() || !validPlateInput(plateNumber) ? plateRef : colorRef).current?.focus();
       return;
     }
 
@@ -131,10 +139,14 @@ export default function RegisterStepTwoScreen() {
           />
 
           <CustomTextInput
+            ref={colorRef}
             label="Color"
+            required
             value={color}
+            error={colorError}
             onChangeText={(text) => {
               updateDraft({ color: text });
+              if (colorError) setColorError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />
