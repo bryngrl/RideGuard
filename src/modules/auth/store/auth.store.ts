@@ -7,7 +7,6 @@ interface AuthStore extends AuthState {
   isOldUser: boolean | null;
   isDemo: boolean;
 
-  startDemo: () => void;
   setUser: (user: AuthUser | null) => void;
   setCheckingAuth: (isCheckingAuth: boolean) => void;
   setIsOldUser: (isOldUser: boolean | null) => void;
@@ -20,15 +19,6 @@ export const useAuthStore = create<AuthStore>((set) => ({
   isCheckingAuth: true,
   isOldUser: null,
   isDemo: false,
-
-  startDemo: () =>
-    set({
-      user: null,
-      isDemo: true,
-      isAuthenticated: true,
-      isCheckingAuth: false,
-      isOldUser: true,
-    }),
 
   setUser: (user) =>
     set((state) => ({

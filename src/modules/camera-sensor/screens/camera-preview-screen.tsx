@@ -22,7 +22,8 @@ export function CameraPreviewScreen() {
     setIsLoading(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      router.replace(fromSettings ? "/devices" : (isSecondCamera ? "/devices/button" : "/devices/camera?camera=2"));
+      if (fromSettings) router.dismissTo("/devices");
+      else router.replace(isSecondCamera ? "/devices/button" : "/devices/camera?camera=2");
     } finally {
       setIsLoading(false);
     }

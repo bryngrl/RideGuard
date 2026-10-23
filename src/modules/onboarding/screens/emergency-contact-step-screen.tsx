@@ -92,8 +92,6 @@ export default function RegisterStepThreeScreen() {
       payload.relationship = store.relationship.trim();
     }
 
-    console.log("Payload:", payload);
-
     try {
       setIsLoading(true);
 
@@ -201,6 +199,7 @@ export default function RegisterStepThreeScreen() {
               required
               prefix="+63"
               keyboardType="phone-pad"
+              placeholder="9XX XXX XXXX"
               value={store.emergencyPhone}
               inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
               error={emergencyPhoneError}
@@ -249,8 +248,12 @@ export default function RegisterStepThreeScreen() {
                     { label: "Parent", value: "Parent" },
                     { label: "Sibling", value: "Sibling" },
                     { label: "Spouse", value: "Spouse" },
+                    { label: "Partner", value: "Partner" },
                     { label: "Child", value: "Child" },
                     { label: "Friend", value: "Friend" },
+                    { label: "Colleague", value: "Colleague" },
+                    { label: "Mentor", value: "Mentor" },
+                    { label: "Student", value: "Student" },
                     { label: "Other", value: "Other" },
                   ].map((item) => (
                     <Pressable

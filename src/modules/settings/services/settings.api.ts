@@ -28,7 +28,7 @@ interface AutoArchiveData {
 }
 
 function normalizeHours(value: unknown): AutoArchiveHours {
-  return value === 24 || value === 48 || value === 72 ? value : null;
+  return value === 24 || value === 48 || value === 72 || value === 168 ? value : null;
 }
 
 export async function getSettings() {
@@ -36,7 +36,7 @@ export async function getSettings() {
   return null;
 }
 
-/** GET /settings/auto-archive -> the account's saved period (null = Never). */
+/** GET /settings/auto-archive -> the account's saved period. */
 export async function getAutoArchive(
   firebaseToken: string,
 ): Promise<AutoArchiveHours> {
@@ -57,7 +57,9 @@ export async function updateAutoArchive(
     { autoArchiveHours: value },
     firebaseToken,
   );
-  return normalizeHours(envelope?.data?.autoArchiveHours);
+  const saved = normalizeHours(envelope?.data?.autoArchiveHours);
+  if (saved !== value) throw new Error("The server did not save the selected auto-archive period.");
+  return saved;
 }
 
 export async function updateNotifications(payload: {

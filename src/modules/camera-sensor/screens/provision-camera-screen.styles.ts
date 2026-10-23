@@ -51,6 +51,9 @@ export const styles = StyleSheet.create({
   topSection: {
     flex: 1,
   },
+  settingsTopSection: {
+    paddingTop: 72,
+  },
   cameraNumber: {
     alignSelf: "flex-start",
     backgroundColor: "#ECF3FF",

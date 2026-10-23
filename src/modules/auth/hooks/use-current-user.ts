@@ -39,13 +39,17 @@ export function useCurrentUser() {
         const profile = await getCurrentUser(token);
         if (cancelled) return;
 
+        const backendNameParts = profile.name?.trim().split(/\s+/) ?? [];
+
         const resolvedFirstName =
           profile.first_name?.trim() ||
           profile.firstName?.trim() ||
+          backendNameParts[0] ||
           firebaseFirstName;
         const resolvedLastName =
           profile.last_name?.trim() ||
           profile.lastName?.trim() ||
+          backendNameParts.slice(1).join(" ") ||
           firebaseLastName;
         const resolvedPhotoUrl = profile.picture?.trim() || firebasePhotoUrl;
 

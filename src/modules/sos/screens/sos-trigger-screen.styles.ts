@@ -1,4 +1,4 @@
-import { BorderRadius, BrandColors, Spacing } from "@/shared/theme";
+import { BorderRadius, BrandColors, FontFamily, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -6,51 +6,52 @@ export const styles = StyleSheet.create({
     borderColor: BrandColors.secondary,
     borderRadius: BorderRadius.full,
     borderWidth: 2,
-    height: 38,
-    marginHorizontal: -4,
-    width: 38,
+    height: 28,
+    width: 28,
+    backgroundColor: BrandColors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
+  overlappingAvatar: { marginLeft: -4 },
+  avatarImage: { width: "100%", height: "100%" },
 
   avatars: {
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: Spacing.three,
+    marginBottom: Spacing.two,
   },
 
   contactsDescription: {
     color: BrandColors.primary,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 17,
     textAlign: "center",
+    maxWidth: 265,
   },
 
   contactsSection: {
     alignItems: "center",
-    marginTop: Spacing.seven,
+    minHeight: 75,
   },
 
   container: {
     flex: 1,
   },
 
-  initialAvatar: {
-    alignItems: "center",
-    backgroundColor: BrandColors.primary,
-    justifyContent: "center",
-  },
-
   initialText: {
     color: BrandColors.secondary,
-    fontSize: 14,
-    fontWeight: "600",
+    fontSize: 11,
+    fontFamily: FontFamily.geistMedium,
   },
-
-  pulseCircle: {
+  sosRing: {
     backgroundColor: "#DCE8F8",
     borderRadius: BorderRadius.full,
-    height: 210,
-    position: "absolute",
-    width: 210,
+    height: 220,
+    width: 220,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   sosButton: {
@@ -61,12 +62,13 @@ export const styles = StyleSheet.create({
     height: 190,
     justifyContent: "center",
     width: 190,
-    zIndex: 2,
   },
 
 
   sosHint: {
     color: BrandColors.secondary,
+    fontSize: 13,
+    lineHeight: 18,
     textAlign: "center",
   },
 
@@ -78,13 +80,17 @@ export const styles = StyleSheet.create({
 
   sosText: {
     color: BrandColors.secondary,
+    fontSize: 18,
+    lineHeight: 23,
     textAlign: "center",
   },
 
-  sosWrapper: {
-    alignItems: "center",
-    height: 230,
-    justifyContent: "center",
-    width: 230,
-  },
+  helpButton: { width: 40, height: 40, alignItems: "center", justifyContent: "center" },
+  contactsLink: { marginTop: Spacing.two, padding: Spacing.one },
+  contactsLinkText: { color: "#0754AD", fontFamily: FontFamily.geistMedium, fontSize: 12 },
+  loading: { marginBottom: Spacing.two },
+  previewPanel: { gap: Spacing.two },
+  previewLabel: { color: BrandColors.primary, fontFamily: FontFamily.geistMedium, fontSize: 11, textAlign: "center" },
+  previewActions: { flexDirection: "row", gap: Spacing.two },
+  previewButton: { flex: 1 },
 });

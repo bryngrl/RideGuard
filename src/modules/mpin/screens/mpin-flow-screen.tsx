@@ -29,10 +29,10 @@ const stepCopy: Record<string, { title: string; description: string }> = {
 };
 
 export default function MpinFlowScreen() {
-  const params = useLocalSearchParams<{ step?: string; mode?: string; preview?: string }>();
+  const params = useLocalSearchParams<{ step?: string; mode?: string }>();
   const mode: MpinMode = params.mode === "change" || params.mode === "reset" ? params.mode : "setup";
   const step = typeof params.step === "string" ? params.step : "status";
-  const preview = __DEV__ && params.preview === "1";
+  const preview = false;
   // Remount local fields when a route's step changes, rather than retaining PINs.
   return <MpinStep key={`${step}/${mode}/${preview}`} step={step} mode={mode} preview={preview} />;
 }
@@ -93,10 +93,10 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   };
   const task = useMpinRequest(failure);
 
-  const go = (next: string, nextMode = mode, replace = false, asPreview = preview) => {
+  const go = (next: string, nextMode = mode, replace = false) => {
     if (navigating.current) return;
     navigating.current = true;
-    const href = { pathname: "/(mpin)/mpin/[step]" as const, params: { step: next, mode: nextMode, ...(asPreview ? { preview: "1" } : {}) } };
+    const href = { pathname: "/(mpin)/mpin/[step]" as const, params: { step: next, mode: nextMode } };
     if (replace) router.replace(href); else router.push(href);
   };
 
@@ -143,7 +143,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   const back = () => {
     if (task.isPending() || cannotBack) return;
     useMpinStore.getState().clearDraft();
-    if (router.canGoBack()) router.back(); else go("manage", mode, true, false);
+    if (router.canGoBack()) router.back(); else go("manage", mode, true);
   };
 
   // A pending operation and mandatory gates cannot be bypassed by hardware back.
@@ -354,21 +354,6 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
         {!unavailable && <Button title={state.status?.configured ? "Change MPIN" : "Set Up MPIN"}
           disabled={!state.status || task.loading || state.checkingStatus} onPress={() => go(state.status?.configured ? "current" : "intro", state.status?.configured ? "change" : "setup")} />}
         {!unavailable && <Button title="Check MPIN status" variant="outline" onPress={checkStatus} disabled={task.loading || state.checkingStatus} />}
-        {__DEV__ && <>
-          <Text style={[styles.note, { color: theme.textMuted }]}>Development design previews — no account security changes</Text>
-          <Button title="Preview MPIN setup" variant="outline" onPress={() => go("intro", "setup", false, true)} />
-          <Button title="Preview MPIN Login screens" variant="outline" onPress={() => go("login", "setup", false, true)} />
-          <Button title="Preview Enter MPIN" variant="ghost" onPress={() => go("unlock", "setup", false, true)} />
-          <Button title="Preview Change MPIN" variant="ghost" onPress={() => go("current", "change", false, true)} />
-          <Button title="Preview change MPIN email code" variant="ghost" onPress={() => go("verify-identity", "change", false, true)} />
-          <Button title="Preview Forgot MPIN" variant="ghost" onPress={() => go("forgot", "reset", false, true)} />
-          <Button title="Preview identity verification" variant="ghost" onPress={() => go("verify-identity", "reset", false, true)} />
-          <Button title="Preview replacement MPIN form" variant="ghost" onPress={() => go("create", "reset", false, true)} />
-          <Button title="Preview new MPIN for Settings" variant="ghost" onPress={() => go("create", "change", false, true)} />
-          <Button title="Preview success design" variant="ghost" onPress={() => go("success", "setup", false, true)} />
-          <Button title="Preview reset success design" variant="ghost" onPress={() => go("success", "reset", false, true)} />
-          <Button title="Preview change success design" variant="ghost" onPress={() => go("success", "change", false, true)} />
-        </>}
         {mandatory && <>{emergencyAction}<Button title="Log out" variant="ghost" onPress={logOut} /></>}
       </View>
     </MpinLayout>;
@@ -381,7 +366,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
       description={confirmed || preview ? (mode === "setup" ? "Your MPIN is ready. You can now securely access RideGuard." : mode === "change" ? "Your MPIN has been updated. Use your new MPIN the next time verification is required." : "Your new MPIN is ready to use.") : "Check your account's MPIN status before continuing."}>
       <View style={styles.actions}>
         <Button title={preview ? "Back to MPIN previews" : confirmed ? (mode === "change" ? "Done" : mode === "setup" ? "Continue to RideGuard" : "Continue") : "Check MPIN status"}
-          onPress={() => preview ? go("manage", mode, true, false) : confirmed ? goHome() : go("status", mode, true)} />
+          onPress={() => preview ? go("manage", mode, true) : confirmed ? goHome() : go("status", mode, true)} />
       </View>
     </MpinLayout>;
   }
@@ -447,6 +432,6 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   }
 
   return <MpinLayout title="MPIN security" description="Choose an MPIN option to continue.">
-    <View style={styles.actions}><Button title="MPIN settings" onPress={() => go("manage", mode, true, false)} /></View>
+    <View style={styles.actions}><Button title="MPIN settings" onPress={() => go("manage", mode, true)} /></View>
   </MpinLayout>;
 }
