@@ -12,12 +12,14 @@ import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Keyboard, Text, View } from "react-native";
 
 export default function ButtonProvisionScreen() {
   const router = useRouter();
+  const { source } = useLocalSearchParams<{ source?: string }>();
+  const fromSettings = source === "settings";
   const theme = useTheme();
   const setButtonDeviceId = useDeviceStore((state) => state.setButtonDeviceId);
 
@@ -97,7 +99,8 @@ export default function ButtonProvisionScreen() {
 
       // Redirect after success
       setTimeout(() => {
-        router.replace("/(onboarding)/devices/button");
+        if (fromSettings) router.dismissTo("/devices");
+        else router.replace("/(onboarding)/devices/button");
       }, 1500);
     } catch (error: unknown) {
       const message =
@@ -166,6 +169,9 @@ export default function ButtonProvisionScreen() {
                 if (buttonIdError) {
                   setButtonIdError("");
                 }
+                if (validButtonId(text) && !validButtonId(buttonId)) {
+                  requestAnimationFrame(() => Keyboard.dismiss());
+                }
               }}
               containerStyle={{
                 paddingBottom: Spacing.two,
@@ -174,7 +180,7 @@ export default function ButtonProvisionScreen() {
           </View>
         </View>
 
-        <View style={styles.footerSection}>
+        <KeyboardHiddenView style={styles.footerSection}>
           <View style={styles.helpContainer}>
             <View style={styles.iconContainer}>
               <LighBulb width={24} height={24} />
@@ -207,7 +213,7 @@ export default function ButtonProvisionScreen() {
             </View>
           </View>
 
-          <KeyboardHiddenView style={styles.buttonContainer}>
+          <View style={styles.buttonContainer}>
             <Button
               title="Connect"
               variant="primary"
@@ -216,8 +222,8 @@ export default function ButtonProvisionScreen() {
               onPress={handleConnect}
               isLoading={isLoading}
             />
-          </KeyboardHiddenView>
-        </View>
+          </View>
+        </KeyboardHiddenView>
 
         <LoadingModal
           visible={alertState.visible}

@@ -59,8 +59,8 @@ export function DeviceStatusScreen() {
     if (device.type === "button") {
       router.push(
         (isConnected
-          ? "/(onboarding)/devices/button"
-          : "/(onboarding)/register/provision") as never,
+          ? "/(onboarding)/devices/button?source=settings"
+          : "/(onboarding)/register/provision?source=settings") as never,
       );
       return;
     }
@@ -68,8 +68,8 @@ export function DeviceStatusScreen() {
     const cameraNumber = device.cameraNumber ?? 1;
     router.push(
       (isConnected
-        ? `/(onboarding)/devices/camera/camera-preview?camera=${cameraNumber}`
-        : `/(onboarding)/devices/camera?camera=${cameraNumber}`) as never,
+        ? `/(onboarding)/devices/camera/camera-preview?camera=${cameraNumber}&source=settings`
+        : `/(onboarding)/devices/camera?camera=${cameraNumber}&source=settings`) as never,
     );
   };
 

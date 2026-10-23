@@ -28,10 +28,14 @@ export function ButtonTestScreen({
     recognizedButtons,
     pressedButtons,
     handleRetry,
-  } = useButtonTest(testType, () => router.replace(fromSettings ? "/devices" : "/devices/button/test-page"));
+  } = useButtonTest(testType, () => {
+    if (fromSettings) router.dismissTo("/devices");
+    else router.replace("/devices/button/test-page");
+  });
 
   const handleSkip = () => {
-    router.replace(fromSettings ? "/devices" : "/(onboarding)/register/complete-setup");
+    if (fromSettings) router.dismissTo("/devices");
+    else router.replace("/(onboarding)/register/complete-setup");
   };
 
   const renderButton = (color: ButtonColor) => (
@@ -95,7 +99,7 @@ export function ButtonTestScreen({
           <Button
             title="Continue"
             onPress={() =>
-              router.replace(fromSettings ? "/devices" : "/(onboarding)/register/complete-setup")
+              fromSettings ? router.dismissTo("/devices") : router.replace("/(onboarding)/register/complete-setup")
             }
             style={styles.continueButton}
           />
