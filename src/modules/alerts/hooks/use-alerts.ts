@@ -36,7 +36,7 @@ function matchesStatus(alert: AlertFields, status: AlertListStatus): boolean {
  * The store holds alert *entities* (so seen/false-alarm/archive updates reflect
  * live); this hook holds the ordered IDs for its status.
  */
-export function useAlertsList(status: AlertListStatus) {
+export function useAlertsList(status: AlertListStatus, enabled = true) {
   const user = useAuthStore((state) => state.user);
   const alerts = useAlertsStore((state) => state.alerts);
   const mergeAlerts = useAlertsStore((state) => state.mergeAlerts);
@@ -46,6 +46,7 @@ export function useAlertsList(status: AlertListStatus) {
   const [ids, setIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadedStatuses, setLoadedStatuses] = useState<Set<AlertListStatus>>(new Set());
 
   const cursorRef = useRef<string | null>(null);
   const cursorStatusRef = useRef(status);
@@ -56,9 +57,19 @@ export function useAlertsList(status: AlertListStatus) {
   const currentStatusRef = useRef(status);
   currentStatusRef.current = status;
 
+  // Invalidate a pending live response when a development preview is selected.
+  useEffect(() => {
+    if (enabled) return;
+    requestIdRef.current += 1;
+    isFetchingRef.current = false;
+    fetchingStatusRef.current = null;
+    setIsRefreshing(false);
+    setIsLoadingMore(false);
+  }, [enabled]);
+
   const fetchPage = useCallback(
     async (mode: "reset" | "more") => {
-      if (!user || (isFetchingRef.current && fetchingStatusRef.current === status)) return;
+      if (!enabled || !user || (isFetchingRef.current && fetchingStatusRef.current === status)) return;
       if (mode === "more" && cursorStatusRef.current !== status) return;
       if (mode === "more" && (!hasMoreRef.current || !cursorRef.current)) return;
 
@@ -86,7 +97,7 @@ export function useAlertsList(status: AlertListStatus) {
             limit: ALERTS_PAGE_SIZE,
             cursor: cursor ?? undefined,
           });
-          if (requestIdRef.current !== requestId || currentStatusRef.current !== status) return;
+          if (!enabled || requestIdRef.current !== requestId || currentStatusRef.current !== status) return;
 
           mergeAlerts(page.alerts);
           pageIds.push(
@@ -115,10 +126,18 @@ export function useAlertsList(status: AlertListStatus) {
           fetchingStatusRef.current = null;
           if (mode === "reset") setIsRefreshing(false);
           else setIsLoadingMore(false);
+          if (mode === "reset") {
+            setLoadedStatuses((previous) => {
+              if (previous.has(status)) return previous;
+              const next = new Set(previous);
+              next.add(status);
+              return next;
+            });
+          }
         }
       }
     },
-    [user, status, mergeAlerts],
+    [enabled, user, status, mergeAlerts],
   );
 
   const refresh = useCallback(() => {
@@ -131,16 +150,17 @@ export function useAlertsList(status: AlertListStatus) {
 
   // Refresh when the preference changes (the save screen bumps the nonce).
   useEffect(() => {
-    if (!user) return;
+    if (!enabled || !user) return;
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, status, listRefreshNonce]);
+  }, [enabled, user, status, listRefreshNonce]);
 
   // Focus + foreground + periodic refresh, all bounded to "while this screen is
   // visible": the interval and AppState listener are set up on focus and torn
   // down on blur.
   useFocusEffect(
     useCallback(() => {
+      if (!enabled) return;
       refresh();
 
       const interval = setInterval(refresh, VISIBLE_REFRESH_MS);
@@ -152,7 +172,7 @@ export function useAlertsList(status: AlertListStatus) {
         clearInterval(interval);
         subscription.remove();
       };
-    }, [refresh]),
+    }, [enabled, refresh]),
   );
 
   // Resolve membership IDs to entities, keep only those still matching this
@@ -195,6 +215,7 @@ export function useAlertsList(status: AlertListStatus) {
     visibleAlerts,
     isRefreshing,
     isLoadingMore,
+    isInitialLoading: enabled && Boolean(user) && !loadedStatuses.has(status),
     hasMore: hasMoreRef.current,
     refresh,
     loadMore,

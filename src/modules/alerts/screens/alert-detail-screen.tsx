@@ -380,8 +380,7 @@ export function AlertDetailScreen() {
       showBackButton
       scrollable={false}
       contentFlush
-      footer={
-        !isFalseAlarm ? (
+      footer={!isFalseAlarm ? (
           <Button
             title="Mark as false alarm"
             variant="danger"
@@ -391,8 +390,7 @@ export function AlertDetailScreen() {
             style={footerStyles.flagButton}
             textStyle={footerStyles.flagButtonText}
           />
-        ) : null
-      }
+      ) : null}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}

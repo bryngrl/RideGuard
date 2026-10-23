@@ -128,6 +128,35 @@ export function formatClockTime(timeStamp: string): string {
     .toLowerCase();
 }
 
+/** Use device-local time for both endpoints; never infer an end from createdAt. */
+export function formatDetectionTimeRange(
+  startTime: string | null | undefined,
+  endTime: string | null | undefined,
+  fallbackTime: string,
+): string {
+  const parse = (value: string | null | undefined) => {
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  };
+  const start = parse(startTime) ?? parse(fallbackTime);
+  if (!start) return "Time unavailable";
+  const clock = (date: Date) => date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+  const end = parse(endTime);
+  if (!end || end.getTime() < start.getTime()) return clock(start);
+
+  const startDay = start.toLocaleDateString("en-CA");
+  const endDay = end.toLocaleDateString("en-CA");
+  const endLabel = startDay === endDay
+    ? clock(end)
+    : `${clock(end)} (${end.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+  return `${clock(start)} - ${endLabel}`;
+}
+
 /**
  * Relative day label: "Today", "Yesterday", or a date like "Sep 28".
  * Returns "" for invalid input.
@@ -231,7 +260,10 @@ export function getAlertDetectionType(message: string): AlertDetectionType {
  * original backend message; detection type and severity are derived from it.
  * Returns null when the payload lacks a usable alertId.
  */
-export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
+export function mapAlertFieldsToItem(
+  fields: AlertFields,
+  presentation?: { startTime?: string; endTime?: string | null; manual?: boolean; pending?: boolean },
+): AlertItem | null {
   const alertId =
     typeof fields.alertId === "string" ? fields.alertId.trim() : "";
 
@@ -243,7 +275,9 @@ export function mapAlertFieldsToItem(fields: AlertFields): AlertItem | null {
     alertId,
     title: fields.message,
     severity: detectionType === "none" ? "clear" : "threat",
-    time: formatClockTime(fields.timeStamp),
+    time: formatDetectionTimeRange(presentation?.startTime, presentation?.endTime, fields.timeStamp),
+    manual: presentation?.manual === true,
+    pending: presentation?.pending === true,
     read: fields.isSeen === true,
     subLabel: fields.isFalseAlarm ? "Marked as false alarm" : undefined,
   };
