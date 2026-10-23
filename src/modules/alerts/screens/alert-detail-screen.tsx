@@ -277,11 +277,7 @@ function EvidencePreview({
 
 // Response section
 
-interface ResponseProps {
-  contactsNotified: boolean;
-}
-
-function Response({ contactsNotified }: ResponseProps) {
+function Response() {
   const theme = useTheme();
 
   return (
@@ -300,9 +296,7 @@ function Response({ contactsNotified }: ResponseProps) {
         <InformationIcon height={16} width={16} />
 
         <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
-          {contactsNotified
-            ? "Emergency contacts have been notified. They can track your live location."
-            : "No emergency contacts were notified."}
+          Contact notification status is not confirmed here. Open SOS to check message submission status.
         </Text>
       </View>
     </View>
@@ -489,7 +483,7 @@ export function AlertDetailScreen() {
         ) : null}
 
         {/* Response */}
-        <Response contactsNotified={true} />
+        <Response />
       </ScrollView>
     </PageLayout>
   );

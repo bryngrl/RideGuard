@@ -1,104 +1,61 @@
+import { useEffect } from "react";
+import { ActivityIndicator, Image, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { BrandColors, Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";
-import { useRouter } from "expo-router";
-import { useEffect } from "react";
-import { Image, Text, View } from "react-native";
-import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
+import { Button } from "@/shared/ui/button";
+import { useSettingsStore } from "@/modules/settings/store/settings.store";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useSosStore } from "../store/sos.store";
+import { useSosStatus } from "../hooks/use-sos-lifecycle";
 import { styles } from "./sos-trigger-screen.styles";
 
 export function SosTriggerScreen() {
   const router = useRouter();
-
-  const pulseScale = useSharedValue(1);
-  const pulseOpacity = useSharedValue(0.35);
-
+  const params = useLocalSearchParams<{ alertId?: string }>();
+  const user = useAuthStore((state) => state.user);
+  const settingsReady = useSettingsStore((state) => state.isHydrated);
+  const shareLocation = useSettingsStore((state) => state.locationWithContacts);
+  const state = useSosStore();
+  useSosStatus(state.ready, true);
   useEffect(() => {
-    pulseScale.value = withRepeat(
-      withSequence(
-        withTiming(1.18, { duration: 1200 }),
-        withTiming(1, { duration: 1200 }),
-      ),
-      -1,
-      false,
-    );
-
-    pulseOpacity.value = withRepeat(
-      withSequence(
-        withTiming(0.1, { duration: 1200 }),
-        withTiming(0.35, { duration: 1200 }),
-      ),
-      -1,
-      false,
-    );
-  }, [pulseOpacity, pulseScale]);
-
-  const animatedPulseStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: pulseScale.value }],
-      opacity: pulseOpacity.value,
-    };
-  });
-
-  const handleSendSOS = () => {
-    router.replace("/sos/countdown" as any);
-  };
-
-  return (
-    <PageLayout title="SOS" scrollable={false}>
-      <View style={styles.container}>
-        <View style={styles.sosSection}>
-          <View style={styles.sosWrapper}>
-            <Animated.View style={[styles.pulseCircle, animatedPulseStyle]} />
-
-            <Pressable
-              feedbackRadius={9999}
-              feedbackColor={BrandColors.secondary}
-              onPress={handleSendSOS}
-              style={styles.sosButton}
-              accessibilityRole="button"
-              accessibilityLabel="Send SOS emergency alert"
-            >
-              <Text style={[Typography.button, styles.sosText]}>
-                Tap to{"\n"}send SOS
-              </Text>
-
-              <Text style={[Typography.caption, styles.sosHint]}>
-                (or press and hold)
-              </Text>
-            </Pressable>
-          </View>
-
-          <View style={styles.contactsSection}>
-            <View style={styles.avatars}>
-              <Image
-                source={{
-                  uri: "https://i.pravatar.cc/150?img=47",
-                }}
-                style={styles.avatar}
-              />
-
-              <View style={[styles.avatar, styles.initialAvatar]}>
-                <Text style={styles.initialText}>N</Text>
-              </View>
-
-              <View style={[styles.avatar, styles.initialAvatar]}>
-                <Text style={styles.initialText}>N</Text>
-              </View>
-            </View>
-
-            <Text style={[Typography.bodySmall, styles.contactsDescription]}>
-              Your SOS will be sent to your emergency{"\n"}contacts
-            </Text>
-          </View>
-        </View>
+    if (state.phase === "countdown") router.replace("/sos/countdown");
+    else if (["submitting", "checking", "retry", "active", "ended"].includes(state.phase)) router.replace("/sos/active");
+  }, [state.phase, router]);
+  const disabled = !settingsReady || !state.ready || state.refreshing || !!state.error ||
+    state.phase !== "idle" || state.contactsStatus !== "ready" || !state.contacts.length;
+  return <PageLayout title="SOS" contentStyle={{ gap: 20 }}>
+    <View style={styles.sosSection}>
+      <View style={styles.sosWrapper}>
+        <Pressable disabled={disabled} onPress={() => void state.begin(typeof params.alertId === "string" ? params.alertId : undefined)}
+          style={[styles.sosButton, disabled && { opacity: 0.5 }]} accessibilityRole="button" accessibilityLabel="Request help for yourself">
+          <Text style={[Typography.button, styles.sosText]}>Tap to{"\n"}request help</Text>
+          <Text style={[Typography.caption, styles.sosHint]}>Five seconds to cancel</Text>
+        </Pressable>
       </View>
-    </PageLayout>
-  );
+      <Text style={[Typography.body, styles.contactsDescription]}>
+        Request help for yourself.{"\n"}{shareLocation ? "Your phone's location snapshot will be included when available." : "Your location will not be shared."}
+      </Text>
+      {state.phase === "preparing" && <ActivityIndicator accessibilityLabel="Checking location permission" />}
+      {!user && <Text style={styles.contactsDescription}>Sign in to use SOS. Demo mode does not send messages.</Text>}
+      {user && !state.ready && <Button title="Load SOS recovery" onPress={() => void state.setOwner(user.uid)} />}
+      {state.error && <View accessibilityLiveRegion="polite"><Text style={styles.contactsDescription}>{state.error}</Text>
+        <Button title="Check SOS status" onPress={() => void state.refresh()} isLoading={state.refreshing} /></View>}
+      <View style={styles.contactsSection}>
+        {state.contactsStatus === "loading" && <ActivityIndicator accessibilityLabel="Loading emergency contacts" />}
+        {state.contactsStatus === "error" && <><Text style={styles.contactsDescription}>Could not load your contacts.</Text>
+          <Button title="Retry contacts" onPress={() => void state.loadContacts()} /></>}
+        {state.contactsStatus === "ready" && state.contacts.length === 0 && <>
+          <Text style={styles.contactsDescription}>Add an emergency contact before requesting help.</Text>
+          <Button title="Add emergency contact" onPress={() => router.push("/contact/add-contact")} />
+        </>}
+        {state.contacts.map((contact) => <View key={contact.id} style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
+          {contact.profileImage ? <Image source={{ uri: contact.profileImage }} style={styles.avatar} /> :
+            <View style={[styles.avatar, styles.initialAvatar]}><Text style={styles.initialText}>{contact.name.slice(0, 1).toUpperCase()}</Text></View>}
+          <Text style={[Typography.bodySmall, { color: BrandColors.primary }]}>{contact.name}</Text>
+        </View>)}
+      </View>
+    </View>
+  </PageLayout>;
 }
