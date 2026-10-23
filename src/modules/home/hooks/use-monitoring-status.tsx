@@ -95,12 +95,12 @@ export function useMonitoringStatus({
 
     if (isViolenceAndWeaponDetected) {
       monitoringTitle = "Violence and Weapon detected";
-      monitoringSubtitle = "SOS activated automatically.";
+      monitoringSubtitle = "Use manual SOS if you need help.";
     } else if (isViolenceDetected) {
       monitoringTitle = "Violence detected";
       monitoringSubtitle = showFollowUpThreatMessage
-        ? "Auto-capturing initiated due to violence.\nSOS activated automatically."
-        : "Unusual movement was detected.\nSOS activated automatically.";
+        ? "Auto-capturing initiated due to violence.\nUse manual SOS if you need help."
+        : "Unusual movement was detected.\nUse manual SOS if you need help.";
     } else {
       monitoringTitle = "Weapon detected";
       monitoringSubtitle = showFollowUpThreatMessage
