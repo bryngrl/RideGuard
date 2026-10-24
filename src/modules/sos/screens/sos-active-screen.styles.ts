@@ -7,7 +7,7 @@ export const styles = StyleSheet.create({
   },
 
   content: {
-    paddingBottom: 0,
+    paddingBottom: Spacing.four,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
@@ -37,9 +37,8 @@ export const styles = StyleSheet.create({
 
   iconSection: {
     alignItems: "center",
-    flex: 1,
     justifyContent: "center",
-    paddingBottom: 96,
+    minHeight: 180,
   },
 
   messageSection: {

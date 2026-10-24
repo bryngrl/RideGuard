@@ -1,0 +1,7 @@
+version: 1
+name: rideguard-sos
+port: 4967
+interceptRequests: true
+scenarios:
+  - name: default
+    path: default.js

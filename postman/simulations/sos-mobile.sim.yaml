@@ -1,0 +1,5 @@
+simulation: sos-mobile
+routing: path
+mocks:
+  - routeKey: rideguard
+    path: ../mocks/rideguard-sos/config.yaml
