@@ -193,10 +193,14 @@ export function useAbly() {
         void syncSavedAlerts();
       });
       channel.on("failed", (change) => {
+        if (cancelled) return;
         console.error("[Ably] Channel failed:", channelName, change.reason?.message);
       });
 
       channel.subscribe(ALERT_CREATED_EVENT, handleAlert).catch((error) => {
+        // A changing device list or sign-out closes the previous client while
+        // its initial channel attachment may still be pending.
+        if (cancelled) return;
         console.error("[Ably] Failed to subscribe:", channelName, error);
       });
 
