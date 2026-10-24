@@ -16,17 +16,23 @@ export function useCurrentUser() {
   const [lastName, setLastName] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadedUid, setLoadedUid] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
       setFirstName(isDemo ? "Demo" : null);
       setLastName(null);
       setPhotoUrl(null);
+      setLoadedUid(null);
       return;
     }
 
     let cancelled = false;
     setIsLoading(true);
+    setFirstName(null);
+    setLastName(null);
+    setPhotoUrl(null);
+    setLoadedUid(null);
 
     const displayNameParts = user.displayName?.trim().split(/\s+/) ?? [];
     const firebaseFirstName = displayNameParts[0] || null;
@@ -56,12 +62,14 @@ export function useCurrentUser() {
         setFirstName(resolvedFirstName ?? null);
         setLastName(resolvedLastName ?? null);
         setPhotoUrl(resolvedPhotoUrl ?? null);
+        setLoadedUid(user.uid);
       } catch (error) {
-        console.error("Failed to load current user:", error);
+        console.info("Could not load current user:", error);
         if (!cancelled) {
           setFirstName(firebaseFirstName);
           setLastName(firebaseLastName);
           setPhotoUrl(firebasePhotoUrl);
+          setLoadedUid(user.uid);
         }
       } finally {
         if (!cancelled) {
@@ -77,5 +85,11 @@ export function useCurrentUser() {
     };
   }, [user, isDemo]);
 
-  return { firstName, lastName, photoUrl, isLoading };
+  const readyForUser = !user || loadedUid === user.uid;
+  return {
+    firstName: readyForUser ? firstName : null,
+    lastName: readyForUser ? lastName : null,
+    photoUrl: readyForUser ? photoUrl : null,
+    isLoading: !!user && (isLoading || !readyForUser),
+  };
 }

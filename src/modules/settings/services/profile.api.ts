@@ -10,6 +10,9 @@ export type ProfileDocument = {
     firstName?: string;
     lastName?: string;
     phoneNumber?: string;
+    first_name?: string;
+    last_name?: string;
+    phone_number?: string;
     email?: string;
     profileImageUrl?: string;
   };
@@ -33,9 +36,9 @@ async function readResponse<T>(response: Response): Promise<T> {
   return envelope.data;
 }
 
-export async function getProfile(): Promise<ProfileDocument> {
+export async function getProfile(firebaseToken: string): Promise<ProfileDocument> {
   return readResponse<ProfileDocument>(await fetch(`${API_BASE_URL}/profile/me`, {
-    headers: { Authorization: `Bearer ${await authToken()}` },
+    headers: { Authorization: `Bearer ${firebaseToken}` },
   }));
 }
 

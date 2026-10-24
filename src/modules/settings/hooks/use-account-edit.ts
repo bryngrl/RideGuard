@@ -1,4 +1,5 @@
 import { useOnboardingStore } from "@/modules/onboarding";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import {
   isValidPhoneNumber,
   normalizePhoneNumber,
@@ -7,6 +8,7 @@ import { validPlateInput } from "@/shared/lib/input-formats";
 import { useEffect, useState } from "react";
 import { updateProfile, updateVehicle } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
+import { useProfileCacheStore } from "../store/profile-cache.store";
 
 // Photo uploads have a separate endpoint, so the text draft omits it.
 type EditableProfile = Omit<SettingsProfile, "photoUrl">;
@@ -25,6 +27,7 @@ function normalizeProfile(profile: EditableProfile): EditableProfile {
 }
 
 export function useAccountEdit(profile: SettingsProfile) {
+  const authUid = useAuthStore((state) => state.user?.uid);
   const updateDraft = useOnboardingStore((state) => state.updateDraft);
   const [initialProfile, setInitialProfile] = useState(() =>
     normalizeProfile(profile),
@@ -87,6 +90,7 @@ export function useAccountEdit(profile: SettingsProfile) {
         });
       }
       updateDraft({ ...normalizedForm });
+      if (authUid) useProfileCacheStore.getState().updateDetails(authUid, normalizedForm);
       return true;
     } catch (cause) {
       setError(

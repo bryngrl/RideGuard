@@ -1,42 +1,25 @@
-import { useCurrentUser } from "@/modules/auth";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
-import { useOnboardingStore } from "@/modules/onboarding";
 import { useFocusEffect } from "expo-router";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import type { SettingsProfile } from "../types/settings.types";
-import { getProfile, type ProfileDocument } from "../services/profile.api";
+import { useProfileCacheStore } from "../store/profile-cache.store";
 
 export function useProfile() {
-  const onboarding = useOnboardingStore();
   const authUser = useAuthStore((state) => state.user);
   const isDemo = useAuthStore((state) => state.isDemo);
-  const [serverProfile, setServerProfile] = useState<ProfileDocument | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const setPhotoUrl = useCallback((url: string) => {
-    setServerProfile((current) => ({ ...current, photo_url: url }));
-  }, []);
+  const cachedUid = useProfileCacheStore((state) => state.uid);
+  const cachedDocument = useProfileCacheStore((state) => state.document);
+  const cacheLoading = useProfileCacheStore((state) => state.loading);
+  const attemptedAt = useProfileCacheStore((state) => state.attemptedAt);
+  const load = useProfileCacheStore((state) => state.load);
+  const setCachedPhotoUrl = useProfileCacheStore((state) => state.setPhotoUrl);
 
   useFocusEffect(useCallback(() => {
-    if (!authUser || isDemo) return;
-    let active = true;
-    setIsLoading(true);
-    getProfile().then((next) => {
-      if (active) setServerProfile(next);
-    }).catch((error) => {
-      console.error("Failed to load profile:", error);
-    }).finally(() => {
-      if (active) setIsLoading(false);
-    });
-    return () => { active = false; };
-  }, [authUser, isDemo]));
-  // Onboarding is filled in during setup; fall back to the signed-in
-  // account's name/photo (GET /auth/me, then Firebase) when it isn't, so
-  // Settings never shows a mock name or avatar.
-  const {
-    firstName: accountFirstName,
-    lastName: accountLastName,
-    photoUrl,
-  } = useCurrentUser();
+    if (authUser && !isDemo) void load(authUser);
+  }, [authUser, isDemo, load]));
+
+  const serverProfile = cachedUid === authUser?.uid ? cachedDocument : null;
+  const displayNameParts = authUser?.displayName?.trim().split(/\s+/) ?? [];
   const profile = useMemo<SettingsProfile>(
     () =>
       isDemo
@@ -51,16 +34,21 @@ export function useProfile() {
             photoUrl: null,
           }
         : {
-            firstName: serverProfile?.personalInfo?.firstName || onboarding.firstName || accountFirstName || "",
-            lastName: serverProfile?.personalInfo?.lastName || onboarding.lastName || accountLastName || "",
-            phone: serverProfile?.personalInfo?.phoneNumber || onboarding.phone,
+            firstName: serverProfile?.personalInfo?.firstName?.trim() || serverProfile?.personalInfo?.first_name?.trim() || displayNameParts[0] || "",
+            lastName: serverProfile?.personalInfo?.lastName?.trim() || serverProfile?.personalInfo?.last_name?.trim() || displayNameParts.slice(1).join(" ") || "",
+            phone: serverProfile?.personalInfo?.phoneNumber || serverProfile?.personalInfo?.phone_number || "",
             email: serverProfile?.personalInfo?.email || authUser?.email || "",
-            vehicleBrand: serverProfile?.vehicle?.brand || onboarding.vehicleBrand,
-            vehicleModel: serverProfile?.vehicle?.model || onboarding.vehicleModel,
-            plateNumber: serverProfile?.vehicle?.plateNumber || onboarding.plateNumber,
-            photoUrl: serverProfile?.photo_url || serverProfile?.personalInfo?.profileImageUrl || photoUrl,
+            vehicleBrand: serverProfile?.vehicle?.brand || "",
+            vehicleModel: serverProfile?.vehicle?.model || "",
+            plateNumber: serverProfile?.vehicle?.plateNumber || "",
+            photoUrl: serverProfile?.photo_url || serverProfile?.personalInfo?.profileImageUrl || authUser?.photoURL || null,
           },
-    [accountFirstName, accountLastName, authUser?.email, isDemo, onboarding, photoUrl, serverProfile],
+    [authUser?.displayName, authUser?.email, authUser?.photoURL, isDemo, serverProfile],
   );
+  const isLoading = !!authUser && !isDemo && !serverProfile &&
+    (cachedUid !== authUser.uid || cacheLoading || !attemptedAt);
+  const setPhotoUrl = useCallback((url: string) => {
+    if (authUser) setCachedPhotoUrl(authUser.uid, url);
+  }, [authUser, setCachedPhotoUrl]);
   return { profile, isLoading, setPhotoUrl };
 }

@@ -10,7 +10,7 @@ import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, BackHandler, Linking, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, BackHandler, Linking, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 import { uploadProfilePhoto } from "../../services/profile.api";
@@ -18,7 +18,7 @@ import { uploadProfilePhoto } from "../../services/profile.api";
 export function AccountEditScreen() {
   const router = useRouter();
   const colors = useTheme();
-  const { profile, setPhotoUrl } = useProfile();
+  const { profile, isLoading, setPhotoUrl } = useProfile();
   const isDemo = useAuthStore((state) => state.isDemo);
   const edit = useAccountEdit(profile);
   const savedName = `${profile.firstName} ${profile.lastName}`.trim();
@@ -163,6 +163,14 @@ export function AccountEditScreen() {
   };
 
   const canSave = (edit.changed || photoAsset !== null) && !edit.saving && !savingPhoto && !pickingPhoto;
+
+  if (isLoading) return (
+    <SettingsPageLayout title="Account" onBack={cancel} contentStyle={styles.content}>
+      <View style={{ height: 148, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.accent} accessibilityLabel="Loading account" />
+      </View>
+    </SettingsPageLayout>
+  );
 
   return (
     <SettingsPageLayout title="Account" onBack={cancel} contentStyle={styles.content}>

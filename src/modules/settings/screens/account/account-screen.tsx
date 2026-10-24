@@ -5,7 +5,7 @@ import { SettingsPageLayout } from "@/modules/settings/components/settings-page-
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { Text } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { ProfileCard } from "../../components/profile-card";
 import { useProfile } from "../../hooks/use-profile";
 import { useProfileFlip } from "../../hooks/use-profile-flip";
@@ -57,7 +57,9 @@ export function AccountScreen() {
       }
     >
       {isLoading ? (
-        <Text style={{ color: colors.textMuted }}>Loading...</Text>
+        <View style={{ height: 148, alignItems: "center", justifyContent: "center" }}>
+          <ActivityIndicator color={colors.accent} accessibilityLabel="Loading account" />
+        </View>
       ) : (
         <ProfileCard profile={profile} progress={progress} onPress={toggle} />
       )}

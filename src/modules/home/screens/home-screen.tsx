@@ -4,7 +4,7 @@ import {
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
 import ErrorIcon from "@/assets/icons/status/error.svg";
-import { useCurrentUser } from "@/modules/auth";
+import { useProfile } from "@/modules/settings/hooks/use-profile";
 import { useDeviceStore } from "@/modules/devices";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
@@ -45,7 +45,7 @@ export function HomeScreen() {
   const colors = useTheme();
   const reduceMotion = useReducedMotion();
 
-  const { firstName } = useCurrentUser();
+  const { profile, isLoading: isProfileLoading } = useProfile();
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
@@ -72,7 +72,7 @@ export function HomeScreen() {
   // const isCamera2Connected = false;
   // const isButtonConnected = true;
 
-  const displayName = firstName?.trim() || "there";
+  const displayName = profile.firstName.trim() || "there";
 
   const hasCameraConnected = isCamera1Connected || isCamera2Connected;
   const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
@@ -205,7 +205,7 @@ export function HomeScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.75}
             >
-              {displayName}!
+              {isProfileLoading ? " " : `${displayName}!`}
             </Text>
           </View>
         </View>
