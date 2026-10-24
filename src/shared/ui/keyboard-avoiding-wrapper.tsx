@@ -9,7 +9,7 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { KeyboardAwareFormScrollView } from "./keyboard-aware-form-scroll-view";
 import { Edge, SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
@@ -45,11 +45,11 @@ export function KeyboardAvoidingWrapper({
     >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         {enableScrollView ? (
-          <KeyboardAwareScrollView
+          <KeyboardAwareFormScrollView
             style={styles.flex}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
@@ -66,7 +66,7 @@ export function KeyboardAvoidingWrapper({
             >
               {content}
             </TouchableWithoutFeedback>
-          </KeyboardAwareScrollView>
+          </KeyboardAwareFormScrollView>
         ) : (
           <TouchableWithoutFeedback
             onPress={Keyboard.dismiss}

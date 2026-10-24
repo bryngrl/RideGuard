@@ -7,6 +7,7 @@ import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { useTheme } from "@/shared/hooks";
 import { formatInputEdit, type InputFormat } from "@/shared/lib/input-formats";
 import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
+import { useScrollFocusedInput } from "./keyboard-aware-form-scroll-view";
 
 function FieldPressTarget({
   onPress,
@@ -79,6 +80,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     ref,
   ) => {
     const theme = useTheme();
+    const scrollFocusedInput = useScrollFocusedInput();
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
@@ -213,6 +215,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             autoCorrect={isPassword ? false : undefined}
             onFocus={(e) => {
               setIsFocused(true);
+              scrollFocusedInput(e.nativeEvent.target);
               onFocus?.(e);
             }}
             onBlur={(e) => {

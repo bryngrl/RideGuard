@@ -8,6 +8,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { useScrollFocusedInput } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SearchResultItem } from "./search-result-item";
 import { useSettingsSearch } from "../hooks/use-settings-search";
 import { settingsRows } from "../config/settings-rows";
@@ -17,6 +18,7 @@ export function SettingsSearch({ active, onOpen, onClose }: { active: boolean; o
   const router = useRouter();
   const reducedMotion = useReducedMotion();
   const input = useRef<TextInput>(null);
+  const scrollFocusedInput = useScrollFocusedInput();
   const openingContacts = useRef(false);
   useFocusEffect(useCallback(() => {
     openingContacts.current = false;
@@ -74,6 +76,7 @@ export function SettingsSearch({ active, onOpen, onClose }: { active: boolean; o
         <SearchIcon width={20} height={20} />
         <TextInput
           ref={input}
+          onFocus={(event) => scrollFocusedInput(event.nativeEvent.target)}
           value={query}
           onChangeText={setQuery}
           placeholder="Search"

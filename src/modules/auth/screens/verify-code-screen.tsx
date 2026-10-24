@@ -1,7 +1,8 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -165,10 +166,12 @@ export default function VerifyCodeScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
+        <KeyboardAwareFormScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          enableOnAndroid
+          enableAutomaticScroll
         >
           <Pressable
             onPress={backToRecovery}
@@ -239,7 +242,7 @@ export default function VerifyCodeScreen() {
               </Pressable>
             </View>}
           </View>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

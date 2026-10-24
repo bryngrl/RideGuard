@@ -3,14 +3,15 @@ import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "./keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "./back-arrow-icon";
 
 interface AuthFormLayoutProps {
   title: string;
-  description: string;
+  description: ReactNode;
   onBack: () => void;
   backDisabled?: boolean;
   variant?: "branded" | "recovery";
@@ -23,12 +24,15 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
   const recovery = variant === "recovery";
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAwareFormScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
+          enableOnAndroid
+          enableAutomaticScroll
+          extraScrollHeight={Spacing.four}
         >
           <Pressable
             onPress={onBack}
@@ -49,7 +53,7 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
             <Text style={[styles.description, recovery && styles.recoveryDescription, { color: theme.textMuted }]}>{description}</Text>
             {children}
           </View>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
