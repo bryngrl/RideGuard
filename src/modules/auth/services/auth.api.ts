@@ -2,6 +2,7 @@ import type { TokenRequest } from "ably";
 import type { User } from "firebase/auth";
 
 import { apiClient } from "@/shared/api";
+import { APIError } from "@/shared/api/errors";
 
 /**
  * Standard success envelope wrapped around every backend response.
@@ -64,6 +65,10 @@ export async function requestPasswordReset(email: string) {
 
 const profileChecks = new Map<string, Promise<boolean>>();
 
+function isRegistrationNoLongerPending(error: unknown): error is APIError {
+  return error instanceof APIError && /registration is no longer pending/i.test(error.message);
+}
+
 /** Share the verification request between login and the auth-state listener. */
 export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
   const existing = profileChecks.get(user.uid);
@@ -71,7 +76,20 @@ export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
   const pending = (async () => {
     const token = await user.getIdToken(true);
     const hasProfile = await checkIsOldUser(token);
-    if (!hasProfile) await verifyRegisteredAccount(token);
+    if (!hasProfile) {
+      try {
+        await verifyRegisteredAccount(token);
+      } catch (error) {
+        if (!isRegistrationNoLongerPending(error)) throw error;
+
+        // Another request may have completed registration between the status
+        // check and verify. Only accept that result if the profile now exists.
+        if (await checkIsOldUser(await user.getIdToken(true))) return true;
+        throw new Error(
+          "Your email is verified, but your RideGuard profile could not be found. Please contact support to finish account setup.",
+        );
+      }
+    }
     return true;
   })();
   profileChecks.set(user.uid, pending);

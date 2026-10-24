@@ -35,9 +35,15 @@ export default function AuthActionScreen() {
       try {
         if (mode === "verifyEmail") {
           await applyActionCode(auth, oobCode);
-          if (auth.currentUser) await auth.currentUser.reload();
+          if (auth.currentUser) {
+            await auth.currentUser.reload();
+            if (active && auth.currentUser.emailVerified && auth.currentUser.email) {
+              router.replace({ pathname: "/(public)/check-email", params: { email: auth.currentUser.email } });
+              return;
+            }
+          }
           if (active) {
-            setMessage("Email verified. Log in to finish creating your RideGuard profile.");
+            setMessage("Email verified. Log in to continue setting up RideGuard.");
             setState("complete");
           }
         } else {
@@ -45,6 +51,13 @@ export default function AuthActionScreen() {
           if (active) setState("ready");
         }
       } catch {
+        if (mode === "verifyEmail" && auth.currentUser) {
+          await auth.currentUser.reload().catch(() => undefined);
+          if (active && auth.currentUser.emailVerified && auth.currentUser.email) {
+            router.replace({ pathname: "/(public)/check-email", params: { email: auth.currentUser.email } });
+            return;
+          }
+        }
         if (active) {
           setMessage("This link has expired or has already been used. Request a new link.");
           setState("error");
@@ -53,7 +66,7 @@ export default function AuthActionScreen() {
     };
     void apply();
     return () => { active = false; };
-  }, [mode, oobCode]);
+  }, [mode, oobCode, router]);
 
   const passwordError = getPasswordError(password);
   const confirmationError = getConfirmPasswordError(password, confirmation);

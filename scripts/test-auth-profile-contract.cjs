@@ -5,6 +5,13 @@ const { test } = require("node:test");
 const vm = require("node:vm");
 const ts = require("typescript");
 
+class APIError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
 function loadAuthApi(reply) {
   const calls = [];
   const source = readFileSync(path.join(__dirname, "../src/modules/auth/services/auth.api.ts"), "utf8");
@@ -24,8 +31,9 @@ function loadAuthApi(reply) {
   const context = {
     exports: {},
     require(name) {
-      assert.equal(name, "@/shared/api");
-      return { apiClient };
+      if (name === "@/shared/api") return { apiClient };
+      if (name === "@/shared/api/errors") return { APIError };
+      throw new Error(`Unexpected import: ${name}`);
     },
   };
   vm.runInNewContext(compiled, context);
@@ -67,6 +75,36 @@ test("profile verification is shared across simultaneous auth callbacks", async 
     { method: "GET", path: "/auth/is-old-user", token: "fresh-token" },
     { method: "POST", path: "/auth/register/verify", token: "fresh-token" },
   ]);
+});
+
+test("a consumed registration is accepted only when a profile now exists", async () => {
+  let statusChecks = 0;
+  const { api, calls } = loadAuthApi((method, route) => {
+    if (route === "/auth/is-old-user") return envelope(++statusChecks > 1);
+    if (method === "POST" && route === "/auth/register/verify") {
+      throw new APIError("Registration is no longer pending", 409);
+    }
+    throw new Error(`Unexpected route: ${route}`);
+  });
+  const user = { uid: "uid", getIdToken: async () => "fresh-token" };
+  assert.equal(await api.ensureEmailPasswordProfile(user), true);
+  assert.deepEqual(calls.map((call) => call.path), [
+    "/auth/is-old-user", "/auth/register/verify", "/auth/is-old-user",
+  ]);
+});
+
+test("a consumed registration without a profile stays blocked", async () => {
+  const { api, calls } = loadAuthApi((_method, route) => {
+    if (route === "/auth/is-old-user") return envelope(false);
+    if (route === "/auth/register/verify") throw new APIError("Registration is no longer pending", 409);
+    throw new Error(`Unexpected route: ${route}`);
+  });
+  const user = { uid: "uid", getIdToken: async () => "fresh-token" };
+  await assert.rejects(
+    api.ensureEmailPasswordProfile(user),
+    /email is verified, but your RideGuard profile could not be found/i,
+  );
+  assert.equal(calls.filter((call) => call.path === "/auth/is-old-user").length, 2);
 });
 
 test("documented identity envelope is unwrapped", async () => {

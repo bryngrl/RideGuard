@@ -1,13 +1,25 @@
 import WelcomeScreen from "@/modules/auth/screens/welcome-screen";
+import { postAuthDestination } from "@/modules/auth/services/registration-progress";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
-import { Redirect } from "expo-router";
+import { useRouter } from "expo-router";
+import { useEffect } from "react";
 
 export default function WelcomeRoute() {
-  const auth = useAuthStore();
-  if (auth.isCheckingAuth) return null;
-  if (auth.isAuthenticated) {
-    if (auth.isOldUser === null) return null;
-    return <Redirect href={auth.isOldUser ? "/(app)/(tabs)" : "/(onboarding)/register/profile"} />;
-  }
+  const router = useRouter();
+  const isCheckingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const isOldUser = useAuthStore((state) => state.isOldUser);
+  const user = useAuthStore((state) => state.user);
+
+  useEffect(() => {
+    if (isCheckingAuth || !isAuthenticated || isOldUser === null || !user) return;
+    let cancelled = false;
+    void postAuthDestination(user, isOldUser)
+      .then((destination) => { if (!cancelled) router.replace(destination); })
+      .catch(() => { if (!cancelled) router.replace("/(onboarding)/register/profile"); });
+    return () => { cancelled = true; };
+  }, [isCheckingAuth, isAuthenticated, isOldUser, router, user]);
+
+  if (isCheckingAuth || isAuthenticated) return null;
   return <WelcomeScreen />;
 }

@@ -32,6 +32,7 @@ export const styles = StyleSheet.create({
     gap: Spacing.three,
     marginTop: Spacing.four,
   },
+  feedback: { marginTop: Spacing.four },
   field: {
     marginBottom: 0,
   },
@@ -41,16 +42,6 @@ export const styles = StyleSheet.create({
   submitButton: {
     height: 42,
     marginTop: Spacing.five,
-  },
-  messageBox: {
-    borderRadius: 10,
-    marginTop: Spacing.three,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-  },
-  messageText: {
-    ...Typography.bodySmall,
-    textAlign: "center",
   },
   loginLink: {
     alignSelf: "center",

@@ -3,16 +3,21 @@ import MainLogo from "@/assets/icons/logos/main.svg";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing } from "@/shared/theme";
-import { APIError } from "@/shared/api";
 import { Button } from "@/shared/ui/button";
+import { FormFeedback } from "@/shared/ui/form-feedback";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRef, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { auth } from "@/lib/firebase";
 
 import { styles } from "./create-account-screen.styles";
 import { registerAccount } from "../services/auth.api";
+import { markRegistrationOnboardingPending } from "../services/registration-progress";
+import { authErrorMessage, registrationFieldErrors } from "../utils/auth-errors";
 import { getConfirmPasswordError, getPasswordError } from "../utils/password-validation";
 
 type Field = "username" | "email" | "password" | "confirmPassword";
@@ -34,9 +39,9 @@ export default function CreateAccountScreen() {
   const [touched, setTouched] = useState<TouchedFields>({});
   const [submitted, setSubmitted] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
+  const [serverErrors, setServerErrors] = useState<Partial<Record<Field, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
   const submitting = useRef(false);
-  const [registrationComplete, setRegistrationComplete] = useState(false);
 
   const usernameError = !username.trim()
     ? "Enter a username."
@@ -58,6 +63,7 @@ export default function CreateAccountScreen() {
     if (submitting.current) return;
     setSubmitted(true);
     setFormMessage(null);
+    setServerErrors({});
     if (usernameError || emailError || passwordError || confirmError) {
       (usernameError ? usernameRef : emailError ? emailRef : passwordError ? passwordRef : confirmRef).current?.focus();
       return;
@@ -67,19 +73,25 @@ export default function CreateAccountScreen() {
     submitting.current = true;
     setIsLoading(true);
     try {
-      await registerAccount({ username: username.trim(), email: email.trim().toLowerCase(), password });
-      setRegistrationComplete(true);
+      const registrationEmail = email.trim().toLowerCase();
+      await registerAccount({ username: username.trim(), email: registrationEmail, password });
+      await markRegistrationOnboardingPending(registrationEmail);
+      // /auth/register sends the first Firebase verification link. Signing in
+      // here only lets the next screen refresh status or resend without keeping
+      // a password in route parameters or persistent storage.
+      try {
+        await signInWithEmailAndPassword(auth, registrationEmail, password);
+      } catch {
+        // The account still exists. The Check Your Email screen can ask for a
+        // fresh password if the Firebase session is not ready yet.
+      }
       setPassword("");
       setConfirmPassword("");
-      setFormMessage("Check your email for the Firebase verification link. After verifying, log in to finish setting up your profile.");
+      router.replace({ pathname: "/(public)/check-email", params: { email: registrationEmail } });
     } catch (error) {
-      setFormMessage(
-        error instanceof APIError && error.status === 404
-          ? "Account creation is unavailable on this server. Please contact support."
-          : error instanceof Error
-            ? error.message
-            : "Account creation failed. Please try again.",
-      );
+      const fields = registrationFieldErrors(error);
+      setServerErrors(fields);
+      setFormMessage(Object.keys(fields).length ? null : authErrorMessage(error, "register"));
     } finally {
       submitting.current = false;
       setIsLoading(false);
@@ -95,18 +107,17 @@ export default function CreateAccountScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+        <KeyboardAwareFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false} enableOnAndroid enableAutomaticScroll extraScrollHeight={Spacing.four}>
       <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
         <BackArrowIcon color={theme.text} />
       </Pressable>
       <View style={styles.brand}><MainLogo width={64} height={64} /></View>
 
       <Text style={[styles.heading, { color: theme.text }]}>Create account</Text>
-      <Text style={[styles.description, { color: theme.textMuted }]}>
-        {registrationComplete ? "Verify your email, then log in." : "Enter your details to create an account."}
-      </Text>
+      <Text style={[styles.description, { color: theme.textMuted }]}>Enter your details to create an account.</Text>
+      {formMessage ? <View style={styles.feedback}><FormFeedback message={formMessage} /></View> : null}
 
-      {!registrationComplete && <View style={styles.fields}>
+      <View style={styles.fields}>
         <CustomTextInput
           ref={usernameRef}
           label="Username"
@@ -115,9 +126,10 @@ export default function CreateAccountScreen() {
           onChangeText={(value) => {
             setUsername(value);
             setFormMessage(null);
+            setServerErrors((current) => ({ ...current, username: undefined }));
           }}
           onBlur={() => markTouched("username")}
-          error={submitted || touched.username ? usernameError : undefined}
+          error={serverErrors.username || (submitted || touched.username ? usernameError : undefined)}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="username"
@@ -134,9 +146,10 @@ export default function CreateAccountScreen() {
           onChangeText={(value) => {
             setEmail(value);
             setFormMessage(null);
+            setServerErrors((current) => ({ ...current, email: undefined }));
           }}
           onBlur={() => markTouched("email")}
-          error={submitted || touched.email ? emailError : undefined}
+          error={serverErrors.email || (submitted || touched.email ? emailError : undefined)}
           autoCapitalize="none"
           autoCorrect={false}
           autoComplete="email"
@@ -154,9 +167,10 @@ export default function CreateAccountScreen() {
           onChangeText={(value) => {
             setPassword(value);
             setFormMessage(null);
+            setServerErrors((current) => ({ ...current, password: undefined }));
           }}
           onBlur={() => markTouched("password")}
-          error={submitted || touched.password ? passwordError : undefined}
+          error={serverErrors.password || (submitted || touched.password ? passwordError : undefined)}
           isPassword
           autoComplete="new-password"
           textContentType="newPassword"
@@ -184,16 +198,9 @@ export default function CreateAccountScreen() {
           containerStyle={styles.field}
           inputWrapperStyle={styles.inputWrapper}
         />
-      </View>}
+      </View>
 
-      <Button title={registrationComplete ? "Go to login" : "Create account"} onPress={registrationComplete ? () => router.replace({ pathname: "/(public)/sign-in", params: { registrationEmail: email.trim().toLowerCase() } }) : handleSubmit} isLoading={isLoading} style={styles.submitButton} />
-      {formMessage && (
-        <View style={[styles.messageBox, { backgroundColor: theme.infoBackground }]}>
-          <Text accessibilityRole="alert" style={[styles.messageText, { color: theme.text }]}>
-            {formMessage}
-          </Text>
-        </View>
-      )}
+      <Button title="Create account" onPress={handleSubmit} isLoading={isLoading} disabled={isLoading} style={styles.submitButton} />
 
       <Pressable
         onPress={() => router.replace("/(public)/sign-in")}
@@ -203,7 +210,7 @@ export default function CreateAccountScreen() {
         <Text style={[styles.loginText, { color: theme.text }]}>Already have an account? </Text>
         <Text style={[styles.loginAction, { color: theme.accent }]}>Log in</Text>
       </Pressable>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

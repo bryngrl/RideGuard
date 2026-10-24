@@ -1,7 +1,8 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useRef, useState } from "react";
-import { Keyboard, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from "react-native";
+import { Keyboard, KeyboardAvoidingView, Platform, TextInput, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 
@@ -20,6 +21,8 @@ import { CustomTextInput } from "@/shared/ui/text-input";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 
 import { checkIsOldUser, ensureEmailPasswordProfile, loginAccount } from "../services/auth.api";
+import { postAuthDestination } from "../services/registration-progress";
+import { authErrorMessage, isUnverifiedAccount } from "../utils/auth-errors";
 import { useAuthStore } from "../store/auth.store";
 
 import { styles } from "./login-screen.styles";
@@ -39,6 +42,7 @@ export default function LoginScreen() {
   const [passwordTouched, setPasswordTouched] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [credentialError, setCredentialError] = useState<string | null>(null);
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
   const [isCredentialLoading, setIsCredentialLoading] = useState(false);
   const credentialPending = useRef(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -56,6 +60,7 @@ export default function LoginScreen() {
     if (credentialPending.current) return;
     setSubmitted(true);
     setCredentialError(null);
+    setVerificationEmail(null);
 
     if (!username.trim() || !password.trim()) {
       return;
@@ -71,17 +76,19 @@ export default function LoginScreen() {
       signedInWithPassword = true;
       await credential.user.reload();
       if (!credential.user.emailVerified) {
-        await signOut(auth);
-        setCredentialError("Verify your email using the link we sent, then try logging in again.");
+        setVerificationEmail(identity.email);
+        setCredentialError("Your email isn't verified yet. Please check your inbox to complete verification.");
         return;
       }
       const hasProfile = await ensureEmailPasswordProfile(credential.user);
+      const destination = await postAuthDestination(credential.user, hasProfile);
       useAuthStore.getState().setUser(credential.user);
       useAuthStore.getState().setIsOldUser(hasProfile);
-      router.replace(hasProfile ? "/(app)/(tabs)" : "/(onboarding)/register/profile");
+      router.replace(destination);
     } catch (error) {
       if (signedInWithPassword) await signOut(auth).catch(() => undefined);
-      setCredentialError(error instanceof Error ? error.message : "Login failed. Please try again.");
+      if (isUnverifiedAccount(error)) setVerificationEmail(username.includes("@") ? username.trim().toLowerCase() : "");
+      setCredentialError(authErrorMessage(error, "login"));
     } finally {
       credentialPending.current = false;
       setIsCredentialLoading(false);
@@ -105,13 +112,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      console.error("Google Sign-In failed:", error);
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : "Google Sign-In failed.",
-      );
+      setCredentialError(authErrorMessage(error, "login"));
     } finally {
       setIsGoogleLoading(false);
     }
@@ -129,10 +130,14 @@ export default function LoginScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
+        <KeyboardAwareFormScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
+          enableOnAndroid
+          enableAutomaticScroll
+          extraScrollHeight={Spacing.four}
         >
           <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
             <BackArrowIcon color={theme.text} />
@@ -141,7 +146,10 @@ export default function LoginScreen() {
           <View style={styles.introSection}>
             <ThemedText style={styles.title}>Log in</ThemedText>
             <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Enter your credentials or continue with Google.</ThemedText>
-            {registrationEmail ? <FormFeedback tone="info" message="Verify your email using the link we sent, then log in to finish setup." /> : null}
+            {credentialError ? <View style={styles.feedback}><FormFeedback message={credentialError} /></View> : null}
+            {verificationEmail !== null ? <Pressable onPress={() => router.push({ pathname: "/(public)/check-email", params: { email: verificationEmail } })} accessibilityRole="button" style={styles.verifyLink}>
+              <ThemedText style={styles.forgotText}>Resend Verification Link</ThemedText>
+            </Pressable> : null}
           </View>
           <View style={styles.formSection}>
             <View style={styles.fields}>
@@ -151,6 +159,7 @@ export default function LoginScreen() {
                 onChangeText={(value) => {
                   setUsername(value);
                   setCredentialError(null);
+                  setVerificationEmail(null);
                 }}
                 onBlur={() => setUsernameTouched(true)}
                 error={usernameError}
@@ -183,16 +192,17 @@ export default function LoginScreen() {
                 inputStyle={styles.input}
                 containerStyle={styles.field}
               />
-              <Pressable
-                onPress={() => router.push("/(public)/forgot-password")}
-                style={styles.forgotButton}
-                accessibilityRole="button"
-              >
-                <ThemedText style={styles.forgotText}>Forgot password?</ThemedText>
-              </Pressable>
+              <View style={styles.recoveryRow}>
+                <Pressable
+                  onPress={() => router.push("/(public)/forgot-password")}
+                  style={styles.forgotButton}
+                  accessibilityRole="button"
+                >
+                  <ThemedText style={styles.forgotText}>Forgot password?</ThemedText>
+                </Pressable>
+              </View>
             </View>
 
-            {credentialError ? <FormFeedback message={credentialError} /> : null}
             <Button
               title="Log in"
               onPress={handleCredentialSignIn}
@@ -242,7 +252,7 @@ export default function LoginScreen() {
               </ThemedText>
             </View>
           </View>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -69,6 +69,10 @@ export default function RootLayout() {
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />
           <Stack.Screen
+            name="(public)/check-email"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right", gestureEnabled: false }}
+          />
+          <Stack.Screen
             name="(public)/forgot-password"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />

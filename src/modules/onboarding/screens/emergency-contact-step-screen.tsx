@@ -15,6 +15,7 @@ import { CustomTextInput } from "@/shared/ui/text-input";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
+import { APIError } from "@/shared/api/errors";
 import { useState } from "react";
 import { Alert, Text, View } from "react-native";
 import { ProfilePayload, submitProfile } from "../services/onboarding.api";
@@ -113,11 +114,10 @@ export default function RegisterStepThreeScreen() {
 
       return true;
     } catch (error: unknown) {
-      console.error("PROFILE SUBMISSION ERROR:", error);
-
       Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to submit profile.",
+        error instanceof APIError && error.status === 422
+          ? "Your verified account already has a profile, so these onboarding details could not be saved. Your entries are kept on this device. Please contact support to finish setup."
+          : "We couldn't save your details. Please check your connection and try again.",
       );
 
       return false;
