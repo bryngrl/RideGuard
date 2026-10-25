@@ -18,6 +18,10 @@ It does not prove Android focus, native permissions, accessibility or real deliv
 
 ## Observations
 <!-- begin:observations -->
+2026-10-26: Done clears local ended recovery regardless of delivered, failed, or
+expired-unconfirmed results. Real HTTP checks reopen the trigger, start a fresh
+SOS with a new request ID, and confirm Done itself adds no send or stop request.
+Local regressions also fence late fetches and stop-persistence completion.
 2026-10-25: 47 tests passed after moving entry discovery before navigation.
 Real HTTP entry returned idle then active routes; fixture counts confirmed entry
 added no activation or stop. The rideguard member logged both GET lookups.

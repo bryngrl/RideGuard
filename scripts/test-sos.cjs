@@ -446,6 +446,103 @@ const deliveryFixture = (overrides = {}) => ({ status: "pending", observedAt: nu
   acceptedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 300000).toISOString(), tracking: "active",
   lastAttemptAt: null, lastCheckedAt: null, lastCheckError: null, failureCode: null, ...overrides });
 
+for (const result of ["delivered", "failed", "pending", "unknown", "timed_out", "send_failed"]) {
+  test(`Done dismisses an ended SOS with ${result} messages and permits a fresh SOS`, async () => {
+    const h = await harness();
+    await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+    const record = h.store.getState().record;
+    const submission = {
+      status: result === "send_failed" ? "failed" : "accepted",
+      updatedAt: record.endedAt,
+      delivery: result === "send_failed" ? null : deliveryFixture({
+        status: result === "timed_out" ? "pending" : result,
+        tracking: result === "timed_out" ? "timed_out" : ["delivered", "failed"].includes(result) ? "complete" : "active",
+      }),
+    };
+    record.recipients[0].initial = submission;
+    record.recipients[0].ended = { ...submission };
+    if (result === "timed_out") await h.advance(300001);
+    await h.store.getState().dismissEnded();
+    assert.equal(h.store.getState().record, null);
+    assert.equal(h.store.getState().recovery, null);
+    assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+    assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+    assert.equal(h.stats.starts, 1, "Done and re-entry never send an SMS");
+    h.deps.uuid = () => "00000000-0000-4000-8000-000000000002";
+    await h.store.getState().begin();
+    assert.equal(h.store.getState().phase, "countdown");
+    await h.advance();
+    assert.equal(h.stats.starts, 2);
+    assert.notEqual(h.store.getState().record.requestId, record.requestId);
+  });
+}
+
+test("Done cancels an in-flight ended lookup and ignores its late result", async () => {
+  const h = await harness();
+  await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+  const oldRecord = h.store.getState().record;
+  const query = deferred(); let oldSignal;
+  h.deps.api.get = (_owner, _id, signal) => { oldSignal = signal; return query.promise; };
+  const pending = h.store.getState().refresh(false);
+  await flush();
+  assert.equal(h.store.getState().refreshing, true);
+  await h.store.getState().dismissEnded();
+  assert.equal(oldSignal.aborted, true);
+  assert.equal(h.store.getState().refreshing, false);
+  query.resolve(oldRecord); await pending;
+  assert.equal(h.store.getState().phase, "idle");
+  assert.equal(h.store.getState().record, null);
+  assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+});
+
+test("a dismissed refresh cannot clear the loading state of a new lookup", async () => {
+  const h = await harness();
+  await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+  const oldRecord = h.store.getState().record;
+  const oldQuery = deferred(); h.deps.api.refreshStatus = () => oldQuery.promise;
+  const oldRefresh = h.store.getState().refreshStatus(); await flush();
+  await h.store.getState().dismissEnded();
+  const discovery = deferred(); h.deps.api.active = () => discovery.promise;
+  const newRefresh = h.store.getState().refresh(); await flush();
+  oldQuery.resolve(oldRecord); await oldRefresh;
+  assert.equal(h.store.getState().refreshing, true);
+  assert.equal(h.store.getState().record, null);
+  discovery.resolve(null); await newRefresh;
+  assert.equal(h.store.getState().refreshing, false);
+  assert.equal(h.store.getState().phase, "idle");
+});
+
+test("Done never discards a still-active SOS", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const record = h.store.getState().record;
+  await h.store.getState().dismissEnded();
+  assert.equal(h.store.getState().record, record);
+  assert.equal(h.store.getState().phase, "active");
+  assert.equal(h.storage.has("rideguard-sos-recovery"), true);
+});
+
+test("Done during stop persistence cannot restore ended recovery or start a stale follow-up lookup", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const write = deferred(); const save = h.deps.storage.setItem;
+  h.deps.storage.setItem = async (key, value) => {
+    const recovery = JSON.parse(value);
+    if (recovery.sosId && !recovery.stopPending) await write.promise;
+    return save(key, value);
+  };
+  let discoveries = 0; h.deps.api.active = async () => { discoveries++; return null; };
+  const stopping = h.store.getState().stop(); await flush();
+  assert.equal(h.store.getState().phase, "ended");
+  const dismissal = h.store.getState().dismissEnded();
+  assert.equal(h.store.getState().stopping, false);
+  write.resolve(); await stopping; await dismissal;
+  assert.equal(discoveries, 0);
+  assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+  assert.equal(h.store.getState().phase, "idle");
+  await h.store.getState().begin();
+  assert.equal(h.store.getState().phase, "countdown");
+  h.store.getState().cancelCountdown();
+});
+
 test("delivery labels preserve progress, legacy failure and service-side guidance", () => {
   const { messagePresentation } = load("src/modules/sos/types.ts");
   const s = { status: "accepted", updatedAt: new Date().toISOString() };
@@ -626,6 +723,35 @@ if (process.env.SOS_SIM_BASE_URL) {
     assert.equal(h.store.getState().record.recipients[0].initial.delivery.status, "delivered");
     assert.equal(h.store.getState().record.recipients[0].ended.delivery.status, "sent");
     const counts = await control("counts"); assert.equal(counts.starts, 1); assert.equal(counts.stops, 1); assert.equal(counts.refreshes, 1);
+  });
+
+  test("Done allows a new SOS over real HTTP after delivered, failed, or expired-unconfirmed results", async () => {
+    for (const status of ["delivered", "failed", "pending"]) {
+      await control("reset"); await control("mode?value=delivery");
+      const h = await harness();
+      h.deps.api = apiModule.createSosApi(async () => "local-fixture", base, 1000);
+      let attempt = 0; h.deps.uuid = () => `new-sos-attempt-${++attempt}`;
+      await h.store.getState().begin(); await h.advance();
+      for (let i = 0; i < 100 && h.store.getState().phase !== "active"; i++) await new Promise(r => setTimeout(r, 10));
+      await h.store.getState().stop();
+      await control("delivery?value=" + status);
+      await control("delivery?which=ended&value=" + status);
+      await h.store.getState().refresh(false);
+      const previous = h.store.getState().record;
+      assert.equal(previous.recipients[0].ended.delivery.status, status);
+      if (status === "pending") await h.advance(300001);
+      await h.store.getState().dismissEnded();
+      assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+      assert.equal((await control("counts")).starts, 1, "Done and entry do not send SMS");
+      await h.store.getState().begin(); await h.advance();
+      for (let i = 0; i < 100 && h.store.getState().phase !== "active"; i++) await new Promise(r => setTimeout(r, 10));
+      const current = h.store.getState().record;
+      assert.equal(current.status, "active");
+      assert.notEqual(current.sosId, previous.sosId);
+      assert.notEqual(current.requestId, previous.requestId);
+      const counts = await control("counts");
+      assert.equal(counts.starts, 2); assert.equal(counts.stops, 1);
+    }
   });
 
   test("an unreachable service keeps the attempt uncertain without an automatic resend", async () => {

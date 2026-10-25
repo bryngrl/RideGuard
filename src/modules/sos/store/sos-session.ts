@@ -64,6 +64,7 @@ export function createSosStore(deps: Dependencies) {
   const now = deps.now ?? Date.now;
   let version = 0;
   let revision = 0;
+  let refreshVersion = 0;
   let countdownVersion = 0;
   let timer: ReturnType<typeof setInterval> | undefined;
   let pendingLocation: SosLocation | null = null;
@@ -83,11 +84,12 @@ export function createSosStore(deps: Dependencies) {
   const store = createStore<SosState>((set, get) => {
     const accept = async (record: SosRecord, ownerVersion: number) => {
       if (version !== ownerVersion) return;
+      const acceptedRevision = revision;
       const recovery: Recovery = { uid: get().owner!, requestId: get().recovery?.requestId ?? record.requestId,
         body: null, sosId: record.sosId, stopPending: record.status !== "ended" && get().recovery?.sosId === record.sosId && (get().recovery?.stopPending ?? false) };
       set({ record, recovery, phase: record.status, error: recovery.stopPending ? "Stop has not been confirmed. Check status or retry stop." : null });
       try { await persist(recovery); }
-      catch { if (version === ownerVersion) set({ error: "SOS status is confirmed, but recovery could not be saved on this phone." }); }
+      catch { if (version === ownerVersion && revision === acceptedRevision) set({ error: "SOS status is confirmed, but recovery could not be saved on this phone." }); }
     };
     const submit = async () => {
       const { owner, recovery } = get();
@@ -206,6 +208,7 @@ export function createSosStore(deps: Dependencies) {
         if (!owner || !ready || !get().foreground || get().refreshing || get().stopping || ["preparing", "countdown", "submitting"].includes(phase)) return;
         const ownerVersion = version;
         const queryRevision = revision;
+        const refreshAttempt = ++refreshVersion;
         set({ refreshing: true });
         try {
           const [lookup, active] = await Promise.allSettled([
@@ -229,13 +232,14 @@ export function createSosStore(deps: Dependencies) {
           } else if (recovery) {
             set({ phase: "checking", error: "The saved SOS is unavailable. Check status again before starting another." });
           } else set({ phase: "idle", error: null });
-        } finally { if (version === ownerVersion) set({ refreshing: false }); }
+        } finally { if (version === ownerVersion && refreshVersion === refreshAttempt) set({ refreshing: false }); }
       },
       refreshStatus: async () => {
         const { owner, record } = get();
         if (!record) { await get().refresh(); return; }
         if (!owner || !get().foreground || get().refreshing || get().stopping) return;
         const ownerVersion = version; const queryRevision = revision;
+        const refreshAttempt = ++refreshVersion;
         set({ refreshing: true });
         try {
           let updated: SosRecord;
@@ -254,7 +258,7 @@ export function createSosStore(deps: Dependencies) {
         } catch (error) {
           if (version === ownerVersion && revision === queryRevision) set({ notice: null, error: error instanceof SosApiError && error.status === 404
             ? "The saved SOS is unavailable." : "Could not refresh message status. Showing last-known results. Retry status when connected." });
-        } finally { if (version === ownerVersion) set({ refreshing: false }); }
+        } finally { if (version === ownerVersion && refreshVersion === refreshAttempt) set({ refreshing: false }); }
       },
       retry: async () => { if (get().phase === "retry" && get().foreground) await submit(); },
       stop: async () => {
@@ -262,23 +266,29 @@ export function createSosStore(deps: Dependencies) {
         if (!owner || !record || record.status === "ended" || get().stopping) return;
         const ownerVersion = version;
         revision++;
+        const stopRevision = revision;
         const recovery: Recovery = { uid: owner, requestId: get().recovery?.requestId ?? record.requestId,
           body: null, sosId: record.sosId, stopPending: true };
         set({ stopping: true, recovery, error: null });
         try {
           await persist(recovery);
-          if (version !== ownerVersion) return;
-          await accept(await deps.api.stop(owner, record.sosId, controller.signal), ownerVersion);
+          if (version !== ownerVersion || revision !== stopRevision) return;
+          const ended = await deps.api.stop(owner, record.sosId, controller.signal);
+          if (version !== ownerVersion || revision !== stopRevision) return;
+          await accept(ended, ownerVersion);
         } catch {
-          if (version === ownerVersion) set({ error: "Stop could not be confirmed. Check status or retry stop." });
+          if (version === ownerVersion && revision === stopRevision) set({ error: "Stop could not be confirmed. Check status or retry stop." });
         } finally {
-          if (version === ownerVersion) { set({ stopping: false }); await get().refresh(); }
+          if (version === ownerVersion && revision === stopRevision) { set({ stopping: false }); await get().refresh(); }
         }
       },
       dismissEnded: async () => {
         if (get().record?.status !== "ended") return;
         revision++;
-        set({ record: null, recovery: null, phase: "idle", error: null });
+        refreshVersion++;
+        controller.abort(); controller = new AbortController();
+        set({ record: null, recovery: null, phase: "idle", error: null, notice: null,
+          refreshing: false, stopping: false, lastFetchedAt: null, nextPollAt: 0, lookupFailures: 0 });
         await persist(null).catch(() => undefined);
       },
     };

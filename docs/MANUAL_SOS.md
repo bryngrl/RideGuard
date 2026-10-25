@@ -127,6 +127,11 @@ logs in Git. No dependency or simulation is published.
 6. No status-change push, sound, vibration or background mobile polling was added.
    The cards use the existing theme preference, labels and icons, with a 44px refresh
    target and polite status announcements. Physical accessibility is still unverified.
+7. Done dismisses a confirmed ended SOS and clears its local recovery state,
+   regardless of delivered, failed, pending, or timed-out message results. In-flight
+   lookups are cancelled and late results cannot reopen the dismissed screen.
+   Reopening SOS permits a new countdown with a new request ID. Delivery tracking
+   on the server continues independently; an unconfirmed delivery is not a failure.
 
 Local checks and remaining acceptance/device checks are recorded in
 `docs/SOS_STATUS_VERIFICATION.md`. Do not use real SMS to reproduce these fixtures.
