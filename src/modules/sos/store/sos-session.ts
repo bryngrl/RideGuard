@@ -5,6 +5,14 @@ import type { Recovery, SosInput, SosLocation, SosRecord } from "../types";
 import { trackingDeadline } from "../types";
 
 export const RECOVERY_KEY = "rideguard-sos-recovery";
+export type LocationDiagnostic = {
+  event: "capture_started" | "capture_finished" | "capture_failed" | "capture_late" | "submission_location" | "confirmed_location";
+  elapsedMs?: number;
+  reason?: "included" | "capture_pending" | "capture_failed" | "no_fix" | "invalid_or_stale_fix";
+  errorCode?: string;
+  requestId?: string;
+  hasLocation?: boolean;
+};
 type Phase = "idle" | "preparing" | "countdown" | "submitting" | "checking" | "retry" | "active" | "ended";
 type Dependencies = {
   api: SosApi;
@@ -14,6 +22,7 @@ type Dependencies = {
   permission(): Promise<boolean>;
   capture(): Promise<SosLocation | null>;
   uuid(): string;
+  locationDiagnostic?(event: LocationDiagnostic): void;
   now?: () => number;
 };
 export type SosState = {
@@ -90,7 +99,11 @@ export function createSosStore(deps: Dependencies) {
       catch { if (version === ownerVersion) set({ phase: "retry", error: "Could not save SOS recovery data. No request was sent. Try again." }); return; }
       if (version !== ownerVersion) return;
       if (!get().foreground) { set({ phase: "retry", error: "SOS was not submitted before the app left the foreground. Retry when ready." }); return; }
-      try { await accept(await deps.api.start(owner, recovery.body, controller.signal), ownerVersion); }
+      try {
+        const record = await deps.api.start(owner, recovery.body, controller.signal);
+        deps.locationDiagnostic?.({ event: "confirmed_location", requestId: recovery.requestId, hasLocation: !!record.location });
+        await accept(record, ownerVersion);
+      }
       catch (error) {
         if (version !== ownerVersion) return;
         const definite = error instanceof SosApiError && (error.code === "SOS_DISABLED" || [400, 401, 403, 404, 409, 422].includes(error.status));
@@ -142,23 +155,47 @@ export function createSosStore(deps: Dependencies) {
         const ownerVersion = version;
         const attemptVersion = ++countdownVersion;
         set({ phase: "preparing", error: null, notice: null });
-        const share = deps.shareLocation();
+        if (!deps.shareLocation()) {
+          get().cancelCountdown("Allow location sharing with emergency contacts to use SOS.");
+          return;
+        }
         let permitted = false;
-        if (share) { try { permitted = await deps.permission(); } catch { /* Continue without location. */ } }
+        try { permitted = await deps.permission(); } catch { /* Permission could not be confirmed. */ }
         if (version !== ownerVersion || countdownVersion !== attemptVersion) return;
+        if (!permitted || !deps.shareLocation()) {
+          get().cancelCountdown("Location permission and sharing with emergency contacts are required to use SOS. Tap again to allow location access.");
+          return;
+        }
         if (!get().foreground) { get().cancelCountdown("SOS preparation cancelled because the app was interrupted. No request was sent. Tap again when ready."); return; }
         const deadline = now() + 5000;
+        const captureStartedAt = now();
+        let captureState: "pending" | "failed" | "finished" = "pending";
         set({ phase: "countdown", remaining: 5 });
+        deps.locationDiagnostic?.({ event: "capture_started" });
         if (permitted) void deps.capture().then((fix) => {
-          if (version === ownerVersion && countdownVersion === attemptVersion && get().phase === "countdown") pendingLocation = fix;
-        }).catch(() => undefined);
+          const current = version === ownerVersion && countdownVersion === attemptVersion && get().phase === "countdown";
+          captureState = "finished";
+          deps.locationDiagnostic?.({ event: current ? "capture_finished" : "capture_late", elapsedMs: now() - captureStartedAt, hasLocation: !!fix });
+          if (current) pendingLocation = fix;
+        }).catch((error: unknown) => {
+          captureState = "failed";
+          const code = error && typeof error === "object" && "code" in error ? String(error.code) : "unknown";
+          deps.locationDiagnostic?.({ event: "capture_failed", elapsedMs: now() - captureStartedAt, errorCode: code });
+        });
         timer = setInterval(() => {
           if (version !== ownerVersion || countdownVersion !== attemptVersion || get().phase !== "countdown") return;
           const remaining = Math.max(0, Math.ceil((deadline - now()) / 1000));
           set({ remaining });
           if (remaining > 0) return;
+          if (!deps.shareLocation()) {
+            get().cancelCountdown("SOS cancelled because location sharing was turned off. No request was sent.");
+            return;
+          }
           clearInterval(timer); timer = undefined;
           const body: SosInput = { requestId: deps.uuid(), location: usableLocation(pendingLocation, now()), ...(alertId ? { alertId } : {}) };
+          deps.locationDiagnostic?.({ event: "submission_location", requestId: body.requestId, elapsedMs: now() - captureStartedAt,
+            hasLocation: !!body.location, reason: body.location ? "included" : captureState === "pending" ? "capture_pending" :
+              captureState === "failed" ? "capture_failed" : pendingLocation ? "invalid_or_stale_fix" : "no_fix" });
           pendingLocation = null;
           set({ recovery: { uid: get().owner!, requestId: body.requestId, body, sosId: null, stopPending: false } });
           void submit();

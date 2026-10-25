@@ -1,13 +1,21 @@
 # Manual SOS mobile flow
 
 The existing trigger, countdown, and status screens use one shared SOS store.
-The trigger loads saved emergency contacts and the user's active SOS. The
+The main screen's SOS button checks saved recovery and active SOS status before
+navigating. It shows loading feedback, blocks repeated taps, and keeps failed
+discovery on the main screen for retry. Active/recovery sessions open the status
+screen; an idle session opens the trigger without a duplicate entry check.
+The trigger loads saved emergency contacts. Direct entry still checks status,
+and returning from the background checks again. The
 countdown lasts five seconds and uses a deadline. Cancel, back, blur, or leaving
 the foreground before expiry cancels it; it is never resumed after backgrounding.
 
 Location sharing follows `locationWithContacts`, after settings hydration.
-Sharing off makes no permission or location request. Sharing on requests only
-foreground permission before the countdown. Denial continues without location.
+Sharing off prompts for consent before enabling sharing. SOS requires both
+sharing consent and foreground location permission before the countdown.
+Denied or failed permission checks block SOS. When native prompts are blocked,
+the app offers to open phone settings; return and tap SOS again after granting access.
+Turning sharing off during the countdown cancels the attempt.
 One current fix is attempted during the countdown; stale/invalid or late fixes
 are not added to an already-submitted request.
 

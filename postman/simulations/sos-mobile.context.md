@@ -18,6 +18,11 @@ It does not prove Android focus, native permissions, accessibility or real deliv
 
 ## Observations
 <!-- begin:observations -->
+2026-10-25: 47 tests passed after moving entry discovery before navigation.
+Real HTTP entry returned idle then active routes; fixture counts confirmed entry
+added no activation or stop. The rideguard member logged both GET lookups.
+Local tests also covered failed discovery, logout/background, an in-flight
+lookup, and skipping the trigger's duplicate entry check while retaining resume checks.
 2026-10-25: 38 tests passed, including real HTTP activation recovery, errors, bounded
 token timeout, both delivery rows and refresh-status POST followed by GET. The sole
 rideguard member served traffic; none stayed silent. Status-only operations did not

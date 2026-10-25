@@ -4,13 +4,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BrandColors, Typography } from "@/shared/theme";
 import { useTheme } from "@/shared/hooks";
+import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { SlideButton } from "@/shared/ui/slide-button";
 import { Button } from "@/shared/ui/button";
 import { useSosStore } from "../store/sos.store";
 import { useSosStatus } from "../hooks/use-sos-lifecycle";
-import { ageLabel, hasPending, messagePresentation, type Submission } from "../types";
+import { ageLabel, hasPending, messagePresentation, type SosRecord, type Submission } from "../types";
 import { styles } from "./sos-active-screen.styles";
+import { countdownColors } from "./sos-countdown-screen.styles";
 
 function MessageRow({ label, value, now, color }: { label: string; value: Submission; now: number; color: string }) {
   const presentation = messagePresentation(value, now);
@@ -27,12 +29,56 @@ function MessageRow({ label, value, now, color }: { label: string; value: Submis
   </View>;
 }
 
+function ContactCard({ recipient, now }: { recipient: SosRecord["recipients"][number]; now: number }) {
+  const colors = useTheme();
+  const dark = useColorScheme() === "dark";
+  const [expanded, setExpanded] = useState(false);
+  const presentation = messagePresentation(recipient.initial, now);
+  const tones = {
+    Delivered: { text: dark ? "#86EFAC" : "#219447", badge: dark ? "#163824" : "#E9F9ED", bar: "#20D32B", steps: 3 },
+    Sent: { text: dark ? "#93B4FF" : "#2460E4", badge: dark ? "#1E2D4E" : "#F3F7FF", bar: "#2460E4", steps: 2 },
+    Submitted: { text: dark ? "#CBD5E1" : "#405171", badge: dark ? "#253147" : "#EEF3F7", bar: "#8E8E8E", steps: 1 },
+  };
+  const failed = presentation.label === "Failed";
+  const tone = tones[presentation.label as keyof typeof tones] ?? {
+    text: failed ? colors.error : colors.textMuted,
+    badge: failed ? colors.errorBackground : colors.backgroundSelected,
+    bar: failed ? colors.error : colors.textMuted, steps: 0,
+  };
+  const initials = recipient.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase() || "?";
+  return <View style={[styles.contactCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Pressable onPress={() => setExpanded(!expanded)} accessibilityRole="button"
+      accessibilityLabel={`${recipient.name}: ${presentation.label}. ${presentation.detail}`}
+      accessibilityHint="Show or hide message details" accessibilityState={{ expanded }} style={styles.contactHeader}>
+      <View style={[styles.avatar, { backgroundColor: dark ? colors.backgroundSelected : "#EEF4FF" }]}>
+        <Text style={[styles.initials, { color: dark ? colors.accent : "#2460E4" }]}>{initials}</Text>
+      </View>
+      <Text style={[styles.contactName, { color: colors.text }]} numberOfLines={2}>{recipient.name}</Text>
+      <View style={[styles.statusBadge, { backgroundColor: tone.badge }]}>
+        <Text accessibilityLiveRegion="polite" style={[styles.statusText, { color: tone.text }]}>{presentation.label}</Text>
+      </View>
+    </Pressable>
+    <View style={styles.progressTrack} accessible accessibilityLabel={`SOS message: ${presentation.label}. ${presentation.detail}`}>
+      {[1, 2, 3].map((step) => <View key={step} style={[styles.progressSegment, {
+        backgroundColor: step <= tone.steps ? tone.bar : dark ? colors.border : "#E3E5E9",
+      }]} />)}
+    </View>
+    {failed && <Text style={[Typography.bodySmall, { color: colors.error }]}>{presentation.detail}</Text>}
+    {recipient.initial.status === "unknown" && <Text style={[Typography.bodySmall, { color: colors.text }]}>{presentation.detail}</Text>}
+    {recipient.ended && <MessageRow label="SOS ended message" value={recipient.ended} now={now} color={colors.text} />}
+    {expanded && <View style={styles.contactDetails}>
+      <Text selectable style={[Typography.bodySmall, { color: colors.text }]}>{recipient.phone}</Text>
+      <MessageRow label="SOS message" value={recipient.initial} now={now} color={colors.text} />
+    </View>}
+  </View>;
+}
+
 export function SosActiveScreen() {
   const router = useRouter();
+  const sliderColors = countdownColors[useColorScheme()];
   const state = useSosStore();
   useSosStatus(state.ready, true);
   const record = state.record;
-  const colors = useTheme();
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
   const title = record?.status === "active" ? "SOS active" : record?.status === "ended" ? "SOS ended by you" :
@@ -44,9 +90,9 @@ export function SosActiveScreen() {
     contentStyle={[styles.content, { gap: 20 }]} footerStyle={styles.footer}
     footer={record?.status === "active" ? <View style={{ gap: 12 }}>
       <SlideButton key={state.stopping ? "stopping" : "ready"} label={state.stopping ? "Stopping SOS" : "Slide to stop SOS"}
-        disabled={state.stopping} onComplete={() => void state.stop()} trackColor="#FFE1E3" borderColor="#FFE1E3"
-        thumbColor={BrandColors.error} labelColor={BrandColors.error} arrowColor={BrandColors.secondary} />
-      <Button title="Stop SOS" variant="secondary" isLoading={state.stopping} onPress={() => void state.stop()} />
+          disabled={state.stopping} onComplete={() => void state.stop()} direction="right" thumbSymbol="×"
+          style={styles.slider} trackColor={sliderColors.track} borderColor={sliderColors.border}
+          thumbColor="#FFFFFF" labelColor="#FFFFFF" arrowColor="#DF1014" />
     </View> : undefined}>
     <Text accessibilityLiveRegion="polite" style={[Typography.largeTitle, styles.title]}>{title}</Text>
     <Text style={[Typography.body, styles.description]}>
@@ -73,11 +119,9 @@ export function SosActiveScreen() {
         : "Location unavailable or sharing disabled."}</Text>
       {record.recipients.some((r) => r.initial.errorCode === "location_omitted_message_limit") &&
         <Text style={[Typography.bodySmall, styles.description]}>Location was omitted because the SMS length limit was reached.</Text>}
-      {record.recipients.map((recipient) => <View key={recipient.contactId} style={{ gap: 12, padding: 16, borderRadius: 12, backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }}>
-        <Text style={[Typography.button, { color: colors.text }]}>{recipient.name} · {recipient.phone}</Text>
-        <MessageRow label="SOS message" value={recipient.initial} now={now} color={colors.text} />
-        {recipient.ended && <MessageRow label="SOS ended message" value={recipient.ended} now={now} color={colors.text} />}
-      </View>)}
+      <View style={styles.contactsList}>
+        {record.recipients.map((recipient) => <ContactCard key={recipient.contactId} recipient={recipient} now={now} />)}
+      </View>
       {record.recipients.some((r) => r.initial.status === "unknown" || r.ended?.status === "unknown") &&
         <Text style={[Typography.bodySmall, styles.description]}>An unknown submission may have reached the contact. It will not be resent automatically.</Text>}
     </>}
