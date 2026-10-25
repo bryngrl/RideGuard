@@ -7,12 +7,13 @@ export const styles = StyleSheet.create({
   logoContainer: { alignItems: "flex-start", marginBottom: Spacing.three },
   headerContainer: { alignItems: "flex-start", marginBottom: Spacing.four },
   formContainer: {
+    flexGrow: 1,
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
   },
   buttonContainer: {
     marginTop: "auto",
-    paddingTop: Spacing.three,
+    paddingTop: Spacing.five,
     alignItems: "flex-end",
   },
 });

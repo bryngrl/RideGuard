@@ -6,11 +6,13 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
+import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
+import { FormFeedback } from "@/shared/ui/form-feedback";
 import * as Location from "expo-location";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
-import { AppState, Linking, Text, View } from "react-native";
+import { AppState, Linking, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { styles } from "./permission-screen.styles";
 
@@ -21,6 +23,7 @@ export default function PermissionsScreen() {
   const [locationGranted, setLocationGranted] = useState(false);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const checkPermissions = async () => {
     const location = await Location.getForegroundPermissionsAsync();
@@ -31,13 +34,13 @@ export default function PermissionsScreen() {
   };
 
   useEffect(() => {
-    checkPermissions();
+    void checkPermissions().catch(() => setPermissionError("Couldn't check permissions. Try again."));
   }, []);
 
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
-        checkPermissions();
+        void checkPermissions().catch(() => setPermissionError("Couldn't check permissions. Try again."));
       }
     });
 
@@ -48,6 +51,7 @@ export default function PermissionsScreen() {
     if (isLoading) return;
 
     setIsLoading(true);
+    setPermissionError(null);
 
     try {
       // Request location first
@@ -77,9 +81,9 @@ export default function PermissionsScreen() {
       }
 
       // Both permissions granted
-      router.replace("/devices/camera");
+      router.push("/(onboarding)/devices/camera");
     } catch (error) {
-      console.error("Permission error:", error);
+      setPermissionError("Couldn't update permissions. Check phone settings.");
     } finally {
       setIsLoading(false);
     }
@@ -100,7 +104,7 @@ export default function PermissionsScreen() {
         },
       ]}
     >
-      <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.stepperContainer}>
           <Stepper currentStep={4} steps={10} size={6} />
         </View>
@@ -224,16 +228,20 @@ export default function PermissionsScreen() {
 
         {/* FIXED BOTTOM BUTTON */}
         <View style={styles.buttonContainer}>
+          {permissionError ? <View style={{ width: "100%", marginBottom: Spacing.three }}><FormFeedback message={permissionError} /></View> : null}
+          <Button title="Back" variant="ghost" fullWidth={false} style={{ width: "48%" }}
+            leftIcon={<BackArrowIcon color={theme.text} />} disabled={isLoading} onPress={() => router.back()} />
           <Button
             title={buttonTitle}
             variant="primary"
             size="md"
-            fullWidth
+            fullWidth={false}
+            style={{ width: "48%" }}
             onPress={handleGoToSettings}
             isLoading={isLoading}
           />
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }

@@ -53,16 +53,16 @@ export async function sendVerificationForUser(user: User): Promise<"sent" | "alr
 export function verificationEmailMessage(error: unknown): string {
   const code = error instanceof VerificationEmailError ? error.code : firebaseErrorCode(error);
   if (code === "auth/too-many-requests") {
-    return "Too many email requests. Wait a while before trying again.";
+    return "Too many email requests. Try again later.";
   }
   if (code === "auth/network-request-failed") {
-    return "Could not reach Firebase. Check your connection and try again.";
+    return "Couldn't connect. Try again.";
   }
   if (!(error instanceof VerificationEmailError)) {
-    return "Could not send a verification link. Check your connection and try again.";
+    return "Couldn't send verification link. Try again.";
   }
   if (error.stage === "sign-in") {
-    return "We couldn't confirm your account to send a link. Check your password and try again.";
+    return "Couldn't verify account. Check your password.";
   }
-  return "We couldn't send a verification link right now. Try again in a moment.";
+  return "Couldn't send verification link. Try again.";
 }

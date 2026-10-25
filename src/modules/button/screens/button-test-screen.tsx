@@ -35,7 +35,7 @@ export function ButtonTestScreen({
 
   const handleSkip = () => {
     if (fromSettings) router.dismissTo("/devices");
-    else router.replace("/(onboarding)/register/complete-setup");
+    else router.replace("/(onboarding)/register/mpin");
   };
 
   const renderButton = (color: ButtonColor) => (
@@ -99,7 +99,7 @@ export function ButtonTestScreen({
           <Button
             title="Continue"
             onPress={() =>
-              fromSettings ? router.dismissTo("/devices") : router.replace("/(onboarding)/register/complete-setup")
+              fromSettings ? router.dismissTo("/devices") : router.replace("/(onboarding)/register/mpin")
             }
             style={styles.continueButton}
           />

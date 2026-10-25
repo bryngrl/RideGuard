@@ -16,14 +16,16 @@ interface AuthFormLayoutProps {
   backDisabled?: boolean;
   variant?: "branded" | "recovery";
   children: ReactNode;
+  notification?: ReactNode;
 }
 
 /** Shared auth layouts: branded forms and the compact Find Your Account format. */
-export function AuthFormLayout({ title, description, onBack, backDisabled, variant = "branded", children }: AuthFormLayoutProps) {
+export function AuthFormLayout({ title, description, onBack, backDisabled, variant = "branded", children, notification }: AuthFormLayoutProps) {
   const theme = useTheme();
   const recovery = variant === "recovery";
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={styles.container}>
       <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <KeyboardAwareFormScrollView
           contentContainerStyle={styles.content}
@@ -53,6 +55,8 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
           </View>
         </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
+      {notification}
+      </View>
     </SafeAreaView>
   );
 }

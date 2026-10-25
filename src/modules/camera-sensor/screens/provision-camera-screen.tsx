@@ -60,7 +60,7 @@ export function ProvisionCameraScreen() {
       setAlertState({
         visible: true,
         status: "error",
-        message: "You must be signed in to connect a device.",
+        message: "Log in to connect a device.",
       });
 
       setTimeout(() => {
@@ -128,7 +128,7 @@ export function ProvisionCameraScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
-        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={8} size={6} /></View>}
+        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={10} size={6} /></View>}
         <View style={[styles.topSection, fromSettings && styles.settingsTopSection]}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />

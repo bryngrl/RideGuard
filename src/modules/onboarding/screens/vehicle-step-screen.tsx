@@ -39,17 +39,17 @@ export default function RegisterStepTwoScreen() {
     let isValid = true;
 
     if (!vehicleBrand.trim()) {
-      setVehicleBrandError("Please enter your vehicle brand.");
+      setVehicleBrandError("Enter your vehicle brand.");
       isValid = false;
     }
 
     if (!vehicleModel.trim()) {
-      setVehicleModelError("Please enter your vehicle model.");
+      setVehicleModelError("Enter your vehicle model.");
       isValid = false;
     }
 
     if (!plateNumber.trim()) {
-      setPlateNumberError("Please enter your plate number.");
+      setPlateNumberError("Enter your plate number.");
       isValid = false;
     } else if (!validPlateInput(plateNumber)) {
       setPlateNumberError("Enter a valid vehicle plate number.");
@@ -57,7 +57,7 @@ export default function RegisterStepTwoScreen() {
     }
 
     if (!color.trim()) {
-      setColorError("Please enter your vehicle color.");
+      setColorError("Enter your vehicle color.");
       isValid = false;
     }
 
@@ -97,6 +97,8 @@ export default function RegisterStepTwoScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             ref={brandRef}
+            returnKeyType="next"
+            onSubmitEditing={() => modelRef.current?.focus()}
             label="Vehicle Brand"
             required
             value={vehicleBrand}
@@ -110,6 +112,8 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             ref={modelRef}
+            returnKeyType="next"
+            onSubmitEditing={() => plateRef.current?.focus()}
             label="Vehicle Model"
             required
             value={vehicleModel}
@@ -123,6 +127,8 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             ref={plateRef}
+            returnKeyType="next"
+            onSubmitEditing={() => colorRef.current?.focus()}
             label="Plate Number"
             required
             autoCapitalize="characters"
@@ -140,6 +146,8 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             ref={colorRef}
+            returnKeyType="done"
+            onSubmitEditing={handleNextStep}
             label="Color"
             required
             value={color}

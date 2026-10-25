@@ -17,6 +17,8 @@ import { auth } from "@/lib/firebase";
 import { styles } from "./create-account-screen.styles";
 import { registerAccount } from "../services/auth.api";
 import { markRegistrationOnboardingPending } from "../services/registration-progress";
+import { useRegistrationDraft } from "../store/registration-draft.store";
+import { sendVerificationForUser } from "../services/verification-email";
 import { authErrorMessage, registrationFieldErrors } from "../utils/auth-errors";
 import { getConfirmPasswordError, getPasswordError } from "../utils/password-validation";
 
@@ -32,10 +34,11 @@ export default function CreateAccountScreen() {
   const usernameRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
   const confirmRef = useRef<TextInput>(null);
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const { username, email, password, confirmPassword, created, update } = useRegistrationDraft();
+  const setUsername = (username: string) => update({ username });
+  const setEmail = (email: string) => update({ email });
+  const setPassword = (password: string) => update({ password });
+  const setConfirmPassword = (confirmPassword: string) => update({ confirmPassword });
   const [touched, setTouched] = useState<TouchedFields>({});
   const [submitted, setSubmitted] = useState(false);
   const [formMessage, setFormMessage] = useState<string | null>(null);
@@ -74,20 +77,35 @@ export default function CreateAccountScreen() {
     setIsLoading(true);
     try {
       const registrationEmail = email.trim().toLowerCase();
-      await registerAccount({ username: username.trim(), email: registrationEmail, password });
-      await markRegistrationOnboardingPending(registrationEmail);
-      // /auth/register sends the first Firebase verification link. Signing in
-      // here only lets the next screen refresh status or resend without keeping
-      // a password in route parameters or persistent storage.
-      try {
-        await signInWithEmailAndPassword(auth, registrationEmail, password);
-      } catch {
-        // The account still exists. The Check Your Email screen can ask for a
-        // fresh password if the Firebase session is not ready yet.
+      const registrationUsername = username.trim().toLowerCase();
+      if (created && (created.email !== registrationEmail || created.username.toLowerCase() !== registrationUsername)) {
+        setFormMessage("Account already created. Restore the original username and email.");
+        return;
       }
-      setPassword("");
-      setConfirmPassword("");
-      router.replace({ pathname: "/(public)/check-email", params: { email: registrationEmail } });
+      if (!created) {
+        await registerAccount({ username: registrationUsername, email: registrationEmail, password });
+        update({ created: { username: registrationUsername, email: registrationEmail } });
+        await markRegistrationOnboardingPending(registrationEmail);
+      }
+      // The current backend creates the Firebase user but does not send the link.
+      // Retain its authenticated session for verification polling and resend.
+      try {
+        const { user } = await signInWithEmailAndPassword(auth, registrationEmail, password);
+        if (!created && !user.emailVerified) {
+          try {
+            await sendVerificationForUser(user);
+            update({ resendAt: Date.now() + 60_000 });
+          } catch {
+            // Account creation succeeded. Keep verification accessible so the
+            // existing resend action can recover delivery without another create.
+            update({ deliveryFailed: true });
+          }
+        }
+      } catch {
+        setFormMessage("Account created. Check your password and retry verification.");
+        return;
+      }
+      router.push({ pathname: "/(public)/check-email", params: { email: registrationEmail } });
     } catch (error) {
       const fields = registrationFieldErrors(error);
       setServerErrors(fields);
@@ -200,7 +218,7 @@ export default function CreateAccountScreen() {
         />
       </View>
 
-      <Button title="Create account" onPress={handleSubmit} isLoading={isLoading} disabled={isLoading} style={styles.submitButton} />
+      <Button title={created ? "Continue verification" : "Create account"} onPress={handleSubmit} isLoading={isLoading} disabled={isLoading} style={styles.submitButton} />
 
       <Pressable
         onPress={() => router.replace("/(public)/sign-in")}

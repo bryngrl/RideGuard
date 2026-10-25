@@ -37,7 +37,11 @@ export interface CurrentUser {
 }
 
 export async function registerAccount(input: { username: string; email: string; password: string }) {
-  const response = await apiClient.post<StandardEnvelope<{ email: string }>>("/auth/register", input);
+  const response = await apiClient.post<StandardEnvelope<{ email: string }>>("/auth/register", {
+    ...input,
+    username: input.username.trim().toLowerCase(),
+    email: input.email.trim().toLowerCase(),
+  });
   return unwrap(response);
 }
 
@@ -69,6 +73,12 @@ function isRegistrationNoLongerPending(error: unknown): error is APIError {
   return error instanceof APIError && /registration is no longer pending/i.test(error.message);
 }
 
+async function hasRegistrationProfile(token: string): Promise<boolean> {
+  const response = await apiClient.get<StandardEnvelope<Record<string, unknown> | null>>("/profile/me", token);
+  const profile = unwrap(response);
+  return profile !== null && typeof profile === "object";
+}
+
 /** Share the verification request between login and the auth-state listener. */
 export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
   const existing = profileChecks.get(user.uid);
@@ -76,21 +86,24 @@ export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
   const pending = (async () => {
     const token = await user.getIdToken(true);
     const hasProfile = await checkIsOldUser(token);
-    if (!hasProfile) {
-      try {
-        await verifyRegisteredAccount(token);
-      } catch (error) {
-        if (!isRegistrationNoLongerPending(error)) throw error;
+    if (hasProfile) return true;
+    if (await hasRegistrationProfile(token)) return false;
+    try {
+      await verifyRegisteredAccount(token);
+    } catch (error) {
+      if (!isRegistrationNoLongerPending(error)) throw error;
 
         // Another request may have completed registration between the status
         // check and verify. Only accept that result if the profile now exists.
-        if (await checkIsOldUser(await user.getIdToken(true))) return true;
-        throw new Error(
-          "Your email is verified, but your RideGuard profile could not be found. Please contact support to finish account setup.",
-        );
-      }
+      const freshToken = await user.getIdToken(true);
+      if (await hasRegistrationProfile(freshToken)) return checkIsOldUser(freshToken);
+      throw new Error(
+        "Your email is verified, but your RideGuard profile could not be found. Please contact support to finish account setup.",
+      );
     }
-    return true;
+    // Verification creates an identity stub. The backend now reports old-user
+    // only after personalInfo exists, so do not skip unfinished onboarding.
+    return checkIsOldUser(await user.getIdToken(true));
   })();
   profileChecks.set(user.uid, pending);
   void pending.finally(() => profileChecks.delete(user.uid)).catch(() => undefined);

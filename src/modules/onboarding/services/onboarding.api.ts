@@ -26,7 +26,7 @@ export function submitProfile(
   payload: ProfilePayload,
   firebaseToken: string,
 ) {
-  return apiClient.post("/profile/personal-info", payload, firebaseToken);
+  return apiClient.post<DeviceApiResponse>("/profile/personal-info", payload, firebaseToken);
 }
 
 export function claimDevice(

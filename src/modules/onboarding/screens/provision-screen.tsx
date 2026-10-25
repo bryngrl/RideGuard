@@ -11,6 +11,7 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
+import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -61,7 +62,7 @@ export default function ButtonProvisionScreen() {
       setAlertState({
         visible: true,
         status: "error",
-        message: "You must be signed in to connect a device.",
+        message: "Log in to connect a device.",
       });
 
       setTimeout(() => {
@@ -126,6 +127,7 @@ export default function ButtonProvisionScreen() {
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
+        {!fromSettings && <Stepper currentStep={7} steps={10} />}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />

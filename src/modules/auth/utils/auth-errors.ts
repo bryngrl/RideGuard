@@ -16,48 +16,51 @@ export function isUnverifiedAccount(error: unknown): boolean {
 export function authErrorMessage(error: unknown, action: "login" | "register" | "status"): string {
   const code = codeOf(error);
   if (code === "auth/network-request-failed" || error instanceof TypeError) {
-    return "You're offline. Check your connection and try again.";
+    return "You're offline. Check your connection.";
   }
   if (code === "auth/too-many-requests" || error instanceof APIError && error.status === 429) {
-    return "Too many attempts. Please wait a while and try again.";
+    return "Too many attempts. Try again later.";
   }
   if (code === "auth/user-disabled" || error instanceof APIError && /disabled/i.test(error.message)) {
-    return "This account is unavailable. Please contact support.";
+    return "Account unavailable. Contact support.";
   }
   if (isUnverifiedAccount(error)) {
-    return "Your email isn't verified yet. Please check your inbox to complete verification.";
+    return "Email not verified. Check your inbox.";
   }
   if (error instanceof Error && /verified, but your RideGuard profile could not be found|registration is no longer pending/i.test(error.message)) {
-    return "Your email is verified, but account setup isn't complete. Please contact support.";
+    return "Account setup incomplete. Contact support.";
   }
   if (action === "login" && (code === "auth/invalid-credential" || code === "auth/wrong-password" ||
       error instanceof APIError && error.status === 401)) {
-    return "Incorrect username, email, or password. Please try again.";
+    return "Incorrect username, email, or password.";
   }
   if (action === "register" && error instanceof APIError) {
     if (error.status === 409 || /already (exists|registered|taken)|duplicate/i.test(error.message)) {
-      return "That username or email already has an account. Log in to continue; if the email isn't verified, you can resend its verification link.";
+      return "The username or email already has an account.";
     }
     if (error.status === 400) return "Check your account details and try again.";
   }
   if (error instanceof APIError && error.status >= 500 || error instanceof APIError && error.status === 404) {
-    return "We couldn't complete your request right now. Please try again.";
+    return "Request failed. Try again.";
   }
   return action === "status"
-    ? "We couldn't check your email status. Check your connection and try again."
+    ? "Couldn't check verification. Try again."
     : action === "register"
-      ? "We couldn't create your account. Please try again."
-      : "We couldn't log you in. Please try again.";
+      ? "Couldn't create account. Try again."
+      : "Couldn't log in. Try again.";
 }
 
 export function registrationFieldErrors(error: unknown): Partial<Record<"username" | "email" | "password", string>> {
-  if (!(error instanceof APIError) || !error.data || typeof error.data !== "object" || !("fields" in error.data)) return {};
-  const fields = error.data.fields;
-  if (!fields || typeof fields !== "object") return {};
+  if (!(error instanceof APIError)) return {};
+  const fields = error.data && typeof error.data === "object" && "fields" in error.data
+    ? error.data.fields : null;
   const result: Partial<Record<"username" | "email" | "password", string>> = {};
   for (const field of ["username", "email", "password"] as const) {
-    if (field in fields) result[field] = field === "email" ? "Check your email address." :
-      field === "username" ? "Check your username." : "Check your password.";
+    // Nest's validation filter returns joined message strings, not a fields map.
+    const validationError = error.status === 400 && new RegExp(`(?:^|,\\s*)${field} must\\b`, "i").test(error.message);
+    const fieldError = fields && typeof fields === "object" && field in fields && fields[field as keyof typeof fields];
+    if (validationError || fieldError) result[field] = field === "email" ? "Use a valid Gmail address." :
+      field === "username" ? "Use 3–24 letters, numbers, periods, or underscores." : "Use 8+ characters with a letter and number.";
   }
   return result;
 }

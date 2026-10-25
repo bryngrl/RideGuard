@@ -6,9 +6,7 @@ import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Dimensions, Image, StyleSheet, Text, View } from "react-native";
-
-const screenWidth = Dimensions.get("window").width;
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export function CameraPreviewScreen() {
   const router = useRouter();
@@ -33,7 +31,7 @@ export function CameraPreviewScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         {!fromSettings && <View style={styles.stepperContainer}>
-          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={8} size={6} />
+          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={10} size={6} />
         </View>}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
@@ -106,7 +104,7 @@ const styles = StyleSheet.create({
     height: 240,
     justifyContent: "center",
     marginVertical: Spacing.three,
-    width: screenWidth,
+    width: "100%",
   },
   previewImage: {
     height: "100%",

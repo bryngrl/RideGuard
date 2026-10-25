@@ -7,6 +7,7 @@ export const styles = StyleSheet.create({
   logoContainer: { alignItems: "flex-start", marginBottom: Spacing.three },
   headerContainer: { alignItems: "flex-start", marginBottom: Spacing.four },
   formContainer: {
+    flexGrow: 1,
     marginTop: Spacing.three,
     marginBottom: Spacing.five,
   },
@@ -14,7 +15,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     marginTop: "auto",
-    paddingTop: Spacing.two,
+    paddingTop: Spacing.five,
   },
   relationshipDropdown: {
     position: "relative",

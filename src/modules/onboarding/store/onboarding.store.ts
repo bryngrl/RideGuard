@@ -3,6 +3,9 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
 export interface OnboardingState {
+  owner: string | null;
+  savedProfile: string | null;
+  setOwner: (owner: string) => void;
   firstName: string;
   lastName: string;
   phone: string;
@@ -26,6 +29,15 @@ export interface OnboardingState {
 export const useOnboardingStore = create<OnboardingState>()(
   persist(
     (set) => ({
+      owner: null,
+      savedProfile: null,
+      setOwner: (owner) => {
+        const current = useOnboardingStore.getState();
+        if (current.owner !== owner) {
+          current.clearDraft();
+          set({ owner });
+        }
+      },
       firstName: "",
       lastName: "",
       phone: "",
@@ -47,6 +59,7 @@ export const useOnboardingStore = create<OnboardingState>()(
 
       clearDraft: () =>
         set({
+          savedProfile: null,
           firstName: "",
           lastName: "",
           phone: "",

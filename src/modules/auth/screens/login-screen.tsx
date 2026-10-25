@@ -77,7 +77,7 @@ export default function LoginScreen() {
       await credential.user.reload();
       if (!credential.user.emailVerified) {
         setVerificationEmail(identity.email);
-        setCredentialError("Your email isn't verified yet. Please check your inbox to complete verification.");
+        setCredentialError("Email not verified. Check your inbox.");
         return;
       }
       const hasProfile = await ensureEmailPasswordProfile(credential.user);
@@ -105,11 +105,7 @@ export default function LoginScreen() {
         const firebaseToken = await user.getIdToken();
         const isOldUser = await checkIsOldUser(firebaseToken);
 
-        if (isOldUser) {
-          router.replace("/(app)/(tabs)");
-        } else {
-          router.replace("/(onboarding)/register/profile");
-        }
+        router.replace(await postAuthDestination(user, isOldUser));
       }
     } catch (error) {
       setCredentialError(authErrorMessage(error, "login"));
@@ -122,6 +118,25 @@ export default function LoginScreen() {
     Keyboard.dismiss();
     if (router.canGoBack()) router.back();
     else router.replace("/(public)/welcome");
+  };
+
+  const continueVerification = async () => {
+    if (credentialPending.current) return;
+    if (!verificationEmail || !password) {
+      setCredentialError("Enter your registered email and password.");
+      return;
+    }
+    credentialPending.current = true;
+    setIsCredentialLoading(true);
+    try {
+      const { user } = await signInWithEmailAndPassword(auth, verificationEmail, password);
+      router.push({ pathname: "/(public)/check-email", params: { email: user.email ?? verificationEmail } });
+    } catch (error) {
+      setCredentialError(authErrorMessage(error, "login"));
+    } finally {
+      credentialPending.current = false;
+      setIsCredentialLoading(false);
+    }
   };
 
   return (
@@ -145,7 +160,7 @@ export default function LoginScreen() {
             <ThemedText style={styles.title}>Log in</ThemedText>
             <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Enter your credentials or continue with Google.</ThemedText>
             {credentialError ? <View style={styles.feedback}><FormFeedback message={credentialError} /></View> : null}
-            {verificationEmail !== null ? <Pressable onPress={() => router.push({ pathname: "/(public)/check-email", params: { email: verificationEmail } })} accessibilityRole="button" style={styles.verifyLink}>
+            {verificationEmail !== null ? <Pressable onPress={continueVerification} disabled={isCredentialLoading} accessibilityRole="button" style={styles.verifyLink}>
               <ThemedText style={styles.forgotText}>Resend Verification Link</ThemedText>
             </Pressable> : null}
           </View>

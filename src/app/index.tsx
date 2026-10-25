@@ -1,8 +1,9 @@
 import WelcomeScreen from "@/modules/auth/screens/welcome-screen";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { postAuthDestination } from "@/modules/auth/services/registration-progress";
-import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { auth } from "@/lib/firebase";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useEffect, useState } from "react";
 
 let hasPlayedIntro = false;
 
@@ -27,10 +28,14 @@ export default function Index() {
     };
   }, [playIntro]);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (isCheckingAuth || !introFinished) return;
 
     if (!isAuthenticated) {
+      const pending = auth.currentUser;
+      if (pending?.email && !pending.emailVerified && pending.providerData.some((provider) => provider.providerId === "password")) {
+        router.replace({ pathname: "/(public)/check-email", params: { email: pending.email } });
+      }
       return;
     }
 
@@ -43,10 +48,10 @@ export default function Index() {
         if (!cancelled) router.replace(destination);
       })
       .catch(() => {
-        if (!cancelled) router.replace(isOldUser ? "/(app)/(tabs)" : "/(onboarding)/register/profile");
+        if (!cancelled) router.replace("/(onboarding)/register/profile");
       });
     return () => { cancelled = true; };
-  }, [introFinished, isAuthenticated, isCheckingAuth, isOldUser, router, user]);
+  }, [introFinished, isAuthenticated, isCheckingAuth, isOldUser, router, user]));
 
   return <WelcomeScreen startup={playIntro} showLanding={introFinished && !isCheckingAuth && !isAuthenticated} />;
 }
