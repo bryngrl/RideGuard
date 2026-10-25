@@ -5,6 +5,7 @@ import type {
   SettingsProfile,
   ThemePreference,
 } from "../types/settings.types";
+import { toE164 } from "@/shared/lib/phone-utils";
 
 /*
  * BACKEND GUIDE
@@ -13,7 +14,7 @@ import type {
  * PATCH /settings/notifications -> updateNotifications
  * PATCH /settings/location -> updateLocationSharing
  * PATCH /settings/theme -> updateTheme
- * Profile and vehicle editing need backend update routes before they can save.
+ * PATCH /profile/me -> updateAccountDetails
  */
 
 interface StandardEnvelope<T> {
@@ -85,19 +86,25 @@ export async function updateTheme(value: ThemePreference) {
   return value;
 }
 
-export async function updateProfile(
-  profile: Pick<SettingsProfile, "firstName" | "lastName" | "phone">,
-) {
-  void profile;
-  throw new Error("Profile editing is not available from the current API yet.");
-}
+type EditableAccountField = "firstName" | "lastName" | "phone" |
+  "vehicleBrand" | "vehicleModel" | "plateNumber";
 
-export async function updateVehicle(
-  vehicle: Pick<
-    SettingsProfile,
-    "vehicleBrand" | "vehicleModel" | "plateNumber"
-  >,
-) {
-  void vehicle;
-  throw new Error("Vehicle editing is not available from the current API yet.");
+/** Send only changed fields so one edit cannot overwrite another server value. */
+export async function updateAccountDetails(
+  changes: Partial<Pick<SettingsProfile, EditableAccountField>>,
+  firebaseToken: string,
+): Promise<void> {
+  const body = {
+    ...(changes.firstName !== undefined && { first_name: changes.firstName }),
+    ...(changes.lastName !== undefined && { last_name: changes.lastName }),
+    ...(changes.phone !== undefined && { phone_number: toE164(changes.phone) }),
+    ...(changes.vehicleBrand !== undefined && { brand: changes.vehicleBrand }),
+    ...(changes.vehicleModel !== undefined && { model: changes.vehicleModel }),
+    ...(changes.plateNumber !== undefined && { plate_number: changes.plateNumber }),
+  };
+  if (!Object.keys(body).length) return;
+  const envelope = await apiClient.patch<StandardEnvelope<unknown>>(
+    "/profile/me", body, firebaseToken,
+  );
+  if (!envelope?.success) throw new Error(envelope?.message || "Unable to save your account.");
 }
