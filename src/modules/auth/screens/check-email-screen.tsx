@@ -144,6 +144,12 @@ export default function CheckEmailScreen() {
     router.replace({ pathname: "/(public)/sign-in", params: { registrationEmail: email } });
   };
 
+  const verifyLater = () => {
+    setPassword("");
+    Keyboard.dismiss();
+    router.replace("/(public)/welcome");
+  };
+
   return (
     <AuthFormLayout title="Check your email"
       description={<>We've sent a verification link to {email
@@ -160,6 +166,9 @@ export default function CheckEmailScreen() {
         {!verified ? <Button title="Open Email" onPress={openEmail} style={styles.primary} /> : null}
         {!verified ? <Button title={seconds ? `Resend in ${seconds}s` : "Resend Verification Link"}
           variant="outline" onPress={resend} isLoading={busy === "resend"} disabled={!!busy || seconds > 0} /> : null}
+        {!verified ? <Pressable onPress={verifyLater} accessibilityRole="button" style={styles.link}>
+          <Text style={[styles.linkText, { color: theme.accent }]}>Verify Later</Text>
+        </Pressable> : null}
         <Pressable onPress={goToLogin} accessibilityRole="button" style={styles.link}>
           <Text style={[styles.linkText, { color: theme.accent }]}>Back to Login</Text>
         </Pressable>

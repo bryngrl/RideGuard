@@ -1,6 +1,5 @@
 import WelcomeScreen from "@/modules/auth/screens/welcome-screen";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
-import { auth } from "@/lib/firebase";
 import { postAuthDestination } from "@/modules/auth/services/registration-progress";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -32,11 +31,6 @@ export default function Index() {
     if (isCheckingAuth || !introFinished) return;
 
     if (!isAuthenticated) {
-      const pendingUser = auth.currentUser;
-      if (pendingUser && !pendingUser.emailVerified &&
-          pendingUser.providerData.some((provider) => provider.providerId === "password") && pendingUser.email) {
-        router.replace({ pathname: "/(public)/check-email", params: { email: pendingUser.email } });
-      }
       return;
     }
 
