@@ -18,6 +18,7 @@ const apiClient = {
   request: async (endpoint, options) => {
     calls.push({ endpoint, options });
     if (reply instanceof Error) throw reply;
+    if (typeof reply === "function") return reply(endpoint, options);
     return reply;
   },
 };
@@ -32,10 +33,11 @@ new Function("require", "module", "exports", compiled)((name) => {
   if (name === "@/shared/api/errors") return { APIError };
   throw new Error(`Unexpected import: ${name}`);
 }, moduleUnderTest, moduleUnderTest.exports);
-const { MpinError, mpinApi } = moduleUnderTest.exports;
+const { MpinError, mpinApi, setupAndUnlockMpin } = moduleUnderTest.exports;
 
-test("MPIN gate remains off until backend recovery email is available", () => {
-  assert.equal(mpinApi.enabled, false);
+test("setup and unlock are enabled independently of unavailable email-link recovery", () => {
+  assert.equal(mpinApi.enabled, true);
+  assert.equal(mpinApi.emailLinksEnabled, false);
 });
 
 test("status forwards auth, abort signal, and lifecycle context", async () => {
@@ -43,7 +45,7 @@ test("status forwards auth, abort signal, and lifecycle context", async () => {
   reply = { success: true, data: { configured: false, requiresUnlock: false } };
   const signal = new AbortController().signal;
   assert.deepEqual(await mpinApi.status("firebase-token", signal, { reason: "resume", inactiveForMs: 1200 }), reply.data);
-  assert.equal(calls[0].endpoint, "/mpin/status?reason=resume&inactiveForMs=1200");
+  assert.equal(calls[0].endpoint, "/mpin/status?reason=resume");
   assert.equal(calls[0].options.token, "firebase-token");
   assert.equal(calls[0].options.signal, signal);
   assert.equal(calls[0].options.method, "GET");
@@ -85,4 +87,45 @@ test("backend lockout and unavailable email delivery have actionable errors", as
   reply = new APIError("MPIN email delivery is not configured", 503);
   await assert.rejects(mpinApi.requestRecovery("firebase-token", new AbortController().signal),
     (error) => error instanceof MpinError && error.code === "email-delivery-unavailable");
+});
+
+test("confirmed setup explicitly unlocks and refreshes status using the same session", async () => {
+  calls.length = 0;
+  const status = { configured: true, requiresUnlock: false };
+  reply = (endpoint) => ({ success: true, data: endpoint === "/mpin/status" ? status : { success: true } });
+  const signal = new AbortController().signal;
+  assert.deepEqual(await setupAndUnlockMpin("token", "1234", signal), status);
+  assert.deepEqual(calls.map((call) => call.endpoint), ["/mpin/setup", "/mpin/unlock", "/mpin/status"]);
+  assert.ok(calls.every((call) => call.options.token === "token" && call.options.signal === signal));
+});
+
+test("failed or ambiguous setup never continues to unlock", async () => {
+  for (const response of [{ success: true, data: { success: false } }, new APIError("Service unavailable", 503)]) {
+    calls.length = 0;
+    reply = response;
+    await assert.rejects(setupAndUnlockMpin("token", "1234", new AbortController().signal));
+    assert.deepEqual(calls.map((call) => call.endpoint), ["/mpin/setup"]);
+  }
+});
+
+test("a failed unlock after saving does not report a completed setup", async () => {
+  calls.length = 0;
+  reply = (endpoint) => {
+    if (endpoint === "/mpin/unlock") throw new APIError("Service unavailable", 503);
+    return { success: true, data: { success: true } };
+  };
+  await assert.rejects(setupAndUnlockMpin("token", "1234", new AbortController().signal));
+  assert.deepEqual(calls.map((call) => call.endpoint), ["/mpin/setup", "/mpin/unlock"]);
+});
+
+test("the fifth incorrect PIN refreshes the server lockout immediately", async () => {
+  calls.length = 0;
+  const status = { configured: true, requiresUnlock: true, locked: true, remainingAttempts: 0, lockedUntil: Date.now() + 900000 };
+  reply = (endpoint) => {
+    if (endpoint === "/mpin/unlock") throw new APIError("Incorrect MPIN", 401);
+    return { success: true, data: status };
+  };
+  await assert.rejects(mpinApi.unlock("token", "0000", new AbortController().signal),
+    (error) => error.code === "incorrect-pin" && error.remoteStatus.locked === true && error.remoteStatus.remainingAttempts === 0);
+  assert.deepEqual(calls.map((call) => call.endpoint), ["/mpin/unlock", "/mpin/status"]);
 });

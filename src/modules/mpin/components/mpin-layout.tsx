@@ -11,10 +11,12 @@ import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "@/s
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SuccessIndicator } from "@/shared/ui/success-indicator";
+import Stepper from "@/shared/ui/stepper";
 
-export function MpinLayout({ title, description, children, onBack, busy, error, preview = false, success = false }: {
+export function MpinLayout({ title, description, children, onBack, busy, error, preview = false, success = false, onboarding = false }: {
   title: string; description: string; children: ReactNode; onBack?: () => void;
   busy?: boolean; error?: string | null; preview?: boolean; success?: boolean;
+  onboarding?: boolean;
 }) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
@@ -23,6 +25,7 @@ export function MpinLayout({ title, description, children, onBack, busy, error, 
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <KeyboardAwareFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false} keyboardGap={Spacing.four}>
+          {onboarding && <Stepper currentStep={9} steps={10} />}
           <View style={styles.toolbar}>
             {onBack && <Pressable onPress={onBack} disabled={busy} style={styles.back}
               feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent

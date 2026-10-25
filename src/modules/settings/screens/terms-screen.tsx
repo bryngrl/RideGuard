@@ -46,7 +46,7 @@ const sections: InformationSection[] = [
   {
     title: "8. MPIN and account security",
     paragraphs: [
-      "MPIN screens are present, but MPIN setup and verification are not available in this version. Your account sign-in remains the active access method. Do not treat an unconfigured MPIN as protection for your account or incident data.",
+      "MPIN adds an access check while you are signed in. Keep your MPIN private. Account sign-in is still required before MPIN can be used, and an unconfigured MPIN does not protect your account or incident data.",
     ],
   },
   {

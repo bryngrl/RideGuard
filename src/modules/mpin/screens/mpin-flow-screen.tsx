@@ -1,18 +1,21 @@
-import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter, type Href } from "expo-router";
+import { Redirect, useFocusEffect, useLocalSearchParams, useNavigation, useRouter, useSegments, type Href } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, BackHandler, Keyboard, Text, View } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { saveOnboardingStep } from "@/modules/auth/services/registration-progress";
 import { useLogout } from "@/modules/settings/hooks/use-logout";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { PinPad } from "@/shared/ui/pin-pad";
 import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
+import { AuthFormLayout } from "@/shared/ui/auth-form-layout";
+import { EmailLinkContent } from "@/shared/ui/email-link-content";
 
 import { MpinLayout, mpinStyles as styles } from "../components/mpin-layout";
 import { MpinUnlockExperience } from "../components/mpin-unlock-experience";
 import { useMpinRequest } from "../hooks/use-mpin-request";
-import { MpinError, mpinApi, type MpinMode, type MpinStatus } from "../services/mpin.api";
+import { MpinError, mpinApi, setupAndUnlockMpin, type MpinMode, type MpinStatus } from "../services/mpin.api";
 import { useMpinStore } from "../store/mpin.store";
 import { isCompleteMpin, validAuthorization } from "../utils/mpin-policy";
 
@@ -29,15 +32,20 @@ const stepCopy: Record<string, { title: string; description: string }> = {
 };
 
 export default function MpinFlowScreen() {
-  const params = useLocalSearchParams<{ step?: string; mode?: string }>();
+  const params = useLocalSearchParams<{ step?: string; mode?: string; onboarding?: string }>();
+  const segments = useSegments();
+  const onboarding = params.onboarding === "true" || segments.some((segment) => segment === "(onboarding)");
   const mode: MpinMode = params.mode === "change" || params.mode === "reset" ? params.mode : "setup";
   const step = typeof params.step === "string" ? params.step : "status";
   const preview = false;
+  const authenticated = useAuthStore((state) => state.isAuthenticated);
+  const checkingAuth = useAuthStore((state) => state.isCheckingAuth);
+  if (!checkingAuth && !authenticated) return <Redirect href="/(public)/sign-in" />;
   // Remount local fields when a route's step changes, rather than retaining PINs.
-  return <MpinStep key={`${step}/${mode}/${preview}`} step={step} mode={mode} preview={preview} />;
+  return <MpinStep key={`${step}/${mode}/${preview}/${onboarding}`} step={step} mode={mode} preview={preview} onboarding={onboarding} />;
 }
 
-function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; preview: boolean }) {
+function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: MpinMode; preview: boolean; onboarding: boolean }) {
   const theme = useTheme();
   const router = useRouter();
   const navigation = useNavigation("/");
@@ -62,6 +70,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     setPin("");
     setErrorVersion((version) => version + 1);
     if (reason instanceof MpinError) {
+      if (reason.remoteStatus && user) useMpinStore.getState().setStatus(user.uid, reason.remoteStatus);
       if (reason.code === "expired-session") setSessionExpired(true);
       if (reason.code === "account-disabled") setAccountDisabled(true);
       if (reason.code === "locked") {
@@ -82,13 +91,13 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
       if (step === "confirm" && ["network", "timeout"].includes(reason.code)) {
         useMpinStore.getState().invalidateAuthorization();
         useMpinStore.getState().invalidateStatus();
-        task.setError("We couldn't confirm whether your MPIN was saved. Check MPIN status before trying again.");
+        task.setError("MPIN save unconfirmed. Check its status first.");
       }
     }
     if (step === "confirm" && reason instanceof TypeError) {
       useMpinStore.getState().invalidateAuthorization();
       useMpinStore.getState().invalidateStatus();
-      task.setError("We couldn't confirm whether your MPIN was saved. Check MPIN status before trying again.");
+      task.setError("MPIN save unconfirmed. Check its status first.");
     }
   };
   const task = useMpinRequest(failure);
@@ -96,7 +105,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   const go = (next: string, nextMode = mode, replace = false) => {
     if (navigating.current) return;
     navigating.current = true;
-    const href = { pathname: "/(mpin)/mpin/[step]" as const, params: { step: next, mode: nextMode } };
+    const href = { pathname: "/(mpin)/mpin/[step]" as const, params: { step: next, mode: nextMode, ...(onboarding ? { onboarding: "true" } : {}) } };
     if (replace) router.replace(href); else router.push(href);
   };
 
@@ -113,7 +122,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     const subscription = AppState.addEventListener("change", (appState) => {
       if (appState !== "active") {
         setPin("");
-        task.setError("For your privacy, the MPIN entry was cleared. Please start this step again.");
+        task.setError("MPIN entry cleared. Start again.");
       }
       setNow(Date.now());
     });
@@ -134,7 +143,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   }, [grant, now, task.loading]);
   const realOwner = !!user && state.owner === user.uid;
   const setupAllowed = realOwner && state.status?.configured === false;
-  const canCreate = preview || (mpinApi.enabled && (mode === "setup" ? setupAllowed : realOwner && authorized));
+  const canCreate = preview || (mpinApi.enabled && (mode === "setup" ? setupAllowed : mpinApi.emailLinksEnabled && realOwner && authorized));
   const draft = state.draft?.mode === mode ? state.draft : null;
   const mandatory = !preview && mpinApi.enabled && realOwner &&
     (state.status === null || !state.status.configured || !state.unlocked);
@@ -162,9 +171,17 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     if (step === "confirm") useMpinStore.getState().clearDraft();
   }, [step]));
 
+  const finishOnboarding = () => {
+    if (navigating.current) return;
+    if (user?.email) void saveOnboardingStep(user.email, "complete-setup").catch(() => undefined);
+    navigating.current = true;
+    router.replace("/(onboarding)/register/complete-setup");
+  };
+
   const finishUnlock = () => {
     if (!user || !useMpinStore.getState().acceptUnlock(user.uid)) throw new MpinError("failed");
     setPin("");
+    if (onboarding) { finishOnboarding(); return; }
     navigating.current = true;
     router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
   };
@@ -176,6 +193,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     if (!status.configured) go("intro", "setup", true);
     else if (!useMpinStore.getState().unlocked) go("login", "setup", true);
     else {
+      if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
       router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
@@ -197,6 +215,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     if (!state.status.configured) go("intro", "setup", true);
     else if (!state.unlocked) go("login", "setup", true);
     else {
+      if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
       router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
@@ -205,17 +224,27 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   useEffect(() => {
     if (!preview && mpinApi.enabled && realOwner && (step === "login" || step === "unlock") &&
       state.unlocked && !state.checkingStatus && !navigating.current) {
+      if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
       router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
   }, [step, preview, realOwner, state.unlocked, state.checkingStatus]);
 
-  const showSuccess = () => {
+  const showSuccess = (setupStatus?: MpinStatus) => {
+    if (mode === "setup" && (!user || !setupStatus ||
+      !useMpinStore.getState().setStatus(user.uid, setupStatus) || !useMpinStore.getState().acceptUnlock(user.uid))) {
+      throw new MpinError("failed");
+    }
     if (!user || !useMpinStore.getState().complete(user.uid, mode)) throw new MpinError("failed");
+    if (mode === "setup") {
+      if (!setupStatus || !useMpinStore.getState().setStatus(user.uid, setupStatus) ||
+        !useMpinStore.getState().acceptUnlock(user.uid)) throw new MpinError("failed");
+    }
     setPin("");
+    if (onboarding && mode === "setup") { finishOnboarding(); return; }
     // Start a clean stack; a successful save must not leave Create/Confirm behind.
     navigation.dispatch({ type: "RESET", payload: { index: 0, routes: [{
-      name: "(mpin)/mpin", state: { index: 0, routes: [{ name: "[step]", params: { step: "success", mode } }] },
+      name: "(mpin)/mpin", state: { index: 0, routes: [{ name: "[step]", params: { step: "success", mode, ...(onboarding ? { onboarding: "true" } : {}) } }] },
     }] } });
   };
 
@@ -230,32 +259,38 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     if (step === "confirm") {
       if (!draft || !canCreate) return;
       if (draft.pin !== value) {
-        task.setError("MPINs don't match. Please try again.");
+        task.setError("MPINs don't match. Try again.");
         setPin("");
         setErrorVersion((version) => version + 1);
         return;
       }
       if (preview) {
-        task.setError("The entries match. This is a design preview; no MPIN was saved. The backend is not connected yet.");
+        task.setError("Preview only. No MPIN saved.");
         setPin("");
         useMpinStore.getState().clearDraft();
         return;
       }
       void task.run(async (token, signal) => {
-        if (mode === "setup") return mpinApi.create(token, value, signal);
+        if (mode === "setup") {
+          return { success: true as const, status: await setupAndUnlockMpin(token, value, signal) };
+        }
         const authorization = useMpinStore.getState().authorization;
         if (!validAuthorization(authorization) || authorization.mode !== mode) throw new MpinError("expired-authorization");
         return mode === "change" ? mpinApi.change(token, authorization.token, value, signal) : mpinApi.reset(token, authorization.token, value, signal);
-      }, (response) => { if (response?.success !== true) throw new MpinError("failed"); showSuccess(); });
+      }, (response) => {
+        if (response?.success !== true) throw new MpinError("failed");
+        showSuccess("status" in response ? response.status as MpinStatus : undefined);
+      });
       return;
     }
     if (preview) {
       setPin("");
-      task.setError("Verification is unavailable in this design preview. No MPIN was verified or account unlocked.");
+      task.setError("Preview only. Verification unavailable.");
       return;
     }
     if (!realOwner || !state.status?.configured || !mpinApi.enabled) return;
     if (step === "current") {
+      if (!mpinApi.emailLinksEnabled) { task.setError("MPIN changes are currently unavailable."); return; }
       void task.run(async (token, signal) => {
         // Current-PIN proof can request email verification, never change the PIN.
         const proof = await mpinApi.authorizeChange(token, value, signal);
@@ -272,14 +307,14 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
         return mpinApi.status(token, signal);
       }, (status) => {
         if (!user || !useMpinStore.getState().setStatus(user.uid, status)) throw new MpinError("failed");
-        if (!useMpinStore.getState().unlocked) throw new MpinError("expired-authorization");
         finishUnlock();
       });
     }
   };
 
   const requestRecovery = () => {
-    if (preview) { task.setError("Identity verification requires the backend. No recovery code has been sent."); return; }
+    if (!mpinApi.emailLinksEnabled) { task.setError("MPIN recovery is currently unavailable."); return; }
+    if (preview) { task.setError("Recovery unavailable. No code sent."); return; }
     void task.run(mpinApi.requestRecovery, (delivery) => {
       if (!useMpinStore.getState().setDelivery(delivery)) throw new MpinError("failed");
       go("verify-identity", "reset");
@@ -292,9 +327,10 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   const codeRetrySeconds = codeRetryAt ? Math.max(0, Math.ceil((codeRetryAt - now) / 1000)) : 0;
   const resendRestricted = resendBlocked && (!codeRetryAt || codeRetrySeconds > 0);
   const verifyIdentity = (code: string) => {
-    if (preview) { setPin(""); task.setError("Email verification is not connected. No code was sent or authorization issued."); return; }
+    if (!mpinApi.emailLinksEnabled) { task.setError("Email-link verification is unavailable."); return; }
+    if (preview) { setPin(""); task.setError("Verification unavailable. No code sent."); return; }
     if (codeBlocked || task.isPending()) return;
-    if (!delivery || code.length !== 6 || deliveryExpired) { setPin(""); task.setError("That code has expired. Request a new code."); return; }
+    if (!delivery || code.length !== 6 || deliveryExpired) { setPin(""); task.setError("Code expired. Request a new one."); return; }
     const purpose = mode === "change" ? "change" : "reset";
     void task.run((token, signal) => mode === "change"
       ? mpinApi.verifyChangeCode(token, delivery.challengeId, code, signal)
@@ -304,6 +340,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     });
   };
   const resend = () => {
+    if (!mpinApi.emailLinksEnabled) { task.setError("Email-link verification is unavailable."); return; }
     if (resendSeconds || task.isPending() || resendRestricted || (codeBlocked && (!codeRetryAt || codeRetrySeconds > 0))) return;
     if (!delivery) {
       if (mode === "change") go("current", "change", true);
@@ -319,6 +356,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   };
 
   const goHome = () => {
+    if (onboarding) { finishOnboarding(); return; }
     router.replace((mode === "change" ? "/(app)/(tabs)/settings" : "/(app)/(tabs)") as Href);
   };
   const recoveryAction = <Button title="Forgot MPIN?" variant="ghost" disabled={task.loading} onPress={() => {
@@ -328,18 +366,18 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     onPress={() => { task.cancel(); useMpinStore.getState().clearFlow(); router.push("/(app)/sos"); }} /> : null;
   const logOut = () => { task.cancel(); useMpinStore.getState().clearFlow(); void logout.logout(); };
 
-  if (sessionExpired || accountDisabled) return <MpinLayout title={accountDisabled ? "Account unavailable" : "Log in again"}
-    description={accountDisabled ? "This account is disabled. Contact support for help." : "Your session has expired. Log in with your account before using MPIN."}>
+  if (sessionExpired || accountDisabled) return <MpinLayout onboarding={onboarding} title={accountDisabled ? "Account unavailable" : "Log in again"}
+    description={accountDisabled ? "Account disabled. Contact support." : "Your session has expired. Log in with your account before using MPIN."}>
     <View style={styles.actions}><Button title="Log out and log in" onPress={logOut} />{emergencyAction}</View>
   </MpinLayout>;
 
   if (step === "login" || step === "unlock") {
     const entryAllowed = preview || (mpinApi.enabled && realOwner && !!state.status?.configured);
     const message = blocked
-      ? (cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "Your MPIN is temporarily locked. Check its status or reset your MPIN.")
+      ? (cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it.")
       : task.error ?? (!entryAllowed ? "Check your MPIN status before continuing." : null);
     return <MpinUnlockExperience value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
-      initialEntry={step === "unlock"} isPending={task.isPending} busy={task.loading} disabled={!!blocked || !entryAllowed}
+      initialEntry isPending={task.isPending} busy={task.loading} disabled={!!blocked || !entryAllowed}
       error={message} errorVersion={errorVersion} preview={preview} onExit={mandatory ? undefined : back}
       onForgot={() => { useMpinStore.getState().clearFlow(); go("forgot", "reset"); }}
       onCheckStatus={!preview && (blocked || !entryAllowed) ? () => go("status", mode, true) : undefined}
@@ -348,8 +386,8 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
 
   if (step === "manage" || step === "status") {
     const unavailable = !mpinApi.enabled;
-    return <MpinLayout {...stepCopy[step]} onBack={mandatory ? undefined : back} busy={task.loading || state.checkingStatus}
-      error={task.error ?? (unavailable ? "MPIN protection is not active yet. The backend integration is still required." : undefined)}>
+    return <MpinLayout onboarding={onboarding} {...stepCopy[step]} onBack={mandatory ? undefined : back} busy={task.loading || state.checkingStatus}
+      error={task.error ?? (unavailable ? "MPIN is currently unavailable." : undefined)}>
       <View style={styles.actions}>
         {!unavailable && <Button title={state.status?.configured ? "Change MPIN" : "Set Up MPIN"}
           disabled={!state.status || task.loading || state.checkingStatus} onPress={() => go(state.status?.configured ? "current" : "intro", state.status?.configured ? "change" : "setup")} />}
@@ -362,7 +400,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   if (step === "success") {
     const confirmed = state.success === mode;
     const title = mode === "setup" ? "MPIN created!" : mode === "change" ? "MPIN changed successfully!" : "MPIN reset successfully!";
-    return <MpinLayout title={confirmed || preview ? title : "No MPIN change confirmed"} success={confirmed || preview} preview={preview}
+    return <MpinLayout onboarding={onboarding} title={confirmed || preview ? title : "No MPIN change confirmed"} success={confirmed || preview} preview={preview}
       description={confirmed || preview ? (mode === "setup" ? "Your MPIN is ready. You can now securely access RideGuard." : mode === "change" ? "Your MPIN has been updated. Use your new MPIN the next time verification is required." : "Your new MPIN is ready to use.") : "Check your account's MPIN status before continuing."}>
       <View style={styles.actions}>
         <Button title={preview ? "Back to MPIN previews" : confirmed ? (mode === "change" ? "Done" : mode === "setup" ? "Continue to RideGuard" : "Continue") : "Check MPIN status"}
@@ -371,8 +409,8 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     </MpinLayout>;
   }
 
-  if (step === "intro") return <MpinLayout {...stepCopy.intro} onBack={mandatory ? undefined : back} preview={preview}
-    error={!preview && !setupAllowed ? "Check your MPIN status before starting setup." : task.error}>
+  if (step === "intro") return <MpinLayout onboarding={onboarding} {...stepCopy.intro} onBack={mandatory ? undefined : back} preview={preview}
+    error={!preview && !setupAllowed ? "Check MPIN status before setup." : task.error}>
     <View style={styles.actions}>
       <Button title="Set Up MPIN" disabled={!preview && !setupAllowed} onPress={() => go("create", "setup")} />
       {!preview && !setupAllowed && <Button title="Check MPIN status" variant="outline" onPress={() => go("status", mode, true)} />}
@@ -380,19 +418,30 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     </View>
   </MpinLayout>;
 
-  if (step === "forgot") return <MpinLayout {...stepCopy.forgot} onBack={cannotBack ? undefined : back} preview={preview} error={task.error} busy={task.loading}>
-    <View style={styles.actions}><Button title="Continue" onPress={requestRecovery} isLoading={task.loading} />
-      {!preview && <Text style={[styles.note, { color: theme.textMuted }]}>Verification uses the email address registered to your signed-in account.</Text>}
-      <Button title="Back to Enter MPIN" variant="ghost" onPress={() => go("unlock", "setup", true)} disabled={task.loading} />
-      {mandatory && emergencyAction}
-    </View>
-  </MpinLayout>;
+  if (step === "forgot") return <AuthFormLayout title="Check your email"
+    description={<>Verification link for{"\n"}<Text style={{ color: theme.accent }}>{user?.email}</Text></>}
+    onBack={() => go("login", "setup", true)} backDisabled={task.loading}>
+    <EmailLinkContent instruction="Verify your email before creating a new MPIN."
+      status="MPIN recovery links are currently unavailable." waiting={false}
+      action="Send verification link" disabled onResend={() => undefined} />
+  </AuthFormLayout>;
 
-  if (step === "verify-identity") return <MpinLayout {...stepCopy[step]}
+  if (!mpinApi.emailLinksEnabled && ["current", "verify-identity"].includes(step)) {
+    return <MpinLayout onboarding={onboarding} title={mode === "change" ? "Change MPIN" : "Forgot your MPIN?"}
+      description="Email-link verification is currently unavailable." error={task.error}>
+      <View style={styles.actions}>
+        <Button title={mandatory ? "Back to Enter MPIN" : "Back to MPIN settings"}
+          onPress={() => go(mandatory ? "login" : "manage", "setup", true)} />
+        <Button title="Log out" variant="ghost" onPress={logOut} />
+      </View>
+    </MpinLayout>;
+  }
+
+  if (step === "verify-identity") return <MpinLayout onboarding={onboarding} {...stepCopy[step]}
     title={mode === "change" ? "Confirm MPIN change" : stepCopy[step].title}
     description={preview ? "Design preview only. No email has been sent." : !delivery ? "No active email code. Start verification again to request a new code." : mode === "change" ? "Enter the six-digit code sent to your account's registered email to change your MPIN." : stepCopy[step].description}
     onBack={cannotBack ? undefined : back}
-    preview={preview} error={task.error ?? (deliveryExpired ? "That code has expired. Request a new code." : undefined)} busy={task.loading}>
+    preview={preview} error={task.error ?? (deliveryExpired ? "Code expired. Request a new one." : undefined)} busy={task.loading}>
     {delivery && <Text style={[styles.note, { color: theme.textMuted }]}>Sent to {delivery.maskedDestination}</Text>}
     {resent && <Text accessibilityLiveRegion="polite" style={[styles.note, { color: theme.textMuted }]}>A new code was sent. Use the latest email.</Text>}
     <VerificationCodeInput value={pin} onChange={(value) => { setPin(value); task.setError(null); }}
@@ -408,14 +457,14 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
   if (["create", "confirm", "unlock", "current"].includes(step)) {
     const needsDraft = step === "confirm" && !draft;
     const entryAllowed = step === "create" || step === "confirm" ? canCreate : preview || (mpinApi.enabled && realOwner && !!state.status?.configured);
-    const unavailableMessage = needsDraft ? "Start by choosing your new MPIN. Temporary entries are cleared when you leave or background the app." :
-      !entryAllowed ? "Verify your identity or check your MPIN status before continuing." : null;
+    const unavailableMessage = needsDraft ? "MPIN entry expired. Choose a new MPIN." :
+      !entryAllowed ? "Verify your identity or check MPIN status." : null;
     const copy = stepCopy[step];
     const title = step === "create" && mode !== "setup" ? "Create new MPIN" : step === "confirm" && mode !== "setup" ? "Confirm new MPIN" : copy.title;
-    return <MpinLayout title={title} description={copy.description} onBack={cannotBack ? undefined : back} preview={preview}
+    return <MpinLayout onboarding={onboarding} title={title} description={copy.description} onBack={cannotBack ? undefined : back} preview={preview}
       error={task.error ?? unavailableMessage} busy={task.loading}>
       {blocked && <Text accessibilityRole="alert" style={[styles.note, { color: theme.error }]}>
-        {cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "Your MPIN is temporarily locked. Check its status or reset your MPIN."}
+        {cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it."}
       </Text>}
       <PinPad value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
         disabled={task.loading || blocked || !entryAllowed || needsDraft} error={!!task.error || blocked} errorVersion={errorVersion} />
@@ -431,7 +480,7 @@ function MpinStep({ step, mode, preview }: { step: string; mode: MpinMode; previ
     </MpinLayout>;
   }
 
-  return <MpinLayout title="MPIN security" description="Choose an MPIN option to continue.">
+  return <MpinLayout onboarding={onboarding} title="MPIN security" description="Choose an MPIN option to continue.">
     <View style={styles.actions}><Button title="MPIN settings" onPress={() => go("manage", mode, true)} /></View>
   </MpinLayout>;
 }

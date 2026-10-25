@@ -23,7 +23,7 @@ export type MpinErrorCode = "unavailable" | "incorrect-pin" | "invalid-code" | "
   "code-used" | "code-replaced" | "attempt-limit" | "resend-cooldown" | "resend-limit";
 
 export class MpinError extends Error {
-  constructor(public readonly code: MpinErrorCode, public readonly retryAt?: number) {
+  constructor(public readonly code: MpinErrorCode, public readonly retryAt?: number, public remoteStatus?: MpinStatus) {
     super(code);
     this.name = "MpinError";
   }
@@ -32,6 +32,8 @@ export class MpinError extends Error {
 export interface MpinBackend {
   /** The server is authoritative for setup, unlock, and all PIN changes. */
   enabled: boolean;
+  /** Recovery and change remain unavailable until backend email links exist. */
+  emailLinksEnabled: boolean;
   status: (authToken: string, signal: AbortSignal, context?: MpinStatusContext) => Promise<MpinStatus>;
   create: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
   unlock: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
@@ -107,20 +109,33 @@ async function request<T>(operation: Operation, path: string, token: string, sig
 
 const base = "/mpin";
 export const mpinApi: MpinBackend = {
-  // The backend email sender for change/recovery is not deployed yet.
-  // Keep the gate closed until those paths pass end-to-end testing.
-  enabled: false,
+  // Setup and unlock do not depend on email delivery.
+  enabled: true,
+  emailLinksEnabled: false,
   status: (token, signal, context) => {
     const params = new URLSearchParams();
     if (context) {
       params.set("reason", context.reason);
-      if (context.inactiveForMs !== undefined) params.set("inactiveForMs", String(context.inactiveForMs));
+      // Nest's current DTO uses @IsNumber without query-string transformation.
+      // The server ignores this optional value; never send a string that fails validation.
     }
     const query = params.toString();
     return request("status", `${base}/status${query ? `?${query}` : ""}`, token, signal);
   },
   create: (token, pin, signal) => request("create", `${base}/setup`, token, signal, { pin }),
-  unlock: (token, pin, signal) => request("unlock", `${base}/unlock`, token, signal, { pin }),
+  unlock: async (token, pin, signal) => {
+    try {
+      return await request("unlock", `${base}/unlock`, token, signal, { pin });
+    } catch (reason) {
+      const error = asMpinError(reason, "unlock");
+      if (!signal?.aborted && (error.code === "incorrect-pin" || error.code === "locked")) {
+        // The fifth incorrect attempt returns 401 while already starting lockout.
+        // Refresh its authoritative deadline before enabling another entry.
+        try { error.remoteStatus = await mpinApi.status(token, signal); } catch { /* Keep the original error. */ }
+      }
+      throw error;
+    }
+  },
   authorizeChange: (token, pin, signal) => request("authorizeChange", `${base}/change/authorize`, token, signal, { pin }),
   requestChangeCode: (token, authorization, signal) => request("requestChangeCode", `${base}/change/code`, token, signal, { authorization }),
   resendChangeCode: (token, challengeId, signal) => request("resendChangeCode", `${base}/change/code/resend`, token, signal, { challengeId }),
@@ -132,31 +147,46 @@ export const mpinApi: MpinBackend = {
   reset: (token, authorization, pin, signal) => request("reset", `${base}/recovery/reset`, token, signal, { authorization, pin }),
 };
 
+/** Establish setup and unlock separately; neither step may fabricate success. */
+export async function setupAndUnlockMpin(token: string, pin: string, signal: AbortSignal): Promise<MpinStatus> {
+  const saved = await mpinApi.create(token, pin, signal);
+  if (saved?.success !== true) throw new MpinError("failed");
+  if (signal.aborted) throw new MpinError("failed");
+  const unlocked = await mpinApi.unlock(token, pin, signal);
+  if (unlocked?.success !== true) throw new MpinError("failed");
+  if (signal.aborted) throw new MpinError("failed");
+  const status = await mpinApi.status(token, signal);
+  if (status?.configured !== true || status.requiresUnlock !== false || status.locked || status.remainingAttempts === 0) {
+    throw new MpinError("failed");
+  }
+  return status;
+}
+
 export function mpinErrorMessage(error: unknown): string {
   if (error instanceof MpinError) {
     switch (error.code) {
-      case "unavailable": return "MPIN is temporarily unavailable. Please try again later.";
-      case "incorrect-pin": return "Incorrect MPIN. Please try again.";
-      case "invalid-code": return "That code is incorrect. Check it and try again.";
-      case "expired-code": return "That code has expired. Request a new code.";
-      case "locked": return "Too many incorrect attempts. Please try again later or reset your MPIN.";
-      case "expired-session": return "Your session has expired. Please log in again.";
-      case "expired-authorization": return "Your verification has expired. Verify your identity again to continue.";
-      case "already-configured": return "An MPIN is already configured. Check your account's MPIN status to continue.";
-      case "policy": return "This MPIN does not meet your account's security requirements. Choose another MPIN.";
-      case "network": return "Connection lost. Check your internet and try again.";
-      case "timeout": return "The request took too long. Check your connection and try again.";
-      case "account-disabled": return "This account is disabled. Contact support for help.";
-      case "email-unavailable": return "Your account needs an accessible registered email. Contact support to recover access.";
-      case "email-unverified": return "Verify your account's registered email before using MPIN recovery or change.";
-      case "email-delivery-unavailable": return "Verification email is temporarily unavailable. Please try again later.";
-      case "code-used": return "That code has already been used. Start verification again.";
-      case "code-replaced": return "That code was replaced. Enter the latest code from your email.";
-      case "attempt-limit": return "Too many code attempts. Wait before requesting another code.";
-      case "resend-cooldown": return "Please wait before requesting another code.";
-      case "resend-limit": return "The code sending limit has been reached. Please try again later.";
+      case "unavailable": return "MPIN unavailable. Try again later.";
+      case "incorrect-pin": return "Incorrect MPIN. Try again.";
+      case "invalid-code": return "Incorrect code. Try again.";
+      case "expired-code": return "Code expired. Request a new one.";
+      case "locked": return "MPIN locked. Try later or reset it.";
+      case "expired-session": return "Session expired. Log in again.";
+      case "expired-authorization": return "Verification expired. Verify again.";
+      case "already-configured": return "MPIN already exists. Check its status.";
+      case "policy": return "MPIN not accepted. Choose another.";
+      case "network": return "Connection lost. Check your internet.";
+      case "timeout": return "Request timed out. Try again.";
+      case "account-disabled": return "Account disabled. Contact support.";
+      case "email-unavailable": return "Account email unavailable. Contact support.";
+      case "email-unverified": return "Verify your email to update your MPIN.";
+      case "email-delivery-unavailable": return "Email delivery unavailable. Try again later.";
+      case "code-used": return "Code already used. Verify again.";
+      case "code-replaced": return "Code replaced. Use the latest email.";
+      case "attempt-limit": return "Too many code attempts. Try again later.";
+      case "resend-cooldown": return "Wait before requesting another code.";
+      case "resend-limit": return "Code limit reached. Try again later.";
     }
   }
-  if (error instanceof TypeError) return "Connection lost. Check your internet and try again.";
-  return "We couldn't complete that request. Please try again.";
+  if (error instanceof TypeError) return "Connection lost. Check your internet.";
+  return "Request failed. Try again.";
 }

@@ -51,7 +51,7 @@ const sections: InformationSection[] = [
   {
     title: "8. Security",
     paragraphs: [
-      "Signed-in requests use an access token, and phone-camera uploads use a separate session token. These measures do not guarantee absolute security. MPIN screens exist, but MPIN setup and verification are not available in this version, so MPIN is not described here as active account protection.",
+      "Signed-in requests use an access token, and phone-camera uploads use a separate session token. MPIN adds an access check while you are signed in. These measures do not guarantee absolute security.",
     ],
   },
   {

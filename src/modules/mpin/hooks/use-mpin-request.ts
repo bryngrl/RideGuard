@@ -25,7 +25,7 @@ export function useMpinRequest(onFailure?: (error: unknown) => void) {
   const run = async <T,>(work: (token: string, signal: AbortSignal) => Promise<T>, success: (value: T) => void) => {
     if (controller.current || !active.current) return;
     const user = useAuthStore.getState().user;
-    if (!user) { setError("Log in with your account to use MPIN. Demo mode cannot secure an account."); return; }
+    if (!user) { setError("Log in to use MPIN."); return; }
     const owner = user.uid;
     const generation = useMpinStore.getState().generation;
     const abort = new AbortController();

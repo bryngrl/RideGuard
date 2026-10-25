@@ -7,6 +7,7 @@ interface MpinStore {
   owner: string | null;
   status: MpinStatus | null;
   unlocked: boolean;
+  requiresLocalUnlock: boolean;
   checkingStatus: boolean;
   draft: { pin: string; mode: MpinMode } | null;
   authorization: (MpinAuthorization & { mode: "change" | "reset" }) | null;
@@ -34,7 +35,7 @@ interface MpinStore {
 }
 
 const initial = {
-  owner: null, status: null, unlocked: false, checkingStatus: false, draft: null, authorization: null,
+  owner: null, status: null, unlocked: false, requiresLocalUnlock: true, checkingStatus: false, draft: null, authorization: null,
   delivery: null, success: null, generation: 0, statusVersion: 0, returnTo: "/",
 };
 
@@ -49,8 +50,11 @@ export const useMpinStore = create<MpinStore>((set, get) => ({
     const normalized = { ...status, serverTime: undefined,
       unlockExpiresAt: status.unlockExpiresAt === undefined ? undefined : localDeadline(status.unlockExpiresAt, status.serverTime),
       lockedUntil: status.lockedUntil === undefined ? undefined : localDeadline(status.lockedUntil, status.serverTime) };
+    const requiresLocalUnlock = get().requiresLocalUnlock || status.requiresUnlock || !!status.locked ||
+      status.remainingAttempts === 0 || (normalized.unlockExpiresAt !== undefined && normalized.unlockExpiresAt <= Date.now());
     set({ status: normalized, checkingStatus: false, statusVersion: get().statusVersion + 1,
-      unlocked: status.configured && !status.requiresUnlock && !status.locked && status.remainingAttempts !== 0 &&
+      requiresLocalUnlock,
+      unlocked: !requiresLocalUnlock && status.configured && !status.requiresUnlock && !status.locked && status.remainingAttempts !== 0 &&
         (normalized.unlockExpiresAt === undefined || normalized.unlockExpiresAt > Date.now()) });
     return true;
   },
@@ -74,24 +78,27 @@ export const useMpinStore = create<MpinStore>((set, get) => ({
     return true;
   },
   acceptUnlock: (owner) => {
-    if (owner !== get().owner || !get().status?.configured || !get().unlocked) return false;
-    set({ draft: null, authorization: null, delivery: null });
+    const status = get().status;
+    // Call only after this session's POST /mpin/unlock succeeds and status is refreshed.
+    if (owner !== get().owner || !status?.configured || status.requiresUnlock || status.locked || status.remainingAttempts === 0 ||
+      (status.unlockExpiresAt !== undefined && status.unlockExpiresAt <= Date.now())) return false;
+    set({ draft: null, authorization: null, delivery: null, requiresLocalUnlock: false, unlocked: true });
     return true;
   },
   // Call only after an explicit server success. A local PIN match is insufficient.
   complete: (owner, mode) => {
     if (owner !== get().owner) return false;
     // Saving a PIN does not prove an unlocked session. Continue rechecks status.
-    set({ status: null, unlocked: false, checkingStatus: false, statusVersion: get().statusVersion + 1,
+    set({ status: null, unlocked: false, requiresLocalUnlock: true, checkingStatus: false, statusVersion: get().statusVersion + 1,
       draft: null, authorization: null, delivery: null, success: mode, generation: get().generation + 1 });
     return true;
   },
   setReturnTo: (path) => set({ returnTo: safeReturnPath(path) }),
   clearDraft: () => set({ draft: null }),
   invalidateAuthorization: () => set({ authorization: null, draft: null, delivery: null, generation: get().generation + 1 }),
-  invalidateStatus: () => set({ status: null, draft: null, unlocked: false, checkingStatus: false, statusVersion: get().statusVersion + 1 }),
+  invalidateStatus: () => set({ status: null, draft: null, unlocked: false, requiresLocalUnlock: true, checkingStatus: false, statusVersion: get().statusVersion + 1 }),
   lock: () => {
-    set({ unlocked: false, checkingStatus: false, statusVersion: get().statusVersion + 1,
+    set({ unlocked: false, requiresLocalUnlock: true, checkingStatus: false, statusVersion: get().statusVersion + 1,
       status: get().status ? { ...get().status!, requiresUnlock: true } : null, draft: null, authorization: null,
       delivery: null, success: null, generation: get().generation + 1 });
   },

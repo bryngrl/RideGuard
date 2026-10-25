@@ -13,10 +13,15 @@ function load(relativePath, overrides = {}) {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const context = {
-    exports: {}, Date, Error, TypeError, AbortController, Promise, setTimeout, clearTimeout,
+    exports: {}, Date, Error, TypeError, AbortController, URLSearchParams, Promise, setTimeout, clearTimeout,
     ...overrides,
     require: (name) => {
       if (overrides.modules && name in overrides.modules) return overrides.modules[name];
+      if (name === "@/shared/api") return { apiClient: { request: async () => {
+        const { APIError } = load("src/shared/api/errors.ts");
+        throw new APIError("Service unavailable", 503);
+      } } };
+      if (name === "@/shared/api/errors") return load("src/shared/api/errors.ts");
       if (name.startsWith(".")) return load(path.relative(path.resolve(__dirname, ".."), path.resolve(path.dirname(filename), name + ".ts")));
       return require(name);
     },
@@ -72,7 +77,8 @@ test("unintegrated rollout and demo mode do not pretend to enforce MPIN", () => 
   const state = { enabled: false, demo: false, uid: "account-a", owner: null, status: null, unlocked: false };
   assert.equal(policy.resolveMpinAccess(state), "allowed");
   assert.equal(policy.resolveMpinAccess({ ...state, enabled: true, demo: true }), "allowed");
-  assert.equal(api.mpinApi.enabled, false);
+  assert.equal(api.mpinApi.enabled, true);
+  assert.equal(api.mpinApi.emailLinksEnabled, false);
 });
 
 test("switching accounts clears PIN drafts, authorization, completion and unlock state", () => {
@@ -133,8 +139,29 @@ test("explicit lock clears grants and drafts without clearing full authenticatio
 test("ordinary screen navigation does not require another MPIN", () => {
   store.getState().reset(); store.getState().setOwner("a");
   store.getState().setStatus("a", { configured: true, requiresUnlock: false });
+  store.getState().acceptUnlock("a");
   store.getState().clearFlow();
   assert.equal(store.getState().unlocked, true);
+});
+
+test("a backend unlock window alone never unlocks a fresh app instance", () => {
+  store.getState().reset(); store.getState().setOwner("a");
+  store.getState().setStatus("a", { configured: true, requiresUnlock: false, unlockExpiresAt: Date.now() + 60000 });
+  assert.equal(store.getState().unlocked, false);
+  assert.equal(store.getState().requiresLocalUnlock, true);
+  assert.equal(store.getState().acceptUnlock("wrong-account"), false);
+});
+
+test("background or expired sessions cannot reopen from another device's valid window", () => {
+  for (const invalidate of [() => store.getState().lock(), () => store.getState().setStatus("a", { configured: true, requiresUnlock: true })]) {
+    store.getState().reset(); store.getState().setOwner("a");
+    store.getState().setStatus("a", { configured: true, requiresUnlock: false });
+    assert.equal(store.getState().acceptUnlock("a"), true);
+    invalidate();
+    store.getState().setStatus("a", { configured: true, requiresUnlock: false, unlockExpiresAt: Date.now() + 60000 });
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().requiresLocalUnlock, true);
+  }
 });
 
 test("return destination accepts app routes and rejects external or recovery redirects", () => {
@@ -145,9 +172,9 @@ test("return destination accepts app routes and rejects external or recovery red
   }
 });
 
-test("all unconnected MPIN operations fail explicitly rather than fabricate security", async () => {
+test("unavailable backend operations fail explicitly rather than fabricate security", async () => {
   for (const [name, method] of Object.entries(api.mpinApi)) {
-    if (name === "enabled") continue;
+    if (typeof method !== "function") continue;
     await assert.rejects(() => method(), (error) => error instanceof api.MpinError && error.code === "unavailable");
   }
 });
@@ -234,7 +261,7 @@ test("timeouts stop processing and show actionable feedback", async () => {
   await flush();
   h.timeout();
   await pending;
-  assert.equal(h.events.some((event) => typeof event === "string" && event.includes("took too long")), true);
+  assert.equal(h.events.some((event) => typeof event === "string" && event.includes("timed out")), true);
 });
 
 test("leaving a verification screen discards late results", async () => {
@@ -260,10 +287,10 @@ test("emergency navigation can cancel a pending MPIN request immediately", async
 });
 
 test("incorrect MPIN and server lockouts preserve error meaning without invented limits", () => {
-  assert.equal(api.mpinErrorMessage(new api.MpinError("incorrect-pin")), "Incorrect MPIN. Please try again.");
-  assert.match(api.mpinErrorMessage(new api.MpinError("locked")), /Too many incorrect attempts/);
-  assert.match(api.mpinErrorMessage(new api.MpinError("expired-authorization")), /Verify your identity again/);
-  assert.match(api.mpinErrorMessage(new api.MpinError("expired-session")), /log in again/);
+  assert.equal(api.mpinErrorMessage(new api.MpinError("incorrect-pin")), "Incorrect MPIN. Try again.");
+  assert.match(api.mpinErrorMessage(new api.MpinError("locked")), /MPIN locked/);
+  assert.match(api.mpinErrorMessage(new api.MpinError("expired-authorization")), /Verify again/);
+  assert.match(api.mpinErrorMessage(new api.MpinError("expired-session")), /log in again/i);
 });
 
 test("server unlock status, expiry and lockout override a stale local unlocked flag", () => {
@@ -295,12 +322,13 @@ test("server time corrects local clock skew for codes, grants and unlock expiry"
   assert.equal(store.getState().setAuthorization({ token: "x", serverTime, expiresAt: serverTime + 60000 }, "change"), true);
   assert.ok(store.getState().authorization.expiresAt > Date.now());
   store.getState().setStatus("a", { configured: true, requiresUnlock: false, serverTime, unlockExpiresAt: serverTime + 60000 });
+  assert.equal(store.getState().acceptUnlock("a"), true);
   assert.equal(store.getState().unlocked, true);
   assert.ok(store.getState().status.unlockExpiresAt > Date.now());
 });
 
 const { createMpinSessionChecker } = load("src/modules/mpin/services/mpin-session.ts");
-test("server recheck preserves a brief-interruption unlock but locks when server requires it", async () => {
+test("server recheck preserves a locally verified session and respects server expiry", async () => {
   const original = api.mpinApi.status;
   const checker = createMpinSessionChecker();
   const user = { uid: "a", getIdToken: async () => "fixture" };
@@ -310,6 +338,8 @@ test("server recheck preserves a brief-interruption unlock but locks when server
     const pending = checker.check(user);
     assert.equal(store.getState().checkingStatus, true);
     await pending;
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().acceptUnlock("a"), true);
     assert.equal(store.getState().unlocked, true);
     assert.equal(store.getState().checkingStatus, false);
     api.mpinApi.status = async () => ({ configured: true, requiresUnlock: true });
@@ -387,21 +417,23 @@ function lifecycleHarness() {
   };
 }
 
-test("lifecycle checks launch and background return without locking valid brief switches", async () => {
+test("cold launch and background return require MPIN while inactive interruptions do not", async () => {
   const original = api.mpinApi.status;
   let calls = 0;
   api.mpinApi.enabled = true;
   api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: false }; };
   const h = lifecycleHarness();
   try {
-    await flush(); assert.equal(calls, 1); assert.equal(store.getState().unlocked, true);
+    await flush(); assert.equal(calls, 1); assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().acceptUnlock("a"), true);
     h.state("inactive"); h.state("active"); await flush(); assert.equal(calls, 1);
-    h.state("background"); h.state("active"); await flush(); assert.equal(calls, 2);
     assert.equal(store.getState().unlocked, true);
+    h.state("background"); h.state("active"); await flush(); assert.equal(calls, 2);
+    assert.equal(store.getState().unlocked, false);
     api.mpinApi.status = async () => ({ configured: true, requiresUnlock: true });
     h.state("background"); h.state("active"); await flush();
     assert.equal(store.getState().unlocked, false);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = false; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
 });
 
 test("foreground expiry checks status and disabled rollout never invokes the adapter", async () => {
@@ -412,13 +444,14 @@ test("foreground expiry checks status and disabled rollout never invokes the ada
   const h = lifecycleHarness();
   try {
     await flush();
+    assert.equal(store.getState().acceptUnlock("a"), true);
     api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: true }; };
     h.expire(); assert.equal(store.getState().checkingStatus, true); await flush();
     assert.equal(store.getState().unlocked, false);
     api.mpinApi.enabled = false;
     h.state("background"); h.state("active"); await flush();
     assert.equal(calls, 2);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = false; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
 });
 
 test("emergency permission is explicit and restricted to SOS or a specific allowed alert", () => {

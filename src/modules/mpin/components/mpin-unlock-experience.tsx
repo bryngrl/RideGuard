@@ -95,9 +95,9 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
       }]} showsVerticalScrollIndicator={false}>
         {(entry || onExit) && <Pressable onPress={closeEntry} disabled={busy} accessibilityRole="button"
           feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent
-          accessibilityLabel={entry ? "Back to MPIN Login" : "Back to MPIN settings"}
+          accessibilityLabel={entry ? "Back to app unlock" : "Back to MPIN settings"}
           style={styles.back}><BackArrowIcon color={theme.text} /></Pressable>}
-        <View style={styles.lock} accessible accessibilityLabel="MPIN login">
+        <View style={styles.lock} accessible accessibilityLabel="App locked">
           <Ionicons name="lock-closed" size={26} color={theme.switchOff} />
         </View>
         <Animated.View style={[styles.brand, { top: logoTop }, brandMotion]}><BrandLockup /></Animated.View>
@@ -105,7 +105,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
           importantForAccessibility={entry ? "no-hide-descendants" : "auto"}
           style={[styles.cardPosition, { top: cardTop }, cardMotion]}
           onLayout={(event) => setCardHeight(event.nativeEvent.layout.height)}>
-          <Pressable accessibilityRole="button" accessibilityLabel="MPIN Login" accessibilityHint="Opens the four-digit MPIN keypad"
+          <Pressable accessibilityRole="button" accessibilityLabel="Unlock RideGuard" accessibilityHint="Opens the four-digit MPIN keypad"
             onPress={() => { if (!entry) setEntry(true); }}
             feedbackRadius={BorderRadius.lg}
             style={[styles.card, { borderColor: theme.border, backgroundColor: theme.background }]}>
@@ -114,7 +114,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
                 {[0, 1, 2].map((column) => <View key={column} style={[styles.gridDot, { borderColor: theme.text }]} />)}
               </View>)}
             </View>
-            <Text style={[Typography.button, { color: theme.text }]}>MPIN Login</Text>
+            <Text style={[Typography.button, { color: theme.text }]}>Unlock RideGuard</Text>
           </Pressable>
           {!entry && <View style={styles.landingFooter}>
             {preview && <Text style={[styles.preview, { color: theme.textMuted }]}>Design preview only</Text>}
