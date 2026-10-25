@@ -135,9 +135,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
-          enableOnAndroid
-          enableAutomaticScroll
-          extraScrollHeight={Spacing.four}
+          keyboardGap={Spacing.four}
         >
           <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
             <BackArrowIcon color={theme.text} />

@@ -1,7 +1,7 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import type { ReactNode } from "react";
-import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import Animated, { FadeIn, useReducedMotion } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -9,6 +9,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, PinLayout, Spacing, Typography } from "@/shared/theme";
 import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { FormFeedback } from "@/shared/ui/form-feedback";
+import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SuccessIndicator } from "@/shared/ui/success-indicator";
 
 export function MpinLayout({ title, description, children, onBack, busy, error, preview = false, success = false }: {
@@ -19,29 +20,32 @@ export function MpinLayout({ title, description, children, onBack, busy, error, 
   const reducedMotion = useReducedMotion();
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={styles.toolbar}>
-          {onBack && <Pressable onPress={onBack} disabled={busy} style={styles.back}
-            feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent
-            accessibilityRole="button" accessibilityLabel="Go back" accessibilityState={{ disabled: !!busy }}>
-            <BackArrowIcon color={theme.text} />
-          </Pressable>}
-        </View>
-        <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(220)} style={styles.body}>
-          <View style={styles.intro}>
-            {success ? <SuccessIndicator label={preview ? "Success screen preview" : title} /> :
-              <View style={[styles.icon, { backgroundColor: theme.infoBackground }]}><Ionicons name="shield-checkmark-outline" size={28} color={theme.text} /></View>}
-            <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{title}</Text>
-            <Text style={[styles.description, { color: theme.textMuted }]}>{description}</Text>
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAwareFormScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false} keyboardGap={Spacing.four}>
+          <View style={styles.toolbar}>
+            {onBack && <Pressable onPress={onBack} disabled={busy} style={styles.back}
+              feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent
+              accessibilityRole="button" accessibilityLabel="Go back" accessibilityState={{ disabled: !!busy }}>
+              <BackArrowIcon color={theme.text} />
+            </Pressable>}
           </View>
-          {preview && <View style={styles.feedback}><FormFeedback tone="info" message="Design preview only. No MPIN is saved, verified, or used to unlock your account." /></View>}
-          {error && <View style={styles.feedback}><FormFeedback message={error} /></View>}
-          {busy && <View style={styles.busy} accessible accessibilityLabel="Processing MPIN request" accessibilityLiveRegion="polite">
-            <ActivityIndicator color={theme.text} /><Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Please wait…</Text>
-          </View>}
-          {children}
-        </Animated.View>
-      </ScrollView>
+          <Animated.View entering={reducedMotion ? undefined : FadeIn.duration(220)} style={styles.body}>
+            <View style={styles.intro}>
+              {success ? <SuccessIndicator label={preview ? "Success screen preview" : title} /> :
+                <View style={[styles.icon, { backgroundColor: theme.infoBackground }]}><Ionicons name="shield-checkmark-outline" size={28} color={theme.text} /></View>}
+              <Text accessibilityRole="header" style={[styles.title, { color: theme.text }]}>{title}</Text>
+              <Text style={[styles.description, { color: theme.textMuted }]}>{description}</Text>
+            </View>
+            {preview && <View style={styles.feedback}><FormFeedback tone="info" message="Design preview only. No MPIN is saved, verified, or used to unlock your account." /></View>}
+            {error && <View style={styles.feedback}><FormFeedback message={error} /></View>}
+            {busy && <View style={styles.busy} accessible accessibilityLabel="Processing MPIN request" accessibilityLiveRegion="polite">
+              <ActivityIndicator color={theme.text} /><Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Please wait…</Text>
+            </View>}
+            {children}
+          </Animated.View>
+        </KeyboardAwareFormScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

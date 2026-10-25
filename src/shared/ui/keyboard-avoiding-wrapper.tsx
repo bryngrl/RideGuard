@@ -55,10 +55,7 @@ export function KeyboardAvoidingWrapper({
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
-            enableOnAndroid
-            enableAutomaticScroll
-            extraScrollHeight={20}
-            extraHeight={100}
+            keyboardGap={Spacing.four}
           >
             <TouchableWithoutFeedback
               onPress={Keyboard.dismiss}

@@ -30,9 +30,7 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
-          enableOnAndroid
-          enableAutomaticScroll
-          extraScrollHeight={Spacing.four}
+          keyboardGap={Spacing.four}
         >
           <Pressable
             onPress={onBack}

@@ -170,8 +170,7 @@ export default function VerifyCodeScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          enableOnAndroid
-          enableAutomaticScroll
+          keyboardGap={Spacing.four}
         >
           <Pressable
             onPress={backToRecovery}
