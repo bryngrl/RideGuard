@@ -37,7 +37,10 @@ export function SosTriggerScreen() {
       <Text style={[Typography.body, styles.contactsDescription]}>
         Request help for yourself.{"\n"}{shareLocation ? "Your phone's location snapshot will be included when available." : "Your location will not be shared."}
       </Text>
-      {state.phase === "preparing" && <ActivityIndicator accessibilityLabel="Checking location permission" />}
+      {state.phase === "preparing" && <View><ActivityIndicator accessibilityLabel="Checking location permission" />
+        <Text style={styles.contactsDescription}>Checking location permission…</Text></View>}
+      {state.refreshing && <Text style={styles.contactsDescription}>Checking SOS status…</Text>}
+      {state.notice && <Text accessibilityLiveRegion="polite" style={styles.contactsDescription}>{state.notice}</Text>}
       {!user && <Text style={styles.contactsDescription}>Sign in to use SOS. Demo mode does not send messages.</Text>}
       {user && !state.ready && <Button title="Load SOS recovery" onPress={() => void state.setOwner(user.uid)} />}
       {state.error && <View accessibilityLiveRegion="polite"><Text style={styles.contactsDescription}>{state.error}</Text>

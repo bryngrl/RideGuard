@@ -22,7 +22,11 @@ export const sosStore = createSosStore({
     const settings = useSettingsStore.getState();
     return settings.isHydrated && settings.locationWithContacts;
   },
-  permission: async () => (await Location.requestForegroundPermissionsAsync()).granted,
+  permission: async () => {
+    const permission = await Location.getForegroundPermissionsAsync();
+    if (permission.granted || !permission.canAskAgain) return permission.granted;
+    return (await Location.requestForegroundPermissionsAsync()).granted;
+  },
   capture: async () => {
     const fix = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
     return { latitude: fix.coords.latitude, longitude: fix.coords.longitude,

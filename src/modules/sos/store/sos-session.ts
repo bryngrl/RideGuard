@@ -2,6 +2,7 @@ import { createStore } from "zustand/vanilla";
 import type { EmergencyContact } from "../../emergency-contacts/types/emergency-contact.types";
 import { SosApiError, sosErrorMessage, type SosApi } from "../services/sos.api";
 import type { Recovery, SosInput, SosLocation, SosRecord } from "../types";
+import { trackingDeadline } from "../types";
 
 export const RECOVERY_KEY = "rideguard-sos-recovery";
 type Phase = "idle" | "preparing" | "countdown" | "submitting" | "checking" | "retry" | "active" | "ended";
@@ -18,13 +19,15 @@ type Dependencies = {
 export type SosState = {
   owner: string | null; ready: boolean; foreground: boolean; phase: Phase; remaining: number;
   contacts: EmergencyContact[]; contactsStatus: "idle" | "loading" | "ready" | "error";
-  record: SosRecord | null; recovery: Recovery | null; error: string | null; refreshing: boolean; stopping: boolean;
+  record: SosRecord | null; recovery: Recovery | null; error: string | null; notice: string | null; refreshing: boolean; stopping: boolean;
+  lastFetchedAt: string | null; nextPollAt: number; lookupFailures: number;
   setOwner(uid: string | null): Promise<void>;
   setForeground(active: boolean): void;
   loadContacts(): Promise<void>;
   begin(alertId?: string): Promise<void>;
-  cancelCountdown(): void;
-  refresh(): Promise<void>;
+  cancelCountdown(notice?: string): void;
+  refresh(discover?: boolean): Promise<void>;
+  refreshStatus(): Promise<void>;
   retry(): Promise<void>;
   stop(): Promise<void>;
   dismissEnded(): Promise<void>;
@@ -65,7 +68,8 @@ export function createSosStore(deps: Dependencies) {
     return write;
   };
   const initial = { ready: false, phase: "idle" as Phase, remaining: 5, contacts: [] as EmergencyContact[],
-    contactsStatus: "idle" as const, record: null, recovery: null, error: null, refreshing: false, stopping: false };
+    contactsStatus: "idle" as const, record: null, recovery: null, error: null, notice: null, refreshing: false, stopping: false,
+    lastFetchedAt: null, nextPollAt: 0, lookupFailures: 0 };
 
   const store = createStore<SosState>((set, get) => {
     const accept = async (record: SosRecord, ownerVersion: number) => {
@@ -117,7 +121,7 @@ export function createSosStore(deps: Dependencies) {
       },
       setForeground: (foreground) => {
         set({ foreground });
-        if (!foreground && get().phase === "countdown") get().cancelCountdown();
+        if (!foreground && get().phase === "countdown") get().cancelCountdown("SOS countdown cancelled because the app was interrupted. No request was sent. Tap again when ready.");
       },
       loadContacts: async () => {
         if (!get().owner || get().contactsStatus === "loading") return;
@@ -128,21 +132,21 @@ export function createSosStore(deps: Dependencies) {
           if (version === ownerVersion) set({ contacts, contactsStatus: "ready" });
         } catch { if (version === ownerVersion) set({ contactsStatus: "error" }); }
       },
-      cancelCountdown: () => {
+      cancelCountdown: (notice) => {
         countdownVersion++; clearInterval(timer); timer = undefined; pendingLocation = null;
-        if (["preparing", "countdown"].includes(get().phase)) set({ phase: "idle", remaining: 5 });
+        if (["preparing", "countdown"].includes(get().phase)) set({ phase: "idle", remaining: 5, notice: notice ?? null });
       },
       begin: async (alertId) => {
         if (!get().owner || !get().ready || !get().foreground || get().phase !== "idle" || get().refreshing ||
           get().contactsStatus !== "ready" || !get().contacts.length) return;
         const ownerVersion = version;
         const attemptVersion = ++countdownVersion;
-        set({ phase: "preparing", error: null });
+        set({ phase: "preparing", error: null, notice: null });
         const share = deps.shareLocation();
         let permitted = false;
         if (share) { try { permitted = await deps.permission(); } catch { /* Continue without location. */ } }
         if (version !== ownerVersion || countdownVersion !== attemptVersion) return;
-        if (!get().foreground) { get().cancelCountdown(); return; }
+        if (!get().foreground) { get().cancelCountdown("SOS preparation cancelled because the app was interrupted. No request was sent. Tap again when ready."); return; }
         const deadline = now() + 5000;
         set({ phase: "countdown", remaining: 5 });
         if (permitted) void deps.capture().then((fix) => {
@@ -160,7 +164,7 @@ export function createSosStore(deps: Dependencies) {
           void submit();
         }, 200);
       },
-      refresh: async () => {
+      refresh: async (discover = true) => {
         const { owner, recovery, ready, phase } = get();
         if (!owner || !ready || !get().foreground || get().refreshing || get().stopping || ["preparing", "countdown", "submitting"].includes(phase)) return;
         const ownerVersion = version;
@@ -170,20 +174,49 @@ export function createSosStore(deps: Dependencies) {
           const [lookup, active] = await Promise.allSettled([
             recovery?.body ? deps.api.byRequest(owner, recovery.requestId, controller.signal)
               : recovery?.sosId ? deps.api.get(owner, recovery.sosId, controller.signal) : Promise.resolve(null),
-            deps.api.active(owner, controller.signal),
+            !recovery?.sosId || discover ? deps.api.active(owner, controller.signal) : Promise.resolve(null),
           ]);
           if (version !== ownerVersion || revision !== queryRevision) return;
           const matched = lookup.status === "fulfilled" ? lookup.value : null;
           const currentActive = active.status === "fulfilled" ? active.value : null;
           const found = recovery?.body ? matched || currentActive : currentActive || matched;
-          if (found) { await accept(found, ownerVersion); return; }
+          if (found) { set({ lastFetchedAt: new Date(now()).toISOString(), lookupFailures: 0, nextPollAt: now() + 5000 }); await accept(found, ownerVersion); return; }
           if (lookup.status === "rejected" || active.status === "rejected") {
-            set({ error: "Could not check SOS status. Check your connection and refresh.", ...(recovery ? { phase: "checking" as Phase } : {}) });
+            const failures = get().lookupFailures + 1;
+            const deadline = trackingDeadline(get().record);
+            const retryAt = now() + Math.min(60000, 10000 * 2 ** (failures - 1));
+            set({ error: "Could not check SOS status. Showing last-known results. Retry status when connected.", lookupFailures: failures,
+              nextPollAt: deadline && deadline > now() ? Math.min(deadline, retryAt) : retryAt, ...(recovery && !get().record ? { phase: "checking" as Phase } : {}) });
           } else if (recovery?.body) {
             set({ phase: "retry", error: "No SOS was found for this attempt. Retry sends the same saved request only when you choose." });
           } else if (recovery) {
             set({ phase: "checking", error: "The saved SOS is unavailable. Check status again before starting another." });
           } else set({ phase: "idle", error: null });
+        } finally { if (version === ownerVersion) set({ refreshing: false }); }
+      },
+      refreshStatus: async () => {
+        const { owner, record } = get();
+        if (!record) { await get().refresh(); return; }
+        if (!owner || !get().foreground || get().refreshing || get().stopping) return;
+        const ownerVersion = version; const queryRevision = revision;
+        set({ refreshing: true });
+        try {
+          let updated: SosRecord;
+          let legacy = false;
+          try { updated = await deps.api.refreshStatus(owner, record.sosId, controller.signal); }
+          catch (error) {
+            if (!(error instanceof SosApiError) || error.status !== 404) throw error;
+            // A missing route and an absent/foreign SOS both use 404. Verify ownership once.
+            updated = await deps.api.get(owner, record.sosId, controller.signal); legacy = true;
+          }
+          if (version !== ownerVersion || revision !== queryRevision) return;
+          await accept(updated, ownerVersion);
+          if (version !== ownerVersion || revision !== queryRevision) return;
+          set({ notice: legacy ? "Enhanced status refresh is unavailable on this service." : null,
+            lastFetchedAt: legacy ? new Date(now()).toISOString() : get().lastFetchedAt, nextPollAt: now() + 5000 });
+        } catch (error) {
+          if (version === ownerVersion && revision === queryRevision) set({ notice: null, error: error instanceof SosApiError && error.status === 404
+            ? "The saved SOS is unavailable." : "Could not refresh message status. Showing last-known results. Retry status when connected." });
         } finally { if (version === ownerVersion) set({ refreshing: false }); }
       },
       retry: async () => { if (get().phase === "retry" && get().foreground) await submit(); },

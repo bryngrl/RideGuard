@@ -1,16 +1,30 @@
-import { Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { BrandColors, Typography } from "@/shared/theme";
+import { useTheme } from "@/shared/hooks";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { SlideButton } from "@/shared/ui/slide-button";
 import { Button } from "@/shared/ui/button";
 import { useSosStore } from "../store/sos.store";
 import { useSosStatus } from "../hooks/use-sos-lifecycle";
-import { submissionLabel, type Submission } from "../types";
+import { ageLabel, hasPending, messagePresentation, type Submission } from "../types";
 import { styles } from "./sos-active-screen.styles";
 
-function summary(label: string, value: Submission) {
-  return label + ": " + submissionLabel[value.status] + (value.errorCode === "expired" ? " (request expired)" : "");
+function MessageRow({ label, value, now, color }: { label: string; value: Submission; now: number; color: string }) {
+  const presentation = messagePresentation(value, now);
+  return <View style={{ gap: 4 }}>
+    <Text style={[Typography.bodySmall, { color }]}>{label}</Text>
+    <View accessible accessibilityLiveRegion="polite" accessibilityLabel={`${label}: ${presentation.label}. ${presentation.detail}`}
+      style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+      <Ionicons name={presentation.icon} size={22} color={color} accessible={false} />
+      <Text style={[Typography.button, { color, flexShrink: 1 }]}>{presentation.label}</Text>
+    </View>
+    <Text style={[Typography.bodySmall, { color }]}>{presentation.detail}</Text>
+    <Text style={[Typography.bodySmall, { color }]}>{value.delivery?.lastCheckedAt
+      ? `Delivery checked ${ageLabel(value.delivery.lastCheckedAt, now)}` : "Not checked yet"}</Text>
+  </View>;
 }
 
 export function SosActiveScreen() {
@@ -18,8 +32,13 @@ export function SosActiveScreen() {
   const state = useSosStore();
   useSosStatus(state.ready, true);
   const record = state.record;
-  const title = state.phase === "submitting" ? "Requesting help" : state.phase === "checking" ? "Checking SOS status" :
-    record?.status === "active" ? "SOS active" : record?.status === "ended" ? "SOS ended by you" : "SOS not confirmed";
+  const colors = useTheme();
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const title = record?.status === "active" ? "SOS active" : record?.status === "ended" ? "SOS ended by you" :
+    state.phase === "submitting" ? "Requesting help" : state.phase === "checking" ? "Checking SOS status" : "SOS not confirmed";
+  const cooldown = record?.statusRefresh?.nextAllowedAt ? Date.parse(record.statusRefresh.nextAllowedAt) - now : 0;
+  const refreshing = state.refreshing || record?.statusRefresh?.state === "pending" && Date.parse(record.statusRefresh.expiresAt ?? "") > now;
   const close = async () => { await state.dismissEnded(); router.replace("/sos"); };
   return <PageLayout title="SOS" backgroundColor={BrandColors.error} headerTextColor={BrandColors.secondary}
     contentStyle={[styles.content, { gap: 20 }]} footerStyle={styles.footer}
@@ -36,8 +55,17 @@ export function SosActiveScreen() {
           "Do not assume contacts were notified. You can contact them directly while checking status."}
     </Text>
     {state.error && <Text accessibilityLiveRegion="polite" style={[Typography.body, styles.description]}>{state.error}</Text>}
-    <Button title="Check SOS status" variant="secondary" isLoading={state.refreshing} disabled={state.phase === "submitting"}
-      onPress={() => void state.refresh()} />
+    {state.error && <Button title="Retry status" variant="secondary" isLoading={state.refreshing} onPress={() => void state.refreshStatus()} />}
+    {state.notice && <Text style={[Typography.bodySmall, styles.description]}>{state.notice}</Text>}
+    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+      <Text style={[Typography.bodySmall, styles.description, { flex: 1 }]}>{state.lastFetchedAt ? `Updated ${ageLabel(state.lastFetchedAt, now)}` : "Status not loaded yet"}</Text>
+      <Pressable accessibilityRole="button" accessibilityLabel="Refresh message status" disabled={!!refreshing || cooldown > 0 || state.phase === "submitting"}
+        onPress={() => void state.refreshStatus()} style={{ minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" }}>
+        <Ionicons name="refresh" size={20} color={BrandColors.secondary} />
+      </Pressable>
+    </View>
+    <Text style={[Typography.bodySmall, styles.description]}>{refreshing ? "Checking message status…" : cooldown > 0
+      ? `Refresh available in ${Math.ceil(cooldown / 1000)} seconds` : hasPending(record, now) ? "Status updates automatically" : "Latest known message results"}</Text>
     {state.phase === "retry" && <Button title="Retry the same SOS request" variant="secondary" onPress={() => void state.retry()} />}
     {record && <>
       <Text style={[Typography.bodySmall, styles.description]}>{record.location
@@ -45,10 +73,10 @@ export function SosActiveScreen() {
         : "Location unavailable or sharing disabled."}</Text>
       {record.recipients.some((r) => r.initial.errorCode === "location_omitted_message_limit") &&
         <Text style={[Typography.bodySmall, styles.description]}>Location was omitted because the SMS length limit was reached.</Text>}
-      {record.recipients.map((recipient) => <View key={recipient.contactId} style={{ gap: 6 }}>
-        <Text style={[Typography.button, { color: BrandColors.secondary }]}>{recipient.name} · {recipient.phone}</Text>
-        <Text accessibilityLiveRegion="polite" style={{ color: BrandColors.secondary }}>{summary("Initial SMS", recipient.initial)}</Text>
-        {recipient.ended && <Text style={{ color: BrandColors.secondary }}>{summary("End update", recipient.ended)}</Text>}
+      {record.recipients.map((recipient) => <View key={recipient.contactId} style={{ gap: 12, padding: 16, borderRadius: 12, backgroundColor: colors.card, borderColor: colors.border, borderWidth: 1 }}>
+        <Text style={[Typography.button, { color: colors.text }]}>{recipient.name} · {recipient.phone}</Text>
+        <MessageRow label="SOS message" value={recipient.initial} now={now} color={colors.text} />
+        {recipient.ended && <MessageRow label="SOS ended message" value={recipient.ended} now={now} color={colors.text} />}
       </View>)}
       {record.recipients.some((r) => r.initial.status === "unknown" || r.ended?.status === "unknown") &&
         <Text style={[Typography.bodySmall, styles.description]}>An unknown submission may have reached the contact. It will not be resent automatically.</Text>}

@@ -14,8 +14,8 @@ function load(relative, overrides = {}) {
   }).outputText;
   const context = { exports: {}, process, fetch, Date, Error, Object, Promise, AbortController,
     setTimeout, clearTimeout, setInterval, clearInterval, ...overrides,
-    require: (name) => name.startsWith(".")
-      ? load(path.relative(path.resolve(__dirname, ".."), path.resolve(path.dirname(filename), name + ".ts"))) : require(name),
+    require: overrides.require ?? ((name) => name.startsWith(".")
+      ? load(path.relative(path.resolve(__dirname, ".."), path.resolve(path.dirname(filename), name + ".ts"))) : require(name)),
   };
   vm.runInNewContext(compiled, context);
   if (!Object.keys(overrides).length) cache.set(filename, context.exports);
@@ -75,6 +75,97 @@ async function harness(options = {}) {
   const advance = async (ms = 5000) => { time += ms; for (const tick of [...intervals]) tick(); await flush(); };
   return { store, deps, stats, storage, advance, uuidCalls: () => uuidCalls, intervals };
 }
+
+function permissionAdapter(getPermission, requestPermission) {
+  let dependencies;
+  const imports = {
+    "@react-native-async-storage/async-storage": { default: {} },
+    "expo-crypto": {},
+    "expo-location": { getForegroundPermissionsAsync: getPermission, requestForegroundPermissionsAsync: requestPermission },
+    zustand: {},
+    "@/modules/auth/store/auth.store": { useAuthStore: { getState: () => ({ user: null }), subscribe() {} } },
+    "@/modules/emergency-contacts/services/contacts.api": {},
+    "@/modules/settings/store/settings.store": {},
+    "../services/sos.api": { createSosApi: () => ({}) },
+    "./sos-session": { createSosStore: (deps) => {
+      dependencies = deps;
+      return { getState: () => ({ async setOwner() {} }) };
+    } },
+  };
+  load("src/modules/sos/store/sos.store.ts", { require: (name) => {
+    assert.ok(Object.hasOwn(imports, name), "Unexpected import: " + name);
+    return imports[name];
+  } });
+  return dependencies.permission;
+}
+
+test("already-granted location permission does not reopen native permissions and cancel SOS", async () => {
+  const h = await harness();
+  h.deps.shareLocation = () => true;
+  let requests = 0;
+  h.deps.permission = permissionAdapter(async () => ({ granted: true, canAskAgain: true }), async () => {
+    requests++;
+    // A native permission activity can pause the app during preparation.
+    h.store.getState().setForeground(false);
+    h.store.getState().cancelCountdown();
+    h.store.getState().setForeground(true);
+    return { granted: true };
+  });
+  await h.store.getState().begin();
+  assert.equal(requests, 0);
+  assert.equal(h.store.getState().phase, "countdown");
+  await h.advance();
+  assert.equal(h.stats.starts, 1);
+});
+
+test("blocked location permission continues without requesting permission again", async () => {
+  const h = await harness();
+  h.deps.shareLocation = () => true;
+  let requests = 0;
+  h.deps.permission = permissionAdapter(async () => ({ granted: false, canAskAgain: false }), async () => {
+    requests++;
+    return { granted: false };
+  });
+  await h.store.getState().begin();
+  await h.advance();
+  assert.equal(requests, 0);
+  assert.equal(h.stats.starts, 1);
+  assert.equal(h.stats.captures, 0);
+  assert.equal(JSON.parse(h.stats.bodies[0]).location, null);
+});
+
+test("location permission is requested when it can still be granted", async () => {
+  let requests = 0;
+  const permission = permissionAdapter(async () => ({ granted: false, canAskAgain: true }), async () => {
+    requests++;
+    return { granted: true };
+  });
+  assert.equal(await permission(), true);
+  assert.equal(requests, 1);
+});
+
+test("interruption during the first permission request stays cancelled and explains how to restart", async () => {
+  const h = await harness();
+  const permission = deferred();
+  h.deps.shareLocation = () => true;
+  h.deps.permission = () => permission.promise;
+  const begin = h.store.getState().begin();
+  h.store.getState().setForeground(false);
+  h.store.getState().cancelCountdown("SOS preparation cancelled because the app was interrupted. No request was sent. Tap again when ready.");
+  h.store.getState().setForeground(true);
+  await h.store.getState().refresh();
+  permission.resolve(true);
+  await begin;
+  await h.advance();
+  assert.equal(h.store.getState().phase, "idle");
+  assert.match(h.store.getState().notice, /No request was sent/);
+  assert.equal(h.store.getState().error, null);
+  assert.equal(h.stats.starts, 0);
+  h.deps.permission = async () => true;
+  await h.store.getState().begin();
+  assert.equal(h.store.getState().notice, null);
+  assert.equal(h.store.getState().phase, "countdown");
+});
 
 test("one five-second deadline survives tick drift and repeated taps without duplicate submission", async () => {
   const h = await harness();
@@ -224,6 +315,130 @@ test("unknown, failed, and accepted recipient outcomes remain distinct from life
   assert.equal(hasPending(r), false); r.recipients[0].initial.status = "queued"; assert.equal(hasPending(r), true);
 });
 
+const deliveryFixture = (overrides = {}) => ({ status: "pending", observedAt: null,
+  acceptedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 300000).toISOString(), tracking: "active",
+  lastAttemptAt: null, lastCheckedAt: null, lastCheckError: null, failureCode: null, ...overrides });
+
+test("delivery labels preserve progress, legacy failure and service-side guidance", () => {
+  const { messagePresentation } = load("src/modules/sos/types.ts");
+  const s = { status: "accepted", updatedAt: new Date().toISOString() };
+  assert.equal(messagePresentation(s).label, "Submitted");
+  assert.match(messagePresentation(s).detail, /unconfirmed/);
+  for (const [status, label] of [["sent", "Sent"], ["delivered", "Delivered"], ["failed", "Failed"]]) {
+    assert.equal(messagePresentation({ ...s, delivery: deliveryFixture({ status }) }).label, label);
+  }
+  assert.equal(messagePresentation({ status: "failed", errorCode: "delivery_failed" }).label, "Failed");
+  assert.match(messagePresentation({ status: "failed", errorCode: "authentication_failed" }).detail, /messaging service/);
+  const sent = messagePresentation({ ...s, delivery: deliveryFixture({ status: "sent", tracking: "timed_out", lastCheckError: "timeout" }) });
+  assert.equal(sent.label, "Sent"); assert.match(sent.detail, /not confirmed/); assert.doesNotMatch(sent.detail, /automatically/);
+});
+
+test("delivery fields validate while legacy responses remain usable; fresh GET does not change evidence times", () => {
+  const { isSosRecord, ageLabel } = load("src/modules/sos/types.ts");
+  const r = publicRecord({ requestId: "fixture", location: null });
+  assert.equal(isSosRecord(r), true);
+  r.recipients[0].initial.delivery = deliveryFixture(); assert.equal(isSosRecord(r), true);
+  r.recipients[0].initial.delivery.expiresAt = "bad"; assert.equal(isSosRecord(r), false);
+  assert.equal(ageLabel("2026-10-25T00:00:00Z", Date.parse("2026-10-25T00:01:10Z")), "1 minute ago");
+  assert.equal(ageLabel(null), "Not checked yet");
+});
+
+test("the frozen older mobile parser accepts the enhanced backend contract", () => {
+  const { isSosRecord: legacyParser } = require("./fixtures/sos-legacy-parser.cjs");
+  const r = publicRecord({ requestId: "fixture", location: null });
+  r.statusRefresh = { state: "complete", requestedAt: null, expiresAt: null, nextAllowedAt: null };
+  for (const status of ["pending", "sent", "delivered", "failed", "unknown"]) {
+    r.recipients[0].initial = { status: "accepted", updatedAt: new Date().toISOString(), delivery: deliveryFixture({ status }) };
+    assert.equal(legacyParser(r), true);
+  }
+});
+
+test("pending detection includes ended-message delivery and manual jobs but stops at deadlines", () => {
+  const r = publicRecord({ requestId: "fixture" });
+  r.status = "ended"; r.recipients[0].initial.status = "accepted";
+  r.recipients[0].ended = { status: "accepted", delivery: deliveryFixture() };
+  assert.equal(hasPending(r), true);
+  const end = Date.parse(r.recipients[0].ended.delivery.expiresAt);
+  assert.equal(hasPending(r, end), false);
+  r.statusRefresh = { state: "pending", expiresAt: new Date(end + 60000).toISOString() };
+  assert.equal(hasPending(r, end), true); assert.equal(hasPending(r, end + 60000), false);
+});
+
+test("a fresh GET updates mobile time while preserving different per-message check times", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const times = ["2026-10-25T00:00:00.000Z", "2026-10-25T00:00:15.000Z"];
+  h.stats.record.recipients[0].initial = { status: "accepted", updatedAt: times[0], delivery: deliveryFixture({ status: "sent", lastCheckedAt: times[0] }) };
+  h.stats.record.recipients.push({ ...h.stats.record.recipients[0], contactId: "second",
+    initial: { status: "accepted", updatedAt: times[0], delivery: deliveryFixture({ status: "delivered", lastCheckedAt: times[1] }) } });
+  await h.store.getState().refresh(false); const fetched = h.store.getState().lastFetchedAt;
+  await h.advance(); await h.store.getState().refresh(false);
+  assert.notEqual(h.store.getState().lastFetchedAt, fetched);
+  assert.deepEqual(h.store.getState().record.recipients.map(r => r.initial.delivery.lastCheckedAt), times);
+  const { messagePresentation } = load("src/modules/sos/types.ts");
+  assert.deepEqual(h.store.getState().record.recipients.map(r => messagePresentation(r.initial).label), ["Sent", "Delivered"]);
+  assert.equal(h.stats.starts, 1);
+});
+
+test("known SOS polling uses only its GET and keeps lifecycle and Stop available on errors", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  let discovery = 0; h.deps.api.active = async () => { discovery++; return null; };
+  await h.store.getState().refresh(false); assert.equal(discovery, 0);
+  const prior = h.store.getState().record;
+  h.deps.api.get = async () => { throw new Error("offline"); };
+  await h.store.getState().refresh(false);
+  assert.equal(h.store.getState().phase, "active"); assert.equal(h.store.getState().record, prior);
+  assert.match(h.store.getState().error, /last-known/);
+  assert.equal(h.stats.starts, 1);
+  await h.store.getState().stop(); assert.equal(h.stats.stops, 1);
+});
+
+test("mobile lookup errors use 10/20/40/60s backoff and success resets cadence", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  h.deps.api.get = async () => { throw new Error("offline"); };
+  for (const delay of [10000, 20000, 40000, 60000]) {
+    const before = h.deps.now(); await h.store.getState().refresh(false);
+    assert.equal(h.store.getState().nextPollAt - before, delay);
+  }
+  h.deps.api.get = async () => h.stats.record; await h.store.getState().refresh(false);
+  assert.equal(h.store.getState().lookupFailures, 0); assert.equal(h.store.getState().nextPollAt - h.deps.now(), 5000);
+});
+
+test("status-only refresh is distinct from activation retry and ignores late owner responses", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const waiting = deferred(); let checks = 0;
+  h.deps.api.refreshStatus = async () => { checks++; return waiting.promise; };
+  const pending = h.store.getState().refreshStatus(); await flush();
+  await h.store.getState().refreshStatus(); assert.equal(checks, 1);
+  await h.store.getState().setOwner("another-owner"); waiting.resolve(h.stats.record); await pending;
+  assert.equal(h.store.getState().record, null); assert.equal(h.stats.starts, 1); assert.equal(h.stats.stops, 0);
+});
+
+test("legacy refresh 404 falls back once to owned GET, and does not conceal an absent SOS", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  let checks = 0; let gets = 0;
+  h.deps.api.refreshStatus = async () => { checks++; throw new apiModule.SosApiError(404); };
+  h.deps.api.get = async () => { gets++; return h.stats.record; };
+  await h.store.getState().refreshStatus(); assert.match(h.store.getState().notice, /Enhanced status refresh is unavailable/);
+  h.deps.api.get = async () => { gets++; throw new apiModule.SosApiError(404); };
+  await h.store.getState().refreshStatus(); assert.match(h.store.getState().error, /saved SOS is unavailable/);
+  assert.equal(checks, 2); assert.equal(gets, 2); assert.equal(h.stats.starts, 1);
+});
+
+test("focused polling fetches on entry, stops at deadline, and ignores disposed timers", async () => {
+  let time = Date.now(); const scheduled = new Map(); let counter = 0; let reads = 0;
+  const { startStatusPolling } = load("src/modules/sos/store/sos-polling.ts", {
+    setTimeout: fn => { scheduled.set(++counter, fn); return counter; }, clearTimeout: id => scheduled.delete(id),
+  });
+  const r = publicRecord({ requestId: "fixture" }); r.recipients[0].initial = { status: "accepted", delivery: deliveryFixture({ expiresAt: new Date(time + 10000).toISOString() }) };
+  const state = { owner: "fixture", ready: true, foreground: true, record: r, phase: "active", nextPollAt: 0,
+    async refresh(discover) { reads++; state.nextPollAt = time + 5000; assert.equal(discover, reads === 1); } };
+  const dispose = startStatusPolling({ getState: () => state }, () => time); await flush(); assert.equal(reads, 1);
+  const tick = async gap => { time += gap; const fn = [...scheduled.values()][0]; scheduled.clear(); fn?.(); await flush(); };
+  await tick(5000); assert.equal(reads, 2); await tick(5000); assert.equal(reads, 3);
+  await tick(60000); assert.equal(reads, 3); dispose(); assert.equal(scheduled.size, 0);
+  state.foreground = false; const off = startStatusPolling({ getState: () => state }, () => time); await flush(); assert.equal(reads, 3); off();
+});
+
 if (process.env.SOS_SIM_BASE_URL) {
   const base = process.env.SOS_SIM_BASE_URL;
   const url = new URL(base);
@@ -251,6 +466,26 @@ if (process.env.SOS_SIM_BASE_URL) {
         assert.equal((await control("counts")).starts, 2);
       }
     }
+  });
+
+  test("real mobile store reads both delivery rows and status-only POST without new activation or stop", async () => {
+    await control("reset"); await control("mode?value=delivery");
+    const h = await harness(); h.deps.api = apiModule.createSosApi(async () => "local-fixture", base, 1000);
+    await h.store.getState().begin(); await h.advance();
+    for (let i = 0; i < 100 && h.store.getState().phase !== "active"; i++) await new Promise(r => setTimeout(r, 10));
+    assert.equal(h.store.getState().record.recipients[0].initial.delivery.status, "pending");
+    for (const status of ["sent", "delivered"]) {
+      await control("delivery?value=" + status); await h.store.getState().refresh(false);
+      assert.equal(h.store.getState().record.recipients[0].initial.delivery.status, status);
+    }
+    await h.store.getState().stop(); assert.equal(h.store.getState().record.recipients[0].ended.delivery.status, "pending");
+    await control("delivery?which=ended&value=sent"); await h.store.getState().refreshStatus();
+    assert.equal(h.store.getState().record.statusRefresh.state, "pending");
+    await h.store.getState().refresh(false);
+    assert.equal(h.store.getState().record.statusRefresh.state, "complete");
+    assert.equal(h.store.getState().record.recipients[0].initial.delivery.status, "delivered");
+    assert.equal(h.store.getState().record.recipients[0].ended.delivery.status, "sent");
+    const counts = await control("counts"); assert.equal(counts.starts, 1); assert.equal(counts.stops, 1); assert.equal(counts.refreshes, 1);
   });
 
   test("an unreachable service keeps the attempt uncertain without an automatic resend", async () => {
