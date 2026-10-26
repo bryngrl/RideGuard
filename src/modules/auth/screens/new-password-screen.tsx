@@ -64,6 +64,7 @@ export default function NewPasswordScreen() {
   const handleBack = () => {
     if (pending.current) return;
     Keyboard.dismiss();
+    usePasswordRecoveryStore.getState().clearVerifiedSession();
     if (router.canGoBack()) router.back();
     else router.replace("/(public)/forgot-password");
   };
@@ -125,7 +126,7 @@ export default function NewPasswordScreen() {
       <Stack.Screen options={{ gestureEnabled: !loading }} />
       <View style={styles.form}>
         {!canEdit && !loading && (
-          <FormFeedback message="Your reset session has expired or is invalid. Request a new code to continue." />
+          <FormFeedback message="Reset link expired. Request a new link." />
         )}
         <CustomTextInput label="New password" required isPassword
           value={password} onChangeText={(value) => { setPassword(value); setRequestError(null); }}
@@ -145,7 +146,7 @@ export default function NewPasswordScreen() {
         {canEdit && requestError && <FormFeedback message={requestError} tone="error" />}
         <Button title="Change Password" onPress={handleSubmit} isLoading={loading}
           disabled={!canEdit || !!passwordError || !!confirmationError} style={styles.submitButton} />
-        {!canEdit && !loading && <Button title="Request a new code" variant="ghost" onPress={restartRecovery} />}
+        {!canEdit && !loading && <Button title="Request a new link" variant="ghost" onPress={restartRecovery} />}
       </View>
     </AuthFormLayout>
   );

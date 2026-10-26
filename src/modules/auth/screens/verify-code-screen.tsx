@@ -98,15 +98,15 @@ export default function VerifyCodeScreen() {
       return;
     }
     if (code.length !== CODE_LENGTH) {
-      setError("Enter the complete six-digit code.");
+      setError("Enter the six-digit code.");
       return;
     }
     if (!delivery) {
-      setError("No code has been sent. Password recovery is not connected yet.");
+      setError("Password recovery unavailable. No code sent.");
       return;
     }
     if (Date.now() >= delivery.expiresAt) {
-      setError("That code has expired. Request a new code.");
+      setError("Code expired. Request a new one.");
       return;
     }
 
@@ -117,7 +117,7 @@ export default function VerifyCodeScreen() {
       const result = await verifyResetCode(destination, code);
       if (!active.current) return;
       if (!usePasswordRecoveryStore.getState().setVerifiedSession(destination, result)) {
-        setError("Your reset session is invalid or expired. Request a new code.");
+        setError("Reset session expired. Request a new code.");
         return;
       }
       setCode("");

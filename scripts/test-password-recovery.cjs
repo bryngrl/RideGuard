@@ -4,6 +4,16 @@ const path = require("node:path");
 const { test } = require("node:test");
 const vm = require("node:vm");
 const ts = require("typescript");
+const firebaseCalls = [];
+let validLink = true;
+const firebase = {
+  verifyPasswordResetCode: async (_auth, code) => {
+    firebaseCalls.push(["verify", code]);
+    if (code !== "valid-reset-code" || !validLink) throw { code: "auth/invalid-action-code" };
+    return "test@example.test";
+  },
+  confirmPasswordReset: async (_auth, code, password) => { firebaseCalls.push(["confirm", code, password]); },
+};
 
 // Same lightweight TypeScript test harness as test-mjpeg-document.cjs.
 function load(relativePath) {
@@ -11,7 +21,11 @@ function load(relativePath) {
     readFileSync(path.join(__dirname, "..", relativePath), "utf8"),
     { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
   ).outputText;
-  const context = { exports: {}, require, Date, Error, TypeError };
+  const context = { exports: {}, require: (name) => {
+    if (name === "firebase/auth") return firebase;
+    if (name === "@/lib/firebase") return { auth: {} };
+    return require(name);
+  }, Date, Error, TypeError };
   vm.runInNewContext(compiled, context);
   return context.exports;
 }
@@ -68,23 +82,50 @@ test("invalid verification clears any previous reset session", () => {
   assert.equal(store.getState().completed, false);
 });
 
-test("unconnected services cannot fake OTP delivery, verification, or password reset success", async () => {
+test("legacy OTP services cannot fake delivery or verification", async () => {
   for (const action of [
     () => recovery.requestResetCode("test@example.test"),
     () => recovery.resendResetCode("test@example.test"),
     () => recovery.verifyResetCode("test@example.test", ""),
-    () => recovery.changeResetPassword("session-fixture", "ValidPass123!"),
   ]) {
     await assert.rejects(action, (error) => error instanceof recovery.RecoveryError && error.code === "unavailable");
   }
 });
 
 test("recovery errors give specific instructions for invalid codes, expiry, and connectivity", () => {
-  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("invalid-code", "")), /incorrect/);
+  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("invalid-code", "")), /incorrect/i);
   assert.match(recovery.recoveryMessage(new recovery.RecoveryError("expired-code", "")), /expired/);
-  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("invalid-session", "")), /Request a new code/);
-  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("expired-session", "")), /Request a new code/);
+  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("invalid-session", "")), /Request a new link/);
+  assert.match(recovery.recoveryMessage(new recovery.RecoveryError("expired-session", "")), /Request a new link/);
   assert.match(recovery.recoveryMessage(new recovery.RecoveryError("network", "")), /internet/);
   assert.match(recovery.recoveryMessage(new TypeError("Network request failed")), /internet/);
-  assert.match(recovery.recoveryMessage(new Error("unexpected")), /try again/);
+  assert.match(recovery.recoveryMessage(new Error("unexpected")), /try again/i);
+});
+
+test("a Firebase-verified link authorizes the new-password form without inventing expiry", async () => {
+  validLink = true;
+  const result = await recovery.verifyPasswordResetLink("valid-reset-code", "TEST@example.test");
+  assert.equal(result.email, "test@example.test");
+  assert.equal(result.session.provider, "firebase");
+  assert.equal(result.session.expiresAt, undefined);
+  assert.equal(store.getState().setVerifiedSession(result.email, result.session), true);
+  assert.equal(isResetSessionValid(store.getState().session), true);
+  store.getState().clear();
+});
+
+test("password changes revalidate the action before confirming the new password", async () => {
+  validLink = true; firebaseCalls.length = 0;
+  assert.equal((await recovery.changeResetPassword("valid-reset-code", "ValidPass123!")).success, true);
+  assert.deepEqual(firebaseCalls, [["verify", "valid-reset-code"], ["confirm", "valid-reset-code", "ValidPass123!"]]);
+});
+
+test("expired, used, or wrong-account links never change a password", async () => {
+  validLink = true;
+  await assert.rejects(recovery.verifyPasswordResetLink("valid-reset-code", "another@example.test"),
+    (error) => error.code === "invalid-session");
+  validLink = false; firebaseCalls.length = 0;
+  await assert.rejects(recovery.changeResetPassword("valid-reset-code", "ValidPass123!"),
+    (error) => error.code === "invalid-session");
+  assert.equal(firebaseCalls.some(([operation]) => operation === "confirm"), false);
+  validLink = true;
 });
