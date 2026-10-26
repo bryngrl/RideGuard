@@ -1,8 +1,9 @@
 import { APIError } from "./errors";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
+export const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
+  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1"
+).replace(/\/+$/, "");
 
 export interface RequestOptions extends RequestInit {
   token?: string;
@@ -82,8 +83,8 @@ export class APIClient {
       const contentType = response.headers.get("content-type") ?? "";
       if (contentType.includes("text/html") || /^\s*</.test(rawResponse)) {
         message = response.status === 503
-          ? "The service is temporarily unavailable. Please try again shortly."
-          : "The server returned an unexpected response. Please try again.";
+          ? "Service unavailable. Try again later."
+          : "Server error. Try again.";
       }
 
       throw new APIError(message, response.status, data);

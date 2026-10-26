@@ -1,10 +1,8 @@
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { appendPhoto } from "@/shared/api/photo-upload";
+import { API_BASE_URL } from "@/shared/api/client";
 import type { ImagePickerAsset } from "expo-image-picker";
 import type { EmergencyContact } from "../types/emergency-contact.types";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
 
 type ContactRecord = {
   id: string;
@@ -20,7 +18,7 @@ type ContactInput = { name: string; phone: string; relationship: string; photoAs
 
 async function token() {
   const user = useAuthStore.getState().user;
-  if (!user) throw new Error("Sign in with Google to manage emergency contacts.");
+  if (!user) throw new Error("Log in to manage contacts.");
   return user.getIdToken();
 }
 

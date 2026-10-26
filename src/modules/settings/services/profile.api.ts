@@ -1,9 +1,7 @@
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { appendPhoto } from "@/shared/api/photo-upload";
+import { API_BASE_URL } from "@/shared/api/client";
 import type { ImagePickerAsset } from "expo-image-picker";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
 
 export type ProfileDocument = {
   personalInfo?: {
@@ -22,7 +20,7 @@ export type ProfileDocument = {
 
 async function authToken() {
   const user = useAuthStore.getState().user;
-  if (!user) throw new Error("Sign in with Google to manage your profile.");
+  if (!user) throw new Error("Log in to manage your profile.");
   return user.getIdToken();
 }
 

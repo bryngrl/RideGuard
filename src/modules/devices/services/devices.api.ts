@@ -17,21 +17,15 @@ export async function claimDevice(
   );
 }
 
-/** Backend contract: release the signed-in user's claim on this device. */
+/** The current backend exposes claim-device as PATCH only; no release route exists. */
 export async function releaseDevice(
   deviceId: string,
-  firebaseToken: string,
+  _firebaseToken: string,
 ): Promise<void> {
   const trimmedId = deviceId.trim();
   if (!trimmedId) {
     throw new Error("Device ID is required.");
   }
 
-  const response = await apiClient.delete<DeviceApiResponse | null>(
-    `/devices/claim-device/${encodeURIComponent(trimmedId)}`,
-    firebaseToken,
-  );
-  if (response?.success === false) {
-    throw new Error(response.message || "Could not disconnect the device.");
-  }
+  throw new Error("Device disconnect is not available yet.");
 }
