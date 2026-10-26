@@ -31,7 +31,7 @@ export function useCameras() {
       setCameras(list);
     } catch (err) {
       console.error("Failed to load cameras:", err);
-      setError("Could not load your cameras.");
+      setError("Couldn't load cameras.");
     } finally {
       isFetchingRef.current = false;
       setIsLoading(false);

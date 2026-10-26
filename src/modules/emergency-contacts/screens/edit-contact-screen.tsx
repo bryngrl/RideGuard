@@ -167,20 +167,20 @@ export function EditContactScreen() {
     const trimmedPhone = phoneNumber.trim();
 
     if (!trimmedName) {
-      setContactNameError("Please enter an emergency contact name.");
+      setContactNameError("Enter the contact name.");
       isValid = false;
     }
 
     if (!trimmedPhone) {
-      setPhoneNumberError("Please enter a phone number.");
+      setPhoneNumberError("Enter a phone number.");
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
-      setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+      setPhoneNumberError("Enter a valid 10-digit mobile number.");
       isValid = false;
     }
 
     if (!relationship.trim()) {
-      setRelationshipError("Please select a relationship.");
+      setRelationshipError("Select a relationship.");
       isValid = false;
     }
 
@@ -440,7 +440,7 @@ export function EditContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Enter the contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
               if (contactNameError) setContactNameError("");
@@ -458,7 +458,7 @@ export function EditContactScreen() {
             inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneNumberError}
             onBlur={() => {
-              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
           />

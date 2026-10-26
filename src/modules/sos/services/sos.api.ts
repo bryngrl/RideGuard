@@ -65,12 +65,12 @@ export type SosApi = ReturnType<typeof createSosApi>;
 
 export function sosErrorMessage(error: unknown): string {
   if (error instanceof SosApiError) {
-    if (error.code === "SOS_DISABLED") return "SOS is not enabled on the service. Contact your emergency contacts directly.";
-    if (error.code === "SOS_NO_CONTACTS") return "No usable emergency contacts were found. Check your saved contacts.";
+    if (error.code === "SOS_DISABLED") return "SOS unavailable. Contact someone directly.";
+    if (error.code === "SOS_NO_CONTACTS") return "No available contacts. Check saved contacts.";
     if (error.status === 401 || error.status === 403) return "Sign in again to use SOS.";
     if (error.status === 404) return "The requested SOS or alert is unavailable.";
-    if (error.status === 409) return "This SOS request conflicts with an earlier request. Check its status.";
-    if (error.status === 400) return "The SOS request could not be accepted. Check its status before trying again.";
+    if (error.status === 409) return "SOS request conflict. Check its status.";
+    if (error.status === 400) return "SOS not accepted. Check its status first.";
   }
-  return "Could not reach the SOS service. Check your connection or contact someone directly.";
+  return "SOS unreachable. Contact someone directly.";
 }

@@ -55,7 +55,7 @@ export function useLogout() {
       returnToWelcome();
     } catch (error) {
       console.error("Logout error:", error);
-      Alert.alert("Logout failed", "Something went wrong while logging out.");
+      Alert.alert("Logout failed", "Couldn't log out. Try again.");
     }
   };
   return {

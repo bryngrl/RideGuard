@@ -76,7 +76,7 @@ export function usePhoneCapture() {
         if (!cancelled) setDeviceId(id);
       } catch (err) {
         console.error("Phone camera registration failed:", err);
-        if (!cancelled) setError("Could not set up the phone camera.");
+        if (!cancelled) setError("Couldn't set up phone camera.");
       }
     })();
     return () => {
@@ -167,7 +167,7 @@ export function usePhoneCapture() {
       );
     } catch (err) {
       console.error("Phone capture start failed:", err);
-      setError("Could not start the phone camera. Try again.");
+      setError("Couldn't start camera. Try again.");
       if (token && sessionId) {
         endPhoneSession(token, deviceId, sessionId).catch(() => undefined);
       }

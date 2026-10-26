@@ -125,12 +125,12 @@ export function AddContactScreen() {
     const trimmedPhone = phoneNumber.trim();
 
     if (!trimmedName) {
-      setContactNameError("Please enter an emergency contact name.");
+      setContactNameError("Enter the contact name.");
       isValid = false;
     }
 
     if (!trimmedPhone) {
-      setPhoneNumberError("Please enter a phone number.");
+      setPhoneNumberError("Enter a phone number.");
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Enter a valid 10-digit mobile number.");
@@ -138,7 +138,7 @@ export function AddContactScreen() {
     }
 
     if (!relationship.trim()) {
-      setRelationshipError("Please select a relationship.");
+      setRelationshipError("Select a relationship.");
       isValid = false;
     }
 
@@ -161,7 +161,7 @@ export function AddContactScreen() {
       setIsLoading(true);
       Keyboard.dismiss();
       const existing = await listContacts();
-      if (existing.length >= 5) throw new Error("You can have up to five emergency contacts.");
+      if (existing.length >= 5) throw new Error("Maximum of five contacts allowed.");
       await createContact({
         name: contactName.trim(),
         phone: `+63${phoneNumber}`,
@@ -279,7 +279,7 @@ export function AddContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Enter the contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
 

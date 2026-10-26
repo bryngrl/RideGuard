@@ -83,9 +83,9 @@ export function createSosStore(deps: Dependencies) {
       revision++;
       set({ phase: "submitting", error: null });
       try { await persist(recovery); }
-      catch { if (version === ownerVersion) set({ phase: "retry", error: "Could not save SOS recovery data. No request was sent. Try again." }); return; }
+      catch { if (version === ownerVersion) set({ phase: "retry", error: "Couldn't save SOS recovery. No request sent." }); return; }
       if (version !== ownerVersion) return;
-      if (!get().foreground) { set({ phase: "retry", error: "SOS was not submitted before the app left the foreground. Retry when ready." }); return; }
+      if (!get().foreground) { set({ phase: "retry", error: "SOS not sent. Return to the app to retry." }); return; }
       try { await accept(await deps.api.start(owner, recovery.body, controller.signal), ownerVersion); }
       catch (error) {
         if (version !== ownerVersion) return;
@@ -178,11 +178,11 @@ export function createSosStore(deps: Dependencies) {
           const found = recovery?.body ? matched || currentActive : currentActive || matched;
           if (found) { await accept(found, ownerVersion); return; }
           if (lookup.status === "rejected" || active.status === "rejected") {
-            set({ error: "Could not check SOS status. Check your connection and refresh.", ...(recovery ? { phase: "checking" as Phase } : {}) });
+            set({ error: "Couldn't check SOS status. Refresh to retry.", ...(recovery ? { phase: "checking" as Phase } : {}) });
           } else if (recovery?.body) {
-            set({ phase: "retry", error: "No SOS was found for this attempt. Retry sends the same saved request only when you choose." });
+            set({ phase: "retry", error: "SOS not found. Retry when ready." });
           } else if (recovery) {
-            set({ phase: "checking", error: "The saved SOS is unavailable. Check status again before starting another." });
+            set({ phase: "checking", error: "Saved SOS unavailable. Check status first." });
           } else set({ phase: "idle", error: null });
         } finally { if (version === ownerVersion) set({ refreshing: false }); }
       },
