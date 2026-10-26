@@ -33,9 +33,11 @@ async function harness(options = {}) {
   let time = Date.now();
   let uuidCalls = 0;
   const intervals = new Set();
+  const locationDiagnostics = [];
   const storage = new Map(options.seed ? [["rideguard-sos-recovery", JSON.stringify(options.seed)]] : []);
   const stats = { starts: 0, stops: 0, permissions: 0, captures: 0, bodies: [], mode: "normal", record: null };
   const deps = {
+    locationDiagnostic: (event) => locationDiagnostics.push(event),
     api: {
       async start(uid, body) {
         stats.starts++; stats.bodies.push(JSON.stringify(body));
@@ -62,7 +64,7 @@ async function harness(options = {}) {
       async removeItem(key) { storage.delete(key); },
     },
     async contacts() { return [{ id: "contact", name: "Test contact", phoneNumber: "test-fixture", relationship: "Friend" }]; },
-    shareLocation: () => false,
+    shareLocation: () => true,
     async permission() { stats.permissions++; return true; },
     async capture() { stats.captures++; return null; },
     uuid: () => { uuidCalls++; return "00000000-0000-4000-8000-000000000001"; }, now: () => time,
@@ -73,15 +75,76 @@ async function harness(options = {}) {
   const store = createSosStore(deps);
   await store.getState().setOwner("owner-a"); store.getState().setForeground(true); await store.getState().loadContacts();
   const advance = async (ms = 5000) => { time += ms; for (const tick of [...intervals]) tick(); await flush(); };
-  return { store, deps, stats, storage, advance, uuidCalls: () => uuidCalls, intervals };
+  return { store, deps, stats, storage, advance, uuidCalls: () => uuidCalls, intervals, locationDiagnostics };
 }
 
-function permissionAdapter(getPermission, requestPermission) {
+const { resolveSosEntry } = load("src/modules/sos/store/sos-entry.ts");
+
+test("SOS entry waits for discovery and routes idle and active sessions without sending messages", async () => {
+  const h = await harness();
+  const lookup = deferred();
+  h.deps.api.active = () => lookup.promise;
+  let resolved = false;
+  const opening = resolveSosEntry(h.store, "owner-a").then(route => { resolved = true; return route; });
+  await flush();
+  assert.equal(h.store.getState().refreshing, true);
+  assert.equal(resolved, false);
+  lookup.resolve(null);
+  assert.equal(await opening, "/sos");
+  h.deps.api.active = async () => publicRecord({ requestId: "existing-request" });
+  assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos/active");
+  assert.equal(h.stats.starts, 0);
+  assert.equal(h.stats.permissions, 0);
+});
+
+test("SOS entry keeps failed discovery on the opening screen so the user can retry", async () => {
+  const h = await harness();
+  h.deps.api.active = async () => { throw new Error("offline"); };
+  await assert.rejects(resolveSosEntry(h.store, "owner-a"), /Could not check SOS status/);
+  h.deps.api.active = async () => null;
+  assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+  assert.equal(h.stats.starts, 0);
+});
+
+test("SOS entry ignores discovery after logout or backgrounding", async () => {
+  for (const interrupt of [h => h.store.getState().setOwner(null), h => h.store.getState().setForeground(false)]) {
+    const h = await harness(); const lookup = deferred();
+    h.deps.api.active = () => lookup.promise;
+    const opening = resolveSosEntry(h.store, "owner-a"); await flush();
+    await interrupt(h); lookup.resolve(publicRecord({ requestId: "old-request" }));
+    assert.equal(await opening, null);
+    assert.equal(h.stats.starts, 0);
+  }
+});
+
+test("SOS entry waits for an existing lookup before resolving the destination", async () => {
+  const h = await harness(); const lookup = deferred();
+  h.deps.api.active = () => lookup.promise;
+  const refresh = h.store.getState().refresh();
+  const opening = resolveSosEntry(h.store, "owner-a");
+  await flush(); lookup.resolve(publicRecord({ requestId: "existing-request" }));
+  await refresh;
+  assert.equal(await opening, "/sos/active");
+  assert.equal(h.stats.starts, 0);
+});
+
+test("a prechecked first SOS screen skips discovery, but resuming still checks", async () => {
+  const h = await harness(); let reads = 0;
+  h.deps.api.active = async () => { reads++; return null; };
+  const { startStatusPolling } = load("src/modules/sos/store/sos-polling.ts");
+  const stop = startStatusPolling(h.store, Date.now, false);
+  await flush(); assert.equal(reads, 0); stop();
+  const resumed = startStatusPolling(h.store);
+  await flush(); assert.equal(reads, 1); resumed();
+});
+
+function permissionAdapter(getPermission, requestPermission, native = { Alert: { alert() {} }, Linking: { async openSettings() {} } }) {
   let dependencies;
   const imports = {
     "@react-native-async-storage/async-storage": { default: {} },
     "expo-crypto": {},
     "expo-location": { getForegroundPermissionsAsync: getPermission, requestForegroundPermissionsAsync: requestPermission },
+    "react-native": native,
     zustand: {},
     "@/modules/auth/store/auth.store": { useAuthStore: { getState: () => ({ user: null }), subscribe() {} } },
     "@/modules/emergency-contacts/services/contacts.api": {},
@@ -118,20 +181,26 @@ test("already-granted location permission does not reopen native permissions and
   assert.equal(h.stats.starts, 1);
 });
 
-test("blocked location permission continues without requesting permission again", async () => {
+test("blocked location permission prevents SOS and offers phone settings", async () => {
   const h = await harness();
   h.deps.shareLocation = () => true;
   let requests = 0;
+  let prompt;
+  let settings = 0;
   h.deps.permission = permissionAdapter(async () => ({ granted: false, canAskAgain: false }), async () => {
     requests++;
     return { granted: false };
-  });
+  }, { Alert: { alert: (...args) => { prompt = args; } }, Linking: { async openSettings() { settings++; } } });
   await h.store.getState().begin();
   await h.advance();
   assert.equal(requests, 0);
-  assert.equal(h.stats.starts, 1);
+  assert.equal(h.stats.starts, 0);
   assert.equal(h.stats.captures, 0);
-  assert.equal(JSON.parse(h.stats.bodies[0]).location, null);
+  assert.equal(h.store.getState().phase, "idle");
+  assert.match(h.store.getState().notice, /required/);
+  assert.equal(prompt[0], "Location permission required");
+  prompt[2][1].onPress(); await flush();
+  assert.equal(settings, 1);
 });
 
 test("location permission is requested when it can still be granted", async () => {
@@ -174,7 +243,7 @@ test("one five-second deadline survives tick drift and repeated taps without dup
   await h.advance(500); assert.equal(h.stats.starts, 1); assert.equal(h.uuidCalls(), 1);
   assert.equal(h.store.getState().phase, "active");
   assert.equal(JSON.parse(h.storage.get("rideguard-sos-recovery")).body, null);
-  assert.equal(h.stats.permissions, 0); assert.equal(h.stats.captures, 0);
+  assert.equal(h.stats.permissions, 1); assert.equal(h.stats.captures, 1);
 });
 
 test("cancel/back and background before expiry send nothing, including after resume", async () => {
@@ -185,12 +254,70 @@ test("cancel/back and background before expiry send nothing, including after res
   }
 });
 
-test("permission denial continues without a fix, while sharing off never requests permission", async () => {
+test("permission denial blocks SOS, and a later grant allows a new attempt", async () => {
   const h = await harness(); h.deps.shareLocation = () => true;
   h.deps.permission = async () => { h.stats.permissions++; return false; };
   await h.store.getState().begin(); await h.advance();
   assert.equal(h.stats.permissions, 1); assert.equal(h.stats.captures, 0);
-  assert.equal(JSON.parse(h.stats.bodies[0]).location, null);
+  assert.equal(h.stats.starts, 0); assert.equal(h.uuidCalls(), 0);
+  assert.equal(h.storage.size, 0); assert.equal(h.store.getState().phase, "idle");
+  h.deps.permission = async () => true;
+  await h.store.getState().begin(); await h.advance();
+  assert.equal(h.stats.starts, 1);
+});
+
+test("sharing off blocks SOS without requesting device permission", async () => {
+  const h = await harness(); h.deps.shareLocation = () => false;
+  await h.store.getState().begin(); await h.advance();
+  assert.equal(h.stats.permissions, 0); assert.equal(h.stats.captures, 0);
+  assert.equal(h.stats.starts, 0); assert.equal(h.store.getState().phase, "idle");
+  assert.match(h.store.getState().notice, /Allow location sharing/);
+});
+
+test("failed permission check blocks SOS without sending or capturing location", async () => {
+  const h = await harness(); h.deps.permission = async () => { throw new Error("permission unavailable"); };
+  await h.store.getState().begin(); await h.advance();
+  assert.equal(h.stats.starts, 0); assert.equal(h.stats.captures, 0);
+  assert.equal(h.store.getState().phase, "idle");
+});
+
+test("revoking sharing during preparation or countdown cancels SOS", async () => {
+  for (const duringPermission of [true, false]) {
+    const h = await harness();
+    if (duringPermission) h.deps.permission = async () => { h.deps.shareLocation = () => false; return true; };
+    await h.store.getState().begin();
+    h.deps.shareLocation = () => false;
+    await h.advance();
+    assert.equal(h.stats.starts, 0); assert.equal(h.store.getState().phase, "idle");
+    assert.equal(h.intervals.size, 0);
+  }
+});
+
+test("location diagnostics distinguish a slow fix from capture errors and unusable fixes", async () => {
+  const scenarios = [
+    { reason: "capture_pending", capture: () => new Promise(() => {}) },
+    { reason: "capture_failed", capture: async () => { throw Object.assign(new Error("private error text"), { code: "E_LOCATION_UNAVAILABLE" }); } },
+    { reason: "no_fix", capture: async () => null },
+    { reason: "invalid_or_stale_fix", capture: async () => ({ latitude: 14, longitude: 121, capturedAt: new Date(Date.now() - 180000).toISOString(), accuracyMeters: 10 }) },
+    { reason: "included", capture: async () => ({ latitude: 14, longitude: 121, capturedAt: new Date().toISOString(), accuracyMeters: 10 }) },
+  ];
+  for (const scenario of scenarios) {
+    const h = await harness();
+    h.deps.capture = scenario.capture;
+    await h.store.getState().begin();
+    await flush();
+    await h.advance();
+    const decision = h.locationDiagnostics.find(event => event.event === "submission_location");
+    assert.equal(decision.reason, scenario.reason);
+    assert.equal(decision.hasLocation, scenario.reason === "included");
+    const confirmed = h.locationDiagnostics.find(event => event.event === "confirmed_location");
+    assert.equal(confirmed.hasLocation, decision.hasLocation);
+    const serialized = JSON.stringify(h.locationDiagnostics);
+    assert.doesNotMatch(serialized, /latitude|longitude|private error text/);
+    if (scenario.reason === "capture_failed") {
+      assert.equal(h.locationDiagnostics.find(event => event.event === "capture_failed").errorCode, "E_LOCATION_UNAVAILABLE");
+    }
+  }
 });
 
 test("late location cannot mutate the persisted final body or create another submission", async () => {
@@ -319,6 +446,103 @@ const deliveryFixture = (overrides = {}) => ({ status: "pending", observedAt: nu
   acceptedAt: new Date().toISOString(), expiresAt: new Date(Date.now() + 300000).toISOString(), tracking: "active",
   lastAttemptAt: null, lastCheckedAt: null, lastCheckError: null, failureCode: null, ...overrides });
 
+for (const result of ["delivered", "failed", "pending", "unknown", "timed_out", "send_failed"]) {
+  test(`Done dismisses an ended SOS with ${result} messages and permits a fresh SOS`, async () => {
+    const h = await harness();
+    await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+    const record = h.store.getState().record;
+    const submission = {
+      status: result === "send_failed" ? "failed" : "accepted",
+      updatedAt: record.endedAt,
+      delivery: result === "send_failed" ? null : deliveryFixture({
+        status: result === "timed_out" ? "pending" : result,
+        tracking: result === "timed_out" ? "timed_out" : ["delivered", "failed"].includes(result) ? "complete" : "active",
+      }),
+    };
+    record.recipients[0].initial = submission;
+    record.recipients[0].ended = { ...submission };
+    if (result === "timed_out") await h.advance(300001);
+    await h.store.getState().dismissEnded();
+    assert.equal(h.store.getState().record, null);
+    assert.equal(h.store.getState().recovery, null);
+    assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+    assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+    assert.equal(h.stats.starts, 1, "Done and re-entry never send an SMS");
+    h.deps.uuid = () => "00000000-0000-4000-8000-000000000002";
+    await h.store.getState().begin();
+    assert.equal(h.store.getState().phase, "countdown");
+    await h.advance();
+    assert.equal(h.stats.starts, 2);
+    assert.notEqual(h.store.getState().record.requestId, record.requestId);
+  });
+}
+
+test("Done cancels an in-flight ended lookup and ignores its late result", async () => {
+  const h = await harness();
+  await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+  const oldRecord = h.store.getState().record;
+  const query = deferred(); let oldSignal;
+  h.deps.api.get = (_owner, _id, signal) => { oldSignal = signal; return query.promise; };
+  const pending = h.store.getState().refresh(false);
+  await flush();
+  assert.equal(h.store.getState().refreshing, true);
+  await h.store.getState().dismissEnded();
+  assert.equal(oldSignal.aborted, true);
+  assert.equal(h.store.getState().refreshing, false);
+  query.resolve(oldRecord); await pending;
+  assert.equal(h.store.getState().phase, "idle");
+  assert.equal(h.store.getState().record, null);
+  assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+});
+
+test("a dismissed refresh cannot clear the loading state of a new lookup", async () => {
+  const h = await harness();
+  await h.store.getState().begin(); await h.advance(); await h.store.getState().stop();
+  const oldRecord = h.store.getState().record;
+  const oldQuery = deferred(); h.deps.api.refreshStatus = () => oldQuery.promise;
+  const oldRefresh = h.store.getState().refreshStatus(); await flush();
+  await h.store.getState().dismissEnded();
+  const discovery = deferred(); h.deps.api.active = () => discovery.promise;
+  const newRefresh = h.store.getState().refresh(); await flush();
+  oldQuery.resolve(oldRecord); await oldRefresh;
+  assert.equal(h.store.getState().refreshing, true);
+  assert.equal(h.store.getState().record, null);
+  discovery.resolve(null); await newRefresh;
+  assert.equal(h.store.getState().refreshing, false);
+  assert.equal(h.store.getState().phase, "idle");
+});
+
+test("Done never discards a still-active SOS", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const record = h.store.getState().record;
+  await h.store.getState().dismissEnded();
+  assert.equal(h.store.getState().record, record);
+  assert.equal(h.store.getState().phase, "active");
+  assert.equal(h.storage.has("rideguard-sos-recovery"), true);
+});
+
+test("Done during stop persistence cannot restore ended recovery or start a stale follow-up lookup", async () => {
+  const h = await harness(); await h.store.getState().begin(); await h.advance();
+  const write = deferred(); const save = h.deps.storage.setItem;
+  h.deps.storage.setItem = async (key, value) => {
+    const recovery = JSON.parse(value);
+    if (recovery.sosId && !recovery.stopPending) await write.promise;
+    return save(key, value);
+  };
+  let discoveries = 0; h.deps.api.active = async () => { discoveries++; return null; };
+  const stopping = h.store.getState().stop(); await flush();
+  assert.equal(h.store.getState().phase, "ended");
+  const dismissal = h.store.getState().dismissEnded();
+  assert.equal(h.store.getState().stopping, false);
+  write.resolve(); await stopping; await dismissal;
+  assert.equal(discoveries, 0);
+  assert.equal(h.storage.has("rideguard-sos-recovery"), false);
+  assert.equal(h.store.getState().phase, "idle");
+  await h.store.getState().begin();
+  assert.equal(h.store.getState().phase, "countdown");
+  h.store.getState().cancelCountdown();
+});
+
 test("delivery labels preserve progress, legacy failure and service-side guidance", () => {
   const { messagePresentation } = load("src/modules/sos/types.ts");
   const s = { status: "accepted", updatedAt: new Date().toISOString() };
@@ -444,6 +668,19 @@ if (process.env.SOS_SIM_BASE_URL) {
   const url = new URL(base);
   if (!["127.0.0.1", "localhost"].includes(url.hostname) || url.protocol !== "http:") throw new Error("Only a local simulation is allowed");
   const control = async (route) => { const response = await fetch(base.replace(/\/v1$/, "") + "/__test/" + route); assert.equal(response.ok, true); return (await response.json()).data; };
+  test("SOS entry discovers idle and existing active sessions through real HTTP without activation", async () => {
+    await control("reset");
+    const h = await harness();
+    const client = apiModule.createSosApi(async () => "local-fixture", base, 1000);
+    h.deps.api = client;
+    assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+    assert.equal((await control("counts")).starts, 0);
+    // Seed an SOS representing a session that already exists on the service.
+    await client.start("owner-a", { requestId: "existing-entry-session", location: null });
+    assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos/active");
+    const counts = await control("counts");
+    assert.equal(counts.starts, 1); assert.equal(counts.stops, 0);
+  });
   test("real mobile HTTP client runs against the Postman SOS simulation", async () => {
     const client = apiModule.createSosApi(async () => "local-fixture", base, 1000);
     for (const mode of ["normal", "lost-submit", "timeout", "server-error", "html-error", "disabled"]) {
@@ -486,6 +723,35 @@ if (process.env.SOS_SIM_BASE_URL) {
     assert.equal(h.store.getState().record.recipients[0].initial.delivery.status, "delivered");
     assert.equal(h.store.getState().record.recipients[0].ended.delivery.status, "sent");
     const counts = await control("counts"); assert.equal(counts.starts, 1); assert.equal(counts.stops, 1); assert.equal(counts.refreshes, 1);
+  });
+
+  test("Done allows a new SOS over real HTTP after delivered, failed, or expired-unconfirmed results", async () => {
+    for (const status of ["delivered", "failed", "pending"]) {
+      await control("reset"); await control("mode?value=delivery");
+      const h = await harness();
+      h.deps.api = apiModule.createSosApi(async () => "local-fixture", base, 1000);
+      let attempt = 0; h.deps.uuid = () => `new-sos-attempt-${++attempt}`;
+      await h.store.getState().begin(); await h.advance();
+      for (let i = 0; i < 100 && h.store.getState().phase !== "active"; i++) await new Promise(r => setTimeout(r, 10));
+      await h.store.getState().stop();
+      await control("delivery?value=" + status);
+      await control("delivery?which=ended&value=" + status);
+      await h.store.getState().refresh(false);
+      const previous = h.store.getState().record;
+      assert.equal(previous.recipients[0].ended.delivery.status, status);
+      if (status === "pending") await h.advance(300001);
+      await h.store.getState().dismissEnded();
+      assert.equal(await resolveSosEntry(h.store, "owner-a"), "/sos");
+      assert.equal((await control("counts")).starts, 1, "Done and entry do not send SMS");
+      await h.store.getState().begin(); await h.advance();
+      for (let i = 0; i < 100 && h.store.getState().phase !== "active"; i++) await new Promise(r => setTimeout(r, 10));
+      const current = h.store.getState().record;
+      assert.equal(current.status, "active");
+      assert.notEqual(current.sosId, previous.sosId);
+      assert.notEqual(current.requestId, previous.requestId);
+      const counts = await control("counts");
+      assert.equal(counts.starts, 2); assert.equal(counts.stops, 1);
+    }
   });
 
   test("an unreachable service keeps the attempt uncertain without an automatic resend", async () => {

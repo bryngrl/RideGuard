@@ -1,90 +1,146 @@
-import { BorderRadius, BrandColors, Spacing } from "@/shared/theme";
+import { BrandColors, Colors, FontFamily } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
-export const styles = StyleSheet.create({
-  avatar: {
-    borderColor: BrandColors.secondary,
-    borderRadius: BorderRadius.full,
-    borderWidth: 2,
-    height: 38,
-    marginHorizontal: -4,
-    width: 38,
+export const createStyles = (colors: typeof Colors.light | typeof Colors.dark) => StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
   },
-
-  avatars: {
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 50,
+  },
+  sosSection: {
+    flex: 1,
     alignItems: "center",
-    flexDirection: "row",
     justifyContent: "center",
-    marginBottom: Spacing.three,
+    gap: 12,
+    paddingVertical: 32,
+    minHeight: 400,
   },
-
+  sosWrapper: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 232,
+    height: 232,
+    borderRadius: 116,
+    backgroundColor: colors.backgroundElement,
+  },
+  innerRing: {
+    position: "absolute",
+    width: 208,
+    height: 208,
+    borderRadius: 104,
+    backgroundColor: colors.backgroundSelected,
+  },
+  sosButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 184,
+    height: 184,
+    borderRadius: 92,
+    backgroundColor: "#C82018",
+    gap: 2,
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  sosText: {
+    color: BrandColors.secondary,
+    fontFamily: FontFamily.geistSemiBold,
+    fontSize: 44,
+    lineHeight: 54,
+  },
+  sosHint: {
+    color: BrandColors.secondary,
+    fontFamily: FontFamily.geistSemiBold,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  cancelHintBlock: {
+    alignSelf: "stretch",
+    flexShrink: 0,
+  },
+  cancelHint: {
+    color: colors.text,
+    fontFamily: FontFamily.geistRegular,
+    fontSize: 12,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  emphasis: {
+    fontFamily: FontFamily.geistSemiBold,
+  },
   contactsDescription: {
-    color: BrandColors.primary,
+    color: colors.text,
+    fontFamily: FontFamily.geistRegular,
+    fontSize: 12,
     lineHeight: 20,
     textAlign: "center",
   },
-
   contactsSection: {
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderWidth: 1,
+    borderRadius: 15,
+    padding: 13,
+    gap: 16,
+  },
+  contactsHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    marginTop: Spacing.seven,
+    justifyContent: "space-between",
+    minHeight: 26,
+    gap: 8,
   },
-
-  container: {
-    flex: 1,
+  contactsTitle: {
+    color: colors.text,
+    fontFamily: FontFamily.geistMedium,
+    fontSize: 12,
+    flexShrink: 1,
   },
-
+  manageLink: {
+    color: colors.accent,
+    fontFamily: FontFamily.geistRegular,
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  contactsSummary: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  avatars: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  avatarFrame: {
+    borderRadius: 17,
+    borderWidth: 2,
+    borderColor: colors.card,
+  },
+  overlappingAvatar: {
+    marginLeft: -6,
+  },
+  avatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
   initialAvatar: {
     alignItems: "center",
-    backgroundColor: BrandColors.primary,
     justifyContent: "center",
   },
-
   initialText: {
-    color: BrandColors.secondary,
-    fontSize: 14,
-    fontWeight: "600",
+    fontFamily: FontFamily.geistMedium,
+    fontSize: 10,
   },
-
-  pulseCircle: {
-    backgroundColor: "#DCE8F8",
-    borderRadius: BorderRadius.full,
-    height: 210,
-    position: "absolute",
-    width: 210,
-  },
-
-  sosButton: {
-    alignItems: "center",
-    backgroundColor: BrandColors.primary,
-    borderRadius: BorderRadius.full,
-    gap: Spacing.two,
-    height: 190,
-    justifyContent: "center",
-    width: 190,
-    zIndex: 2,
-  },
-
-
-  sosHint: {
-    color: BrandColors.secondary,
-    textAlign: "center",
-  },
-
-  sosSection: {
-    alignItems: "center",
-    flex: 1,
-    justifyContent: "center",
-  },
-
-  sosText: {
-    color: BrandColors.secondary,
-    textAlign: "center",
-  },
-
-  sosWrapper: {
-    alignItems: "center",
-    height: 230,
-    justifyContent: "center",
-    width: 230,
+  contactsCount: {
+    color: colors.text,
+    fontFamily: FontFamily.geistRegular,
+    fontSize: 11,
+    lineHeight: 16,
+    flexShrink: 1,
   },
 });

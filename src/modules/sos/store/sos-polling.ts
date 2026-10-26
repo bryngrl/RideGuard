@@ -2,7 +2,7 @@ import { hasPending, trackingDeadline } from "../types";
 import type { SosState } from "./sos-session";
 
 // Called only by a focused screen. Foreground changes cancel and recreate its timer.
-export function startStatusPolling(store: { getState(): SosState; subscribe?(listener: () => void): () => void }, now = Date.now) {
+export function startStatusPolling(store: { getState(): SosState; subscribe?(listener: () => void): () => void }, now = Date.now, checkOnEntry = true) {
   let disposed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let finalDeadline: number | null = null;
@@ -33,6 +33,7 @@ export function startStatusPolling(store: { getState(): SosState; subscribe?(lis
     schedule();
   };
   const unsubscribe = store.subscribe?.(schedule);
-  void poll(true);
+  if (checkOnEntry) void poll(true);
+  else schedule();
   return () => { disposed = true; clearTimeout(timer); unsubscribe?.(); };
 }

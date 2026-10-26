@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import * as Location from "expo-location";
+import { Alert, Linking } from "react-native";
 import { useStore } from "zustand";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { listContacts } from "@/modules/emergency-contacts/services/contacts.api";
@@ -17,6 +18,7 @@ const api = createSosApi(async (uid) => {
 });
 
 export const sosStore = createSosStore({
+  locationDiagnostic: (event) => { console.info("[SOS location]", event); },
   api, storage: AsyncStorage, contacts: listContacts, uuid: () => Crypto.randomUUID(),
   shareLocation: () => {
     const settings = useSettingsStore.getState();
@@ -24,7 +26,14 @@ export const sosStore = createSosStore({
   },
   permission: async () => {
     const permission = await Location.getForegroundPermissionsAsync();
-    if (permission.granted || !permission.canAskAgain) return permission.granted;
+    if (permission.granted) return true;
+    if (!permission.canAskAgain) {
+      Alert.alert("Location permission required", "Allow location access in your phone settings to use SOS.", [
+        { text: "Cancel", style: "cancel" },
+        { text: "Open settings", onPress: () => { void Linking.openSettings().catch(() => undefined); } },
+      ]);
+      return false;
+    }
     return (await Location.requestForegroundPermissionsAsync()).granted;
   },
   capture: async () => {
