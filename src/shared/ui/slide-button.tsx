@@ -1,6 +1,5 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, FontFamily, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { useRef } from "react";
 import { useReducedMotion } from "react-native-reanimated";
 import {
@@ -24,6 +23,8 @@ interface SlideButtonProps {
   thumbColor?: string;
   labelColor?: string;
   arrowColor?: string;
+  direction?: "left" | "right";
+  thumbSymbol?: string;
 }
 
 export function SlideButton({
@@ -36,9 +37,14 @@ export function SlideButton({
   thumbColor,
   labelColor,
   arrowColor,
+  direction = "left",
+  thumbSymbol,
 }: SlideButtonProps) {
   const theme = useTheme();
   const reduceMotion = useReducedMotion();
+  const reduceMotionRef = useRef(reduceMotion);
+  reduceMotionRef.current = reduceMotion;
+  const completedRef = useRef(false);
 
   const translateX = useRef(new Animated.Value(0)).current;
 
@@ -47,16 +53,15 @@ export function SlideButton({
   const startPosition = useRef(0);
 
   const disabledRef = useRef(disabled);
-  const reduceMotionRef = useRef(reduceMotion);
-  const completedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
 
   disabledRef.current = disabled;
-  reduceMotionRef.current = reduceMotion;
   onCompleteRef.current = onComplete;
+  const directionRef = useRef(direction);
+  directionRef.current = direction;
+  const restingPosition = () => directionRef.current === "right" ? 0 : maxTranslateX.current;
 
-  const thumbSize = 54;
-  const thumbInset = 6;
+  const thumbSize = 40;
 
   const resolvedTrackColor = trackColor ?? `${theme.error}18`;
 
@@ -83,7 +88,7 @@ export function SlideButton({
       },
 
       onPanResponderGrant: () => {
-        startPosition.current = maxTranslateX.current;
+        startPosition.current = restingPosition();
       },
 
       onPanResponderMove: (_, gestureState) => {
@@ -98,6 +103,7 @@ export function SlideButton({
       },
 
       onPanResponderRelease: (_, gestureState) => {
+        if (disabledRef.current || completedRef.current) return;
         const max = maxTranslateX.current;
 
         if (max <= 0) {
@@ -107,41 +113,36 @@ export function SlideButton({
 
         const completionThreshold = max * 0.7;
 
-        if (gestureState.dx < 0 && draggedDistance >= completionThreshold) {
+        const correctDirection = directionRef.current === "right" ? gestureState.dx > 0 : gestureState.dx < 0;
+        if (correctDirection && draggedDistance >= completionThreshold) {
           completedRef.current = true;
           if (reduceMotionRef.current) {
-            translateX.setValue(0);
+            translateX.setValue(directionRef.current === "right" ? max : 0);
             onCompleteRef.current();
             return;
           }
           Animated.timing(translateX, {
-            toValue: 0,
+            toValue: directionRef.current === "right" ? max : 0,
             duration: 150,
             useNativeDriver: true,
-          }).start(() => {
-            onCompleteRef.current();
+          }).start(({ finished }) => {
+            if (finished && !disabledRef.current) onCompleteRef.current();
           });
 
           return;
         }
-        if (reduceMotionRef.current) {
-          translateX.setValue(max);
-          return;
-        }
+        if (reduceMotionRef.current) { translateX.setValue(restingPosition()); return; }
         Animated.spring(translateX, {
-          toValue: max,
+          toValue: restingPosition(),
           useNativeDriver: true,
           bounciness: 0,
         }).start();
       },
 
       onPanResponderTerminate: () => {
-        if (reduceMotionRef.current) {
-          translateX.setValue(maxTranslateX.current);
-          return;
-        }
+        if (reduceMotionRef.current) { translateX.setValue(restingPosition()); return; }
         Animated.spring(translateX, {
-          toValue: maxTranslateX.current,
+          toValue: restingPosition(),
           useNativeDriver: true,
           bounciness: 0,
         }).start();
@@ -162,12 +163,13 @@ export function SlideButton({
       onLayout={(event) => {
         const width = event.nativeEvent.layout.width;
 
-        const maxPosition = Math.max(0, width - thumbSize - thumbInset * 2);
+        const maxPosition = Math.max(0, width - thumbSize - Spacing.one * 2);
 
         maxTranslateX.current = maxPosition;
-        translateX.setValue(maxPosition);
+        translateX.setValue(restingPosition());
       }}
     >
+      {/* LABEL */}
       <Text
         pointerEvents="none"
         style={[
@@ -181,12 +183,13 @@ export function SlideButton({
         {label}
       </Text>
 
+      {/* SLIDE THUMB */}
       <Animated.View
-        {...panResponder.panHandlers}
         accessible
         accessibilityRole="button"
         accessibilityLabel={label}
-        accessibilityHint="Slide left to confirm"
+        accessibilityHint={`Slide ${direction} to confirm, or double tap with a screen reader`}
+        accessibilityState={{ disabled }}
         accessibilityActions={[{ name: "activate", label }]}
         onAccessibilityAction={(event) => {
           if (event.nativeEvent.actionName === "activate" && !disabledRef.current && !completedRef.current) {
@@ -194,6 +197,13 @@ export function SlideButton({
             onCompleteRef.current();
           }
         }}
+        onAccessibilityTap={() => {
+          if (!disabledRef.current && !completedRef.current) {
+            completedRef.current = true;
+            onCompleteRef.current();
+          }
+        }}
+        {...panResponder.panHandlers}
         style={[
           styles.thumb,
           {
@@ -206,7 +216,16 @@ export function SlideButton({
           },
         ]}
       >
-        <Ionicons name="arrow-back" size={24} color={resolvedArrowColor} />
+        <Text
+          style={[
+            styles.arrow,
+            {
+              color: resolvedArrowColor,
+            },
+          ]}
+        >
+          {thumbSymbol ?? (direction === "right" ? "→" : "←")}
+        </Text>
       </Animated.View>
     </View>
   );
@@ -215,7 +234,7 @@ export function SlideButton({
 const styles = StyleSheet.create({
   container: {
     width: "100%",
-    height: 66,
+    height: 60,
 
     borderWidth: 1,
     borderRadius: BorderRadius.full,
@@ -224,14 +243,12 @@ const styles = StyleSheet.create({
 
     overflow: "hidden",
 
-    paddingHorizontal: 6,
+    paddingHorizontal: Spacing.one,
   },
 
   label: {
     position: "absolute",
-    fontSize: 14,
-    lineHeight: 20,
-    fontFamily: FontFamily.geistMedium,
+    fontWeight: "900",
     left: 0,
     right: 0,
 
@@ -239,13 +256,21 @@ const styles = StyleSheet.create({
   },
 
   thumb: {
-    width: 54,
-    height: 54,
+    width: 40,
+    height: 40,
 
     borderRadius: BorderRadius.full,
 
     alignItems: "center",
     justifyContent: "center",
 
+    elevation: 2,
+  },
+
+  arrow: {
+    fontSize: 24,
+    lineHeight: 26,
+
+    fontFamily: Typography.h3.fontFamily,
   },
 });

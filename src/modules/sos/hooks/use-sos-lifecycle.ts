@@ -1,7 +1,7 @@
 import { useCallback, useEffect } from "react";
 import { AppState } from "react-native";
 import { useFocusEffect, useSegments } from "expo-router";
-import { hasPending } from "../types";
+import { startStatusPolling } from "../store/sos-polling";
 import { sosStore } from "../store/sos.store";
 
 export function useSosLifecycle() {
@@ -14,22 +14,23 @@ export function useSosLifecycle() {
     sosStore.getState().setForeground(AppState.currentState === "active");
     const subscription = AppState.addEventListener("change", (state) => {
       sosStore.getState().setForeground(state === "active");
-      if (state === "background") sosStore.getState().cancelCountdown();
-      if (state === "active") void sosStore.getState().refresh();
+      if (state === "background") sosStore.getState().cancelCountdown("SOS preparation cancelled because the app was interrupted. No request was sent. Tap again when ready.");
     });
     return () => { subscription.remove(); sosStore.getState().cancelCountdown(); };
   }, []);
 }
 
-export function useSosStatus(ready: boolean, contacts = false) {
+export function useSosStatus(ready: boolean, contacts = false, checkOnFocus = true) {
   useFocusEffect(useCallback(() => {
     if (!ready) return;
+    sosStore.getState().setForeground(AppState.currentState === "active");
     if (contacts) void sosStore.getState().loadContacts();
-    void sosStore.getState().refresh();
-    const timer = setInterval(() => {
-      const state = sosStore.getState();
-      if (state.foreground && (hasPending(state.record) || state.phase === "checking")) void state.refresh();
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [ready, contacts]));
+    let stop = startStatusPolling(sosStore, Date.now, checkOnFocus);
+    const app = AppState.addEventListener("change", (state) => {
+      stop();
+      sosStore.getState().setForeground(state === "active");
+      if (state === "active") stop = startStatusPolling(sosStore);
+    });
+    return () => { stop(); app.remove(); };
+  }, [ready, contacts, checkOnFocus]));
 }

@@ -3,12 +3,46 @@ import SosIcon from "@/assets/icons/home/echo-sos.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
-import { useRouter } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { ActivityIndicator, Alert, AppState, StyleSheet, Text, View } from "react-native";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { sosStore } from "@/modules/sos/store/sos.store";
+import { resolveSosEntry } from "@/modules/sos/store/sos-entry";
 
 export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
   const router = useRouter();
   const colors = useTheme();
+  const [checkingSos, setCheckingSos] = useState(false);
+  const opening = useRef(false);
+  const focused = useRef(false);
+  const visit = useRef(0);
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    visit.current++;
+    setCheckingSos(opening.current);
+    return () => { focused.current = false; visit.current++; };
+  }, []));
+  const openSos = async () => {
+    if (opening.current) return;
+    opening.current = true;
+    setCheckingSos(true);
+    const owner = useAuthStore.getState().user?.uid ?? null;
+    const currentVisit = visit.current;
+    try {
+      sosStore.getState().setForeground(AppState.currentState === "active");
+      const route = await resolveSosEntry(sosStore, owner);
+      if (!focused.current || visit.current !== currentVisit || (useAuthStore.getState().user?.uid ?? null) !== owner || !route) return;
+      if (route === "/sos") router.push({ pathname: "/sos", params: { statusChecked: "true" } });
+      else router.push(route);
+    } catch (error) {
+      if (focused.current && visit.current === currentVisit && (useAuthStore.getState().user?.uid ?? null) === owner)
+        Alert.alert("Could not open SOS", error instanceof Error ? error.message : "Could not check SOS status. Try again.");
+    } finally {
+      opening.current = false;
+      if (focused.current) setCheckingSos(false);
+    }
+  };
 
   return (
     <View
@@ -22,12 +56,15 @@ export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
             styles.sosButton,
             homeLayout && styles.homeSosButton,
           ]}
-          onPress={() => router.push("/sos" as any)}
+          onPress={() => void openSos()}
+          disabled={checkingSos}
+          accessibilityState={{ busy: checkingSos, disabled: checkingSos }}
           accessibilityRole="button"
           accessibilityLabel="Open SOS emergency screen"
         >
-          <SosIcon width={homeLayout ? 22 : 15} height={homeLayout ? 22 : 15} />
-          <Text style={[Typography.button, styles.sosButtonText]}>SOS</Text>
+          {checkingSos ? <ActivityIndicator color={BrandColors.secondary} /> :
+            <SosIcon width={homeLayout ? 22 : 15} height={homeLayout ? 22 : 15} />}
+          <Text accessibilityLiveRegion="polite" style={[Typography.button, styles.sosButtonText]}>{checkingSos ? "Checking SOS status…" : "SOS"}</Text>
         </Pressable>
         {!homeLayout && (
           <Pressable

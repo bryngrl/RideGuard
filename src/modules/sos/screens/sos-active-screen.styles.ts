@@ -1,55 +1,57 @@
-import { BrandColors, Spacing } from "@/shared/theme";
+import { Colors, FontFamily, Typography } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
-export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-
-  content: {
-    paddingBottom: Spacing.four,
-    paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
-  },
-
-  description: {
-    color: BrandColors.secondary,
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: Spacing.three,
-    textAlign: "center",
-    maxWidth: 265,
-  },
-  previewNotice: {
-    color: BrandColors.secondary,
-    fontSize: 11,
-    lineHeight: 16,
-    marginTop: Spacing.two,
-    textAlign: "center",
-  },
-
-  footer: {
-    backgroundColor: BrandColors.error,
-    borderTopColor: "transparent",
-    paddingHorizontal: Spacing.four,
-    paddingTop: 0,
-  },
-
-  iconSection: {
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 180,
-  },
-
-  messageSection: {
-    alignItems: "center",
-    paddingHorizontal: Spacing.three,
-  },
-
-  title: {
-    color: BrandColors.secondary,
-    fontSize: 28,
-    lineHeight: 35,
-    textAlign: "center",
-  },
+export const createStyles = (colors: typeof Colors.light | typeof Colors.dark) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: "#DF1014" },
+  header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, paddingTop: 12, paddingBottom: 16, minHeight: 76 },
+  iconButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center" },
+  headerTitle: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5 },
+  title: { color: "#FFFFFF", fontFamily: FontFamily.geistSemiBold, fontSize: 15, letterSpacing: 0.5, flexShrink: 1, textAlign: "center" },
+  activeDotHalo: { width: 18, height: 18, borderRadius: 9, backgroundColor: "#EF7476", alignItems: "center", justifyContent: "center" },
+  activeDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: "#FFFFFF" },
+  content: { paddingHorizontal: 16, paddingBottom: 20, gap: 18 },
+  statusBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  locationBadge: { flexDirection: "row", alignItems: "center", gap: 7, borderRadius: 24, backgroundColor: "#BF1014", paddingHorizontal: 13, minHeight: 44, flexShrink: 1 },
+  locationText: { color: "#FFFFFF", fontFamily: FontFamily.geistMedium, fontSize: 12, flexShrink: 1 },
+  refreshButton: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 24, borderWidth: 1, borderColor: "#F08C8E", paddingHorizontal: 15, minHeight: 44 },
+  disabled: { opacity: 0.6 },
+  contactsList: { gap: 14 },
+  contactCard: { backgroundColor: colors.card, borderRadius: 16, paddingHorizontal: 14, paddingVertical: 14, gap: 12 },
+  contactHeader: { flexDirection: "row", alignItems: "center", gap: 10, minHeight: 42 },
+  avatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: colors.infoBackground, alignItems: "center", justifyContent: "center" },
+  initials: { fontFamily: FontFamily.geistSemiBold, fontSize: 14, color: colors.accent },
+  contactIdentity: { flex: 1, gap: 1 },
+  contactName: { fontFamily: FontFamily.geistSemiBold, fontSize: 16, lineHeight: 20, color: colors.text },
+  phone: { fontFamily: FontFamily.geistRegular, fontSize: 12, lineHeight: 16, color: colors.textMuted },
+  statusBadge: { borderRadius: 16, paddingHorizontal: 10, paddingVertical: 5, maxWidth: "46%" },
+  statusText: { fontFamily: FontFamily.geistSemiBold, fontSize: 11, lineHeight: 15, textAlign: "center" },
+  progressTrack: { flexDirection: "row", gap: 4 },
+  progressStep: { flex: 1, gap: 5 },
+  progressSegment: { height: 4, borderRadius: 2 },
+  progressLabel: { fontFamily: FontFamily.geistMedium, fontSize: 10, lineHeight: 14, color: colors.textMuted },
+  contactDetails: { gap: 10 },
+  description: { color: "#FFFFFF", lineHeight: 18 },
+  footer: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 24 },
+  slider: { height: 60 },
+  endedContainer: { flex: 1, backgroundColor: colors.background },
+  endedHeading: { alignItems: "center", gap: 10, paddingTop: 24, paddingBottom: 12 },
+  endedTitle: { ...Typography.h1, color: colors.text, textAlign: "center" },
+  endedSubtitle: { ...Typography.bodyLarge, color: colors.text, textAlign: "center", paddingHorizontal: 20 },
+  endedContent: { paddingHorizontal: 20, paddingBottom: 24, gap: 16 },
+  endedStatusSection: { gap: 12 },
+  endedSectionTitle: { ...Typography.caption, color: colors.textMuted, letterSpacing: 1 },
+  endedContacts: { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, borderRadius: 16, overflow: "hidden" },
+  endedContact: { paddingHorizontal: 14, paddingVertical: 14, gap: 10 },
+  endedContactHeader: { minHeight: 38, gap: 12 },
+  endedContactDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  endedAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: colors.infoBackground },
+  endedInitials: { ...Typography.caption },
+  endedContactName: { ...Typography.bodyLarge, fontFamily: FontFamily.geistMedium },
+  endedStatusBadge: { paddingVertical: 5 },
+  endedStatusText: { ...Typography.caption },
+  endedNote: { flexDirection: "row", alignItems: "flex-start", gap: 10, padding: 16, borderRadius: 16, backgroundColor: colors.infoBackground },
+  endedNoteText: { ...Typography.bodySmall, flexShrink: 1, color: colors.text },
+  endedDetails: { gap: 12 },
+  endedFooter: { backgroundColor: colors.background, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16 },
+  doneButton: { borderRadius: 32, minHeight: 54 },
 });

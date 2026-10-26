@@ -57,6 +57,7 @@ export function createSosApi(getToken: (uid: string) => Promise<string>, baseUrl
       catch (error) { if (error instanceof SosApiError && error.status === 404) return null; throw error; }
     },
     get: (uid: string, id: string, signal?: AbortSignal) => record(uid, `/sos/${encodeURIComponent(id)}`, undefined, signal),
+    refreshStatus: (uid: string, id: string, signal?: AbortSignal) => record(uid, `/sos/${encodeURIComponent(id)}/refresh-status`, {}, signal),
     stop: (uid: string, id: string, signal?: AbortSignal) => record(uid, `/sos/${encodeURIComponent(id)}/stop`, {}, signal),
   };
 }

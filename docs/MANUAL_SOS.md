@@ -1,13 +1,21 @@
 # Manual SOS mobile flow
 
 The existing trigger, countdown, and status screens use one shared SOS store.
-The trigger loads saved emergency contacts and the user's active SOS. The
+The main screen's SOS button checks saved recovery and active SOS status before
+navigating. It shows loading feedback, blocks repeated taps, and keeps failed
+discovery on the main screen for retry. Active/recovery sessions open the status
+screen; an idle session opens the trigger without a duplicate entry check.
+The trigger loads saved emergency contacts. Direct entry still checks status,
+and returning from the background checks again. The
 countdown lasts five seconds and uses a deadline. Cancel, back, blur, or leaving
 the foreground before expiry cancels it; it is never resumed after backgrounding.
 
 Location sharing follows `locationWithContacts`, after settings hydration.
-Sharing off makes no permission or location request. Sharing on requests only
-foreground permission before the countdown. Denial continues without location.
+Sharing off prompts for consent before enabling sharing. SOS requires both
+sharing consent and foreground location permission before the countdown.
+Denied or failed permission checks block SOS. When native prompts are blocked,
+the app offers to open phone settings; return and tap SOS again after granting access.
+Turning sharing off during the countdown cancels the attempt.
 One current fix is attempted during the countdown; stale/invalid or late fixes
 are not added to an already-submitted request.
 
@@ -98,3 +106,32 @@ logs in Git. No dependency or simulation is published.
 - No native rebuild, OTA, deployment, real Firestore, or live SMS run. Native
   project files are unchanged. `SOS_ENABLED` stays false on the backend; the
   separate backend recovery and route task branches still need integration.
+# Automatic message status (2026-10-25)
+
+1. Each contact card shows separate SOS and SOS-ended messages. Submitted is provider
+   acceptance; Sent is carrier acceptance; Delivered requires a receipt and does not
+   mean read or that help is coming. Only queued end updates get a row.
+2. Node tracks each accepted message for five minutes, even after the app closes.
+   The focused foreground SOS screen reads immediately on entry/resume and every
+   five seconds while work remains. Known IDs use their GET directly on polling
+   ticks. Errors back off 10/20/40/60s. Local expiry permits a final read; it does not
+   restart tracking. Timers stop on blur, background, logout and completion.
+3. The small refresh control calls status-only POST, then GET follows the persisted
+   job. Jobs expire after 60s and have a 30s server cooldown. Retry status never
+   resends. Retry the same SOS request remains a separate activation-recovery action.
+4. Updated measures the last successful mobile GET. Delivery checked uses each
+   message's saved provider timestamp. Failed refreshes preserve prior cards, the
+   lifecycle header and Stop SOS. Sent remains visible after confirmation timeout.
+5. Older backends can omit new fields. A refresh-route 404 triggers one owned GET;
+   a second 404 means SOS unavailable. No automatic activation or resend occurs.
+6. No status-change push, sound, vibration or background mobile polling was added.
+   The cards use the existing theme preference, labels and icons, with a 44px refresh
+   target and polite status announcements. Physical accessibility is still unverified.
+7. Done dismisses a confirmed ended SOS and clears its local recovery state,
+   regardless of delivered, failed, pending, or timed-out message results. In-flight
+   lookups are cancelled and late results cannot reopen the dismissed screen.
+   Reopening SOS permits a new countdown with a new request ID. Delivery tracking
+   on the server continues independently; an unconfirmed delivery is not a failure.
+
+Local checks and remaining acceptance/device checks are recorded in
+`docs/SOS_STATUS_VERIFICATION.md`. Do not use real SMS to reproduce these fixtures.
