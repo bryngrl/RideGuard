@@ -84,11 +84,11 @@ function modal(width, fontScale, theme) {
 }
 
 test("shared branded confirmations always stack the primary action above Cancel", () => {
-  for (const theme of [{ card: "light-card", border: "light-border", text: "light-text" }, { card: "dark-card", border: "dark-border", text: "dark-text" }]) {
+  for (const theme of [{ card: "light-card", modalSurface: "light-modal", border: "light-border", text: "light-text" }, { card: "dark-card", modalSurface: "dark-modal", border: "dark-border", text: "dark-text" }]) {
     for (const [width, fontScale] of [[320, 1], [410, 1], [410, 1.5], [900, 1]]) {
       const view = modal(width, fontScale, theme);
       const card = view.tree.props.children.props.children;
-      assert.equal(card.props.style[1].backgroundColor, theme.card);
+      assert.equal(card.props.style[1].backgroundColor, theme.modalSurface);
       const actions = card.props.children[1];
       assert.equal(actions.props.style.flexDirection, "column");
       assert.equal(actions.props.children[0].props.title, "Discard");

@@ -117,7 +117,7 @@ export function ContactListScreen() {
           accessibilityLabel="Add emergency contact"
           disabled={loading || !hasLoaded}
         >
-          <AddIcon height={16} width={16} />
+          <AddIcon color={colors.icon} height={16} width={16} />
         </Pressable>
       ) : null}
     >
@@ -153,7 +153,7 @@ export function ContactListScreen() {
 function EmptyContacts({ colors, onAdd }: { colors: ReturnType<typeof useTheme>; onAdd: () => void }) {
   return (
     <View style={styles.emptyContainer}>
-      <ProfilePlaceholder width={112} height={112} />
+      <ProfilePlaceholder color={colors.contactIllustration} width={112} height={112} />
 
       <Text
         style={[

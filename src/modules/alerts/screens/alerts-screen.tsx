@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -279,20 +279,20 @@ export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean 
               if (menuOpen) setMenuOpen(false);
               else positionMenu(true);
             }}
-            style={styles.filterButton}
+            style={[styles.filterButton, { backgroundColor: theme.card, borderColor: theme.border }]}
             feedbackRadius={20}
             feedbackBehindContent
             accessibilityRole="button"
             accessibilityLabel={`Filter alerts: ${selectedFilter.label}`}
             accessibilityState={{ expanded: menuOpen }}
           >
-            <Text style={[Typography.bodySmall, styles.filterLabel]} numberOfLines={1}>
+            <Text style={[Typography.bodySmall, styles.filterLabel, { color: theme.text }]} numberOfLines={1}>
               {selectedFilter.label}
             </Text>
             <Ionicons
               name={menuOpen ? "chevron-up" : "chevron-down"}
               size={14}
-              color={BrandColors.primary}
+              color={theme.text}
             />
           </Pressable>
         </View>
@@ -301,7 +301,7 @@ export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean 
         pointerEvents={menuOpen ? "auto" : "none"}
         accessibilityElementsHidden={!menuOpen}
         importantForAccessibility={menuOpen ? "auto" : "no-hide-descendants"}
-        style={[styles.menu, { top: menuTop, right: menuRight }, menuMotion]}
+        style={[styles.menu, { top: menuTop, right: menuRight, backgroundColor: theme.modalSurface }, menuMotion]}
       >
         <View style={styles.menuSurface}>
           {availableFilters.map((option, index) => {
@@ -315,17 +315,17 @@ export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean 
                 }}
                 style={[
                   styles.menuItem,
-                  index > 0 && styles.menuItemBorder,
-                  selected && styles.menuItemSelected,
+                  index > 0 && [styles.menuItemBorder, { borderTopColor: theme.border }],
+                  selected && [styles.menuItemSelected, { backgroundColor: theme.backgroundSelected }],
                 ]}
                 feedbackBehindContent
                 accessibilityRole="menuitem"
                 accessibilityState={{ selected }}
               >
-                <Text style={[Typography.bodySmall, styles.menuItemText]}>
+                <Text style={[Typography.bodySmall, styles.menuItemText, { color: theme.text }]}>
                   {option.label}
                 </Text>
-                {selected && <Ionicons name="checkmark" size={18} color={BrandColors.primary} />}
+                {selected && <Ionicons name="checkmark" size={18} color={theme.text} />}
               </Pressable>
             );
           })}

@@ -29,10 +29,18 @@ export const styles = StyleSheet.create({
     right: 0,
   },
 
+  darkContactBackground: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    width: "100%",
+    aspectRatio: 402 / 638,
+  },
+
   contactName: {
-    fontSize: 28,
-    fontWeight: "700",
-    lineHeight: 34,
+    fontSize: 24,
+    fontWeight: "600",
+    lineHeight: 30,
     marginTop: Spacing.three,
   },
 
@@ -52,7 +60,7 @@ export const styles = StyleSheet.create({
     paddingBottom: Spacing.four,
   },
 
-  deleteText: {},
+  deleteText: { fontSize: 14, lineHeight: 20 },
 
   editContainer: {
     flex: 1,
@@ -91,8 +99,8 @@ export const styles = StyleSheet.create({
   },
 
   phoneNumber: {
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 22,
     marginTop: Spacing.one,
   },
 
@@ -102,9 +110,9 @@ export const styles = StyleSheet.create({
   },
 
   previewImage: {
-    borderRadius: 60,
-    height: 120,
-    width: 120,
+    borderRadius: 78,
+    height: 156,
+    width: 156,
   },
 
   previewPageContent: {
@@ -130,8 +138,8 @@ export const styles = StyleSheet.create({
   },
 
   relationship: {
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     marginTop: Spacing.one,
   },
 

@@ -8,7 +8,7 @@ import WeaponDetectedIcon from "@/assets/icons/alerts/weapon-detected.svg";
 import ClockIcon from "@/assets/icons/misc/clock.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BrandColors, Typography } from "@/shared/theme";
+import { Typography } from "@/shared/theme";
 import { getAlertDetectionType } from "../services/alerts.mapper";
 import type { AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alert-item.styles";
@@ -38,8 +38,8 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
 
   const labelColor =
     getAlertDetectionType(alert.title) === "none"
-      ? BrandColors.success
-      : BrandColors.error;
+      ? theme.success
+      : theme.error;
 
   const isUnread = !alert.read;
 
@@ -48,7 +48,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
       style={[
         styles.edgeToEdgeWrapper,
         isUnread && {
-          backgroundColor: "#E7F3FF",
+          backgroundColor: theme.unreadBackground,
         },
       ]}
     >
@@ -69,13 +69,13 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
         <View style={styles.textBlock}>
           <View style={styles.timeRow}>
             <Text
-              style={[Typography.medium, styles.label, { color: "#000000" }]}
+              style={[Typography.medium, styles.label, { color: theme.text }]}
             >
               {alert.time}
             </Text>
             {alert.manual ? (
-              <View style={styles.manualBadge}>
-                <Text style={styles.manualBadgeText}>Manual</Text>
+              <View style={[styles.manualBadge, { borderColor: theme.primary }]}>
+                <Text style={[styles.manualBadgeText, { color: theme.primary }]}>Manual</Text>
               </View>
             ) : null}
           </View>
@@ -92,7 +92,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
               style={[
                 Typography.bodySmall,
                 styles.subLabel,
-                { color: "#0046CE" },
+                { color: theme.accent },
               ]}
               numberOfLines={1}
             >
@@ -106,7 +106,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
           {alert.pending ? (
             <ClockIcon height={16} width={16} />
           ) : isUnread ? (
-            <View style={[styles.unreadDot, { backgroundColor: "#0064D1" }]} />
+            <View style={[styles.unreadDot, { backgroundColor: theme.unreadDot }]} />
           ) : null}
         </View>
       </Pressable>

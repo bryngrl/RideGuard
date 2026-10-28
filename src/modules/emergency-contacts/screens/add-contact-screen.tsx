@@ -234,7 +234,7 @@ export function AddContactScreen() {
           accessibilityRole="button"
           accessibilityLabel="Emergency contact information"
         >
-          <HelpIcon width={20} height={20} />
+          <HelpIcon color={theme.icon} width={20} height={20} />
         </Pressable>
       }
     >
@@ -248,9 +248,9 @@ export function AddContactScreen() {
           >
             {profileImage ? (
               <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
-                placeholder={<ProfilePlaceholder width={96} height={96} />} />
+                placeholder={<ProfilePlaceholder color={theme.contactIllustration} width={96} height={96} />} />
             ) : (
-              <ProfilePlaceholder width={96} height={96} />
+              <ProfilePlaceholder color={theme.contactIllustration} width={96} height={96} />
             )}
           </Pressable>
 

@@ -4,7 +4,7 @@ import RedEyeIcon from "@assets/icons/status/red-eye.svg";
 import { useEffect, useState, type ReactNode } from "react";
 
 import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
-import { Colors } from "@/shared/theme/colors";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 export type MonitoringCardState = "no-camera" | "monitoring" | "threat";
 
@@ -15,6 +15,7 @@ interface UseMonitoringStatusOptions {
 export function useMonitoringStatus({
   hasCameraConnected,
 }: UseMonitoringStatusOptions) {
+  const colors = useTheme();
   const alerts = useAlertsStore((state) => state.alerts);
 
   const latestAlert = [...alerts]
@@ -63,22 +64,22 @@ export function useMonitoringStatus({
 
   const monitoringCardStyles = {
     "no-camera": {
-      backgroundColor: Colors.light.warningBackground,
-      borderColor: Colors.light.warningStroke,
-      titleColor: Colors.light.warningHeader,
-      subtitleColor: Colors.light.warningSubHeader,
+      backgroundColor: colors.warningBackground,
+      borderColor: colors.warningStroke,
+      titleColor: colors.warningHeader,
+      subtitleColor: colors.warningSubHeader,
     },
     monitoring: {
-      backgroundColor: "#FFFFFF",
-      borderColor: "#7b7b7b4f",
-      titleColor: Colors.light.primary,
-      subtitleColor: "#7B7B7B",
+      backgroundColor: colors.card,
+      borderColor: colors.border,
+      titleColor: colors.text,
+      subtitleColor: colors.textSecondary,
     },
     threat: {
-      backgroundColor: Colors.light.dangerBackground,
-      borderColor: Colors.light.dangerStroke,
-      titleColor: Colors.light.dangerHeader,
-      subtitleColor: Colors.light.dangerSubHeader,
+      backgroundColor: colors.dangerBackground,
+      borderColor: colors.dangerStroke,
+      titleColor: colors.dangerHeader,
+      subtitleColor: colors.dangerSubHeader,
     },
   }[monitoringCardState];
 

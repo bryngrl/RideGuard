@@ -77,7 +77,7 @@ export default function RegisterStepTwoScreen() {
         </View>
 
         <View style={styles.logoContainer}>
-          <MainLogo width={64} height={64} />
+          <MainLogo color={theme.logo} width={64} height={64} />
         </View>
 
         <View style={styles.headerContainer}>

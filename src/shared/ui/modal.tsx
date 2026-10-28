@@ -45,7 +45,7 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
       onRequestClose={() => {}}
     >
       <View style={styles.modalOverlay}>
-        <View style={[styles.alertBox, { backgroundColor: theme.card }]}>
+        <View style={[styles.alertBox, { backgroundColor: theme.modalSurface }]}>
           <View style={styles.contentContainer}>
             {status === "loading" && <LoadingIcon width={56} height={56} />}
             {status === "success" && <SuccessIcon width={56} height={56} />}

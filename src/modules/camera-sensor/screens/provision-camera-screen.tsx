@@ -131,10 +131,10 @@ export function ProvisionCameraScreen() {
         {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={10} size={6} /></View>}
         <View style={[styles.topSection, fromSettings && styles.settingsTopSection]}>
           <View style={styles.logoContainer}>
-            <MainLogo width={64} height={64} />
+            <MainLogo color={theme.logo} width={64} height={64} />
           </View>
-          <View style={styles.cameraNumber}>
-            <Text style={styles.cameraNumberText}>
+          <View style={[styles.cameraNumber, { backgroundColor: theme.infoBackground }]}>
+            <Text style={[styles.cameraNumberText, { color: theme.text }]}>
               {fromSettings ? `Camera ${cameraNumber}` : `Camera ${cameraNumber} of 2`}
             </Text>
           </View>
@@ -156,7 +156,7 @@ export function ProvisionCameraScreen() {
             <CustomTextInput
               label="Device ID"
               required
-              labelStyle={{ color: BrandColors.primary }}
+              labelStyle={{ color: theme.text }}
               placeholder="e.g., ABC-123-XYZ"
               autoCapitalize="characters"
               autoCorrect={false}

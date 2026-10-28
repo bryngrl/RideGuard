@@ -5,7 +5,7 @@ const vm = require("node:vm");
 const ts = require("typescript");
 const path = require("node:path");
 
-function render(kind, params, history) {
+function render(kind, params, history, scheme = "light") {
   const actions = [], effects = [];
   const router = { canGoBack: () => history, back: () => actions.push("back"), replace: (href) => actions.push(href) };
   const modules = {
@@ -15,9 +15,11 @@ function render(kind, params, history) {
     "react/jsx-runtime": require("react/jsx-runtime"),
     "expo-router": { useRouter: () => router, useLocalSearchParams: () => params, useFocusEffect: (work) => effects.push(work) },
     "expo-image-picker": {}, "@expo/vector-icons": { Ionicons: "Icon" }, "expo-linear-gradient": { LinearGradient: "Gradient" },
+    "expo-image": { Image: "ArtworkImage" },
     "react-native": { View: "View", Text: "Text", Image: "Image", Pressable: "Pressable",
       BackHandler: { addEventListener: () => ({ remove() {} }) } },
     "@/shared/hooks/use-theme": { useTheme: () => ({}) },
+    "@/shared/hooks/use-color-scheme": { useColorScheme: () => scheme },
     "@/shared/theme": { actionFooterPadding: () => 40, BrandColors: {}, Spacing: {}, Typography: {} },
     "react-native-safe-area-context": { useSafeAreaInsets: () => ({ bottom: 24 }) },
     "@/shared/lib/input-formats": { nationalMobile: (value) => value, formatNationalMobile: (value) => value },
@@ -32,6 +34,7 @@ function render(kind, params, history) {
   const source = readFileSync(path.join(__dirname, `../src/modules/emergency-contacts/screens/${kind}-contact-screen.tsx`), "utf8");
   const context = { exports: {}, require: (name) => {
     if (name.endsWith(".svg")) return "Svg";
+    if (name === "@/assets/images/backgrounds/contact-information-dark.png") return "contact-information-dark.png";
     assert.ok(name in modules, name); return modules[name];
   } };
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
@@ -57,4 +60,20 @@ test("an empty new-contact form can close safely without back history", () => {
   const screen = render("add", {}, false);
   screen.tree.props.onBack();
   assert.deepEqual(screen.actions, ["/contact"]);
+});
+
+test("contact details switch the background artwork without changing contact identity or navigation", () => {
+  for (const scheme of ["light", "dark"]) {
+    const screen = render("edit", { contactId: "contact-1", contactName: "Ana" }, true, scheme);
+    const layer = screen.tree.props.children[0].props.children[1];
+    const background = scheme === "dark" ? layer.props.children : layer;
+    assert.equal(background.type, scheme === "dark" ? "ArtworkImage" : "Svg");
+    if (scheme === "dark") {
+      assert.equal(background.props.source, "contact-information-dark.png");
+      assert.equal(background.props.contentFit, "contain");
+      assert.equal(background.props.pointerEvents, "none");
+    }
+    screen.tree.props.onBack();
+    assert.deepEqual(screen.actions, ["back"]);
+  }
 });

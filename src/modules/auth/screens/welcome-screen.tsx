@@ -1,3 +1,6 @@
+import { useTheme } from "@/shared/hooks/use-theme";
+import { useColorScheme } from "@/shared/hooks/use-color-scheme";
+
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { BrandNameReveal } from "@/components/brand-name-reveal";
 import { BrandLockup } from "@/components/brand-lockup";
@@ -26,6 +29,7 @@ const SIGNAL_RING_DURATION = 3800;
 const SIGNAL_RING_STAGGER = 650;
 
 function SignalRing({ size, index, active }: { size: number; index: number; active: boolean }) {
+  const theme = useTheme();
   const reduceMotion = useReducedMotion();
   const progress = useSharedValue(0);
 
@@ -52,7 +56,7 @@ function SignalRing({ size, index, active }: { size: number; index: number; acti
   return (
     <Animated.View
       style={[
-        styles.signalRing,
+        styles.signalRing, { borderColor: theme.welcomeRing },
         { width: size, height: size, marginTop: -size / 2, marginLeft: -size / 2 },
         signalMotion,
       ]}
@@ -66,6 +70,8 @@ type WelcomeScreenProps = {
 };
 
 export default function WelcomeScreen({ startup = false, showLanding = true }: WelcomeScreenProps) {
+  const theme = useTheme();
+  const scheme = useColorScheme();
   const { bottom } = useSafeAreaInsets();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
@@ -162,8 +168,8 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
   }));
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <Animated.View
         pointerEvents="none"
         importantForAccessibility="no-hide-descendants"
@@ -173,12 +179,12 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
           <Svg width="100%" height="100%" viewBox="0 0 360 360">
             <Defs>
               <RadialGradient id="haloSurface" cx="50%" cy="50%" rx="50%" ry="50%">
-                <Stop offset="0%" stopColor="#E5EFFF" />
-                <Stop offset="24%" stopColor="#EAF2FF" />
-                <Stop offset="48%" stopColor="#F3F8FF" />
-                <Stop offset="70%" stopColor="#FBFDFF" />
-                <Stop offset="88%" stopColor="#FFFFFF" />
-                <Stop offset="100%" stopColor="#FFFFFF" />
+                <Stop offset="0%" stopColor={theme.welcomeGlow} />
+                <Stop offset="24%" stopColor={theme.welcomeGlow} />
+                <Stop offset="48%" stopColor={theme.welcomeGlowMiddle} />
+                <Stop offset="70%" stopColor={theme.background} />
+                <Stop offset="88%" stopColor={theme.background} />
+                <Stop offset="100%" stopColor={theme.background} />
               </RadialGradient>
             </Defs>
             <Rect width="360" height="360" fill="url(#haloSurface)" />
@@ -217,7 +223,7 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
               <BrandNameReveal reveal={false} />
             </View>
             <Animated.View style={[styles.startupLogo, logoMotion]}>
-              <MainLogo width={64} height={64} />
+              <MainLogo color={theme.logo} width={64} height={64} />
             </Animated.View>
             <View style={[styles.startupWordmark, { transform: [{ translateX: (49 - wordmarkWidth) / 2 }] }]}>
               <BrandNameReveal />
@@ -240,7 +246,7 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
               onPress={() => router.push("/(public)/create-account")}
               variant="ghost"
               style={styles.action}
-              textStyle={styles.secondaryActionText}
+              textStyle={[styles.secondaryActionText, { color: theme.primary }]}
             />
           </Animated.View>
         </View>

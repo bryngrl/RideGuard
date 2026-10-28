@@ -31,7 +31,7 @@ export function SettingRow({
         { borderBottomColor: colors.border, borderBottomWidth: showDivider ? StyleSheet.hairlineWidth : 0 },
       ]}
     >
-      <Icon width={20} height={20} />
+      <Icon width={20} height={20} color={danger ? colors.error : colors.icon} />
       <Text
         style={[
           Typography.body,

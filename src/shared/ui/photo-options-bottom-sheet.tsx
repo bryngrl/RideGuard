@@ -136,7 +136,7 @@ export function PhotoOptionsBottomSheet({
             onLayout={(event) => setSheetHeight(event.nativeEvent.layout.height)}
             style={[
               styles.sheet,
-              { backgroundColor: theme.background, paddingBottom: Spacing.three + insets.bottom },
+              { backgroundColor: theme.modalSurface, paddingBottom: Spacing.three + insets.bottom },
               sheetStyle,
             ]}
           >
@@ -149,7 +149,7 @@ export function PhotoOptionsBottomSheet({
                 accessibilityRole="button"
                 accessibilityLabel="Take photo"
               >
-                <CameraIcon width={24} height={24} />
+                <CameraIcon color={theme.icon} width={24} height={24} />
                 <Text style={[Typography.button, styles.optionText, { color: theme.text }]}>Take photo</Text>
               </FeedbackPressable>
               <FeedbackPressable
@@ -159,7 +159,7 @@ export function PhotoOptionsBottomSheet({
                 accessibilityRole="button"
                 accessibilityLabel="Choose existing photo"
               >
-                <ImageIcon width={24} height={24} />
+                <ImageIcon color={theme.icon} width={24} height={24} />
                 <Text style={[Typography.button, styles.optionText, { color: theme.text }]}>Choose existing photo</Text>
               </FeedbackPressable>
             </View>

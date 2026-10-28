@@ -117,11 +117,11 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       }
     }, [error, hint, isFocused, scrollFocusedInput]);
     const reduceMotion = useReducedMotion();
-    const borderColor = useSharedValue<string>(theme.border);
+    const borderColor = useSharedValue<string>(theme.formBorder);
     useEffect(() => {
-      const color = hasError ? theme.error : isFocused ? theme.borderFocus : theme.border;
+      const color = hasError ? theme.error : isFocused ? theme.borderFocus : theme.formBorder;
       borderColor.value = reduceMotion ? color : withTiming(color, { duration: 140 });
-    }, [borderColor, hasError, isFocused, reduceMotion, theme.border, theme.borderFocus, theme.error]);
+    }, [borderColor, hasError, isFocused, reduceMotion, theme.formBorder, theme.borderFocus, theme.error]);
     const focusStyle = useAnimatedStyle(() => ({ borderColor: borderColor.value }));
 
     return (
@@ -164,7 +164,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
           style={[
             styles.inputWrapper,
             {
-              backgroundColor: theme.backgroundElement,
+              backgroundColor: isFocused ? theme.backgroundSelected : theme.inputBackground,
             },
             focusStyle,
             inputWrapperStyle,
@@ -222,6 +222,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               inputStyle,
             ]}
             placeholderTextColor={theme.textMuted}
+            selectionColor={theme.accent}
             secureTextEntry={isPassword && !isPasswordVisible}
             autoCapitalize={isPassword ? "none" : undefined}
             autoCorrect={isPassword ? false : undefined}
@@ -258,7 +259,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
               <Ionicons
                 name={isPasswordVisible ? "eye-outline" : "eye-off-outline"}
                 size={20}
-                color="#767676"
+                color={theme.iconMuted}
               />
             </Pressable>
           ) : (

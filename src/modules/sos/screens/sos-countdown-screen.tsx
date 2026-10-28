@@ -38,7 +38,7 @@ export function SosCountdownScreen() {
     <View style={styles.content}>
       <View style={styles.messageSection}>
         <Text style={[styles.eyebrow, { color: colors.accent }]}>STARTING SOS</Text>
-        <Text style={styles.title}>Notifying your contacts in</Text>
+        <Text style={[styles.title, { color: colors.accent }]}>Notifying your contacts in</Text>
       </View>
       <View style={styles.countdownSection}>
         <View style={[styles.countdownCircle, { width: size, height: size }]}>
@@ -50,8 +50,8 @@ export function SosCountdownScreen() {
               rotation={-90} origin={`${size / 2}, ${size / 2}`} />
           </Svg>
           <View style={styles.countdownValue} accessible accessibilityLiveRegion="polite" accessibilityLabel={`${state.remaining} seconds remaining`}>
-            <Text style={styles.countdownText}>{state.remaining}</Text>
-            <Text style={styles.seconds}>seconds</Text>
+            <Text style={[styles.countdownText, { color: colors.accent }]}>{state.remaining}</Text>
+            <Text style={[styles.seconds, { color: colors.muted }]}>seconds</Text>
           </View>
         </View>
       </View>
