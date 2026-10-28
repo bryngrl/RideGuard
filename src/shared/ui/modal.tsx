@@ -1,9 +1,10 @@
 import ErrorIcon from "@/assets/icons/status/error.svg";
 import LoadingIcon from "@/assets/icons/status/loading.svg";
 import SuccessIcon from "@/assets/icons/status/success.svg";
-import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { useEffect, useState } from "react";
 import { Modal, StyleSheet, Text, View } from "react-native";
+import { useTheme } from "@/shared/hooks/use-theme";
 
 interface LoadingModalProps {
   visible: boolean;
@@ -12,6 +13,7 @@ interface LoadingModalProps {
 }
 
 export function LoadingModal({ visible, status, message }: LoadingModalProps) {
+  const theme = useTheme();
   const [dotCount, setDotCount] = useState(0);
 
   useEffect(() => {
@@ -30,9 +32,9 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
     status === "loading" ? "Verifying" + ".".repeat(dotCount) : message;
 
   const getTextColor = () => {
-    if (status === "success") return BrandColors.success;
-    if (status === "error") return BrandColors.error;
-    return BrandColors.primary;
+    if (status === "success") return theme.success;
+    if (status === "error") return theme.error;
+    return theme.text;
   };
 
   return (
@@ -43,7 +45,7 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
       onRequestClose={() => {}}
     >
       <View style={styles.modalOverlay}>
-        <View style={styles.alertBox}>
+        <View style={[styles.alertBox, { backgroundColor: theme.card }]}>
           <View style={styles.contentContainer}>
             {status === "loading" && <LoadingIcon width={56} height={56} />}
             {status === "success" && <SuccessIcon width={56} height={56} />}
@@ -79,7 +81,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: Spacing.four,
-    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,

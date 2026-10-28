@@ -10,10 +10,10 @@ import {
   ViewStyle,
 } from "react-native";
 import { KeyboardAwareFormScrollView } from "./keyboard-aware-form-scroll-view";
-import { Edge, SafeAreaView } from "react-native-safe-area-context";
+import { Edge, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
-import { MaxContentWidth, Spacing } from "@/shared/theme";
+import { actionFooterPadding, MaxContentWidth, Spacing } from "@/shared/theme";
 
 export interface KeyboardAvoidingWrapperProps {
   children: React.ReactNode;
@@ -31,9 +31,10 @@ export function KeyboardAvoidingWrapper({
   safeAreaEdges = ["top", "bottom"],
 }: KeyboardAvoidingWrapperProps) {
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   const content = (
-    <View style={[styles.innerContainer, contentContainerStyle]}>
+    <View style={[styles.innerContainer, { paddingBottom: actionFooterPadding(bottom, safeAreaEdges.includes("bottom")) }, contentContainerStyle]}>
       {children}
     </View>
   );

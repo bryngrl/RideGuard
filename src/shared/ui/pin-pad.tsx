@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef } from "react";
 import { StyleSheet, Text, View, useWindowDimensions, type StyleProp, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
+import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withSequence, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, PinLayout, Spacing, Typography, getPinKeypadGap } from "@/shared/theme";
@@ -19,6 +19,7 @@ interface PinPadProps {
   label?: string;
   indicatorStyle?: StyleProp<ViewStyle>;
   keypadStyle?: StyleProp<ViewStyle>;
+  keyStyle?: StyleProp<ViewStyle>;
 }
 
 function PinIndicator({ filled, active, error, style }: { filled: boolean; active: boolean; error: boolean; style?: StyleProp<ViewStyle> }) {
@@ -27,10 +28,11 @@ function PinIndicator({ filled, active, error, style }: { filled: boolean; activ
   const scale = useSharedValue(1);
   useEffect(() => {
     scale.value = filled && !reduceMotion ? withSequence(withTiming(1.08, { duration: 85 }), withTiming(1, { duration: 110 })) : 1;
+    return () => cancelAnimation(scale);
   }, [filled, reduceMotion, scale]);
   const motion = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <Animated.View style={[styles.indicator, style, motion, {
+    <Animated.View collapsable={false} style={[styles.indicator, style, motion, {
       backgroundColor: error ? theme.inputErrorBackground : theme.backgroundElement,
       borderColor: error ? theme.error : active ? theme.borderFocus : theme.border,
     }]}>
@@ -40,7 +42,7 @@ function PinIndicator({ filled, active, error, style }: { filled: boolean; activ
 }
 
 /** Accessible, masked input. PIN values are never rendered as text or announced. */
-export function PinPad({ value, onChange, onComplete, disabled = false, error = false, errorVersion = 0, length = 4, label = "MPIN", indicatorStyle, keypadStyle }: PinPadProps) {
+export function PinPad({ value, onChange, onComplete, disabled = false, error = false, errorVersion = 0, length = 4, label = "MPIN", indicatorStyle, keypadStyle, keyStyle }: PinPadProps) {
   const theme = useTheme();
   const reduceMotion = useReducedMotion();
   const current = useRef(value);
@@ -55,6 +57,7 @@ export function PinPad({ value, onChange, onComplete, disabled = false, error = 
     if (errorVersion > 0 && !reduceMotion) {
       shake.value = withSequence(withTiming(-5, { duration: 60 }), withTiming(5, { duration: 70 }), withTiming(-3, { duration: 60 }), withTiming(0, { duration: 70 }));
     }
+    return () => cancelAnimation(shake);
   }, [errorVersion, reduceMotion, shake]);
   const motion = useAnimatedStyle(() => ({ transform: [{ translateX: shake.value }] }));
   const enter = (digit: string) => {
@@ -71,21 +74,21 @@ export function PinPad({ value, onChange, onComplete, disabled = false, error = 
     onChange(current.current);
   };
   return (
-    <View style={styles.container}>
-      <Animated.View style={[styles.indicators, length > 4 && { gap: Spacing.two }, motion]} accessible accessibilityLabel={`${label}: ${value.length} of ${length} digits entered`}
+    <View collapsable={false} style={styles.container}>
+      <Animated.View collapsable={false} style={[styles.indicators, length > 4 && { gap: Spacing.two }, motion]} accessible accessibilityLabel={`${label}: ${value.length} of ${length} digits entered`}
         accessibilityLiveRegion="polite" importantForAccessibility="yes">
         {Array.from({ length }, (_, index) => <PinIndicator key={index} filled={index < value.length} active={!disabled && index === value.length} error={error} style={indicatorStyle} />)}
       </Animated.View>
-      <View style={[styles.keypad, { marginTop: keypadGap }, keypadStyle, disabled && styles.disabled]}>
+      <View collapsable={false} style={[styles.keypad, { marginTop: keypadGap }, keypadStyle, disabled && styles.disabled]}>
         {[ ["1", "2", "3"], ["4", "5", "6"], ["7", "8", "9"], ["", "0", "delete"] ].map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.keyRow}>
-            {row.map((key, index) => key === "" ? <View key={index} style={styles.key} /> : (
+          <View collapsable={false} key={rowIndex} style={styles.keyRow}>
+            {row.map((key, index) => key === "" ? <View key={`empty-${rowIndex}-${index}`} style={[styles.key, keyStyle]} /> : (
               <Pressable key={key} disabled={disabled || (key === "delete" && !value.length)}
                 onPress={() => key === "delete" ? backspace() : enter(key)}
                 accessibilityRole="button" accessibilityLabel={key === "delete" ? "Delete last digit" : key}
                 accessibilityState={{ disabled: disabled || (key === "delete" && !value.length) }}
                 feedbackRadius={BorderRadius.lg}
-                style={styles.key}>
+                style={[styles.key, keyStyle]}>
                 {key === "delete" ? <Ionicons name="backspace-outline" size={25} color={theme.text} /> :
                   <Text style={[styles.digit, { color: theme.text }]}>{key}</Text>}
               </Pressable>

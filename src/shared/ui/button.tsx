@@ -181,15 +181,17 @@ export function Button({
         style,
       ]}
       accessibilityRole="button"
+      accessibilityLabel={title}
       accessibilityState={{ disabled: isDisabled, busy: isLoading }}
     >
-      {isLoading ? (
-        <ActivityIndicator color={variantStyles.spinnerColor} size="small" />
-      ) : (
         <View
+          collapsable={false}
+          accessibilityElementsHidden={isLoading}
+          importantForAccessibility={isLoading ? "no-hide-descendants" : "auto"}
           style={[
             styles.contentRow,
             centerTextWithLeftIcon && styles.fullWidthContentRow,
+            { opacity: isLoading ? 0 : 1 },
           ]}
         >
           {leftIcon && (
@@ -219,7 +221,11 @@ export function Button({
 
           {rightIcon && <View style={styles.rightIcon}>{rightIcon}</View>}
         </View>
-      )}
+      <View collapsable={false} pointerEvents="none" accessibilityElementsHidden={!isLoading}
+        importantForAccessibility={isLoading ? "auto" : "no-hide-descendants"}
+        style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", opacity: isLoading ? 1 : 0 }]}>
+        <ActivityIndicator animating={isLoading} color={variantStyles.spinnerColor} size="small" />
+      </View>
     </Pressable>
   );
 }
