@@ -29,7 +29,7 @@ function mapCamera(dto: CameraDto): LiveCamera {
   return {
     deviceId: dto.device_id,
     streamUrl: dto.stream_url ?? null,
-    online: Boolean(dto.online),
+    online: dto.online === true,
     lastSeenAt: dto.last_seen_at ?? null,
     source: dto.source === "phone" ? "phone" : "esp32",
   };

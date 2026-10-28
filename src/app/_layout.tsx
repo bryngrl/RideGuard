@@ -7,12 +7,16 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import { useSettingsStore } from "@/modules/settings/store/settings.store";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useMpinLifecycle } from "@/modules/mpin/hooks/use-mpin-lifecycle";
 import { MpinPrivacyCover } from "@/modules/mpin/components/mpin-privacy-cover";
+import { SessionRecovery } from "@/modules/auth/components/session-recovery";
+import { BrandedAlertHost } from "@/shared/ui/branded-alert-host";
+import { LocationServicesPrompt } from "@/shared/ui/location-services-prompt";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -39,7 +43,7 @@ export default function RootLayout() {
     "Geist-SemiBold": require("../../assets/fonts/Geist-SemiBold.ttf"),
     "Geist-Thin": require("../../assets/fonts/Geist-Thin.ttf"),
   });
-  useAuth();
+  const { sessionError, retrySession, isCheckingAuth } = useAuth();
   useAbly();
   usePushRegistration();
   useMpinLifecycle();
@@ -69,6 +73,10 @@ export default function RootLayout() {
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />
           <Stack.Screen
+            name="(public)/check-email"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right", gestureEnabled: false }}
+          />
+          <Stack.Screen
             name="(public)/forgot-password"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />
@@ -76,8 +84,12 @@ export default function RootLayout() {
             name="(public)/verify-code"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
           />
-          <Stack.Screen name="(app)" options={{ animation: "fade" }} />
-          <Stack.Screen name="(mpin)/mpin" options={{ animation: reduceMotion ? "none" : "slide_from_right", gestureEnabled: false }} />
+          <Stack.Screen
+            name="privacy/privacy"
+            options={{ animation: reduceMotion ? "none" : "slide_from_right", animationDuration: 260 }}
+          />
+          <Stack.Screen name="(app)" options={{ animation: Platform.OS === "android" ? "none" : "fade" }} />
+          <Stack.Screen name="(mpin)/mpin" options={{ animation: reduceMotion || Platform.OS === "android" ? "none" : "slide_from_right", gestureEnabled: false }} />
           <Stack.Screen
             name="(public)/new-password"
             options={{ animation: reduceMotion ? "none" : "slide_from_right" }}
@@ -88,7 +100,10 @@ export default function RootLayout() {
           />
           <Stack.Screen name="(onboarding)/register" options={{ animation: "fade" }} />
         </Stack>
+        <SessionRecovery message={sessionError} busy={isCheckingAuth} onRetry={retrySession} />
         <MpinPrivacyCover />
+        <BrandedAlertHost />
+        <LocationServicesPrompt />
       </ThemeProvider>
     </GestureHandlerRootView>
   );

@@ -1,36 +1,42 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Spacing, Typography } from "@/shared/theme";
+import { actionFooterPadding, Spacing, Typography } from "@/shared/theme";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "./keyboard-aware-form-scroll-view";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "./back-arrow-icon";
 
 interface AuthFormLayoutProps {
   title: string;
-  description: string;
+  description: ReactNode;
   onBack: () => void;
   backDisabled?: boolean;
+  showBack?: boolean;
   variant?: "branded" | "recovery";
   children: ReactNode;
+  notification?: ReactNode;
 }
 
 /** Shared auth layouts: branded forms and the compact Find Your Account format. */
-export function AuthFormLayout({ title, description, onBack, backDisabled, variant = "branded", children }: AuthFormLayoutProps) {
+export function AuthFormLayout({ title, description, onBack, backDisabled, showBack = true, variant = "branded", children, notification }: AuthFormLayoutProps) {
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
   const recovery = variant === "recovery";
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <ScrollView
-          contentContainerStyle={styles.content}
+      <View style={styles.container}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <KeyboardAwareFormScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: actionFooterPadding(bottom, true) }]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
+          keyboardGap={Spacing.four}
         >
-          <Pressable
+          {showBack ? <Pressable
             onPress={onBack}
             disabled={backDisabled}
             style={styles.backButton}
@@ -42,15 +48,17 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, varia
             accessibilityState={{ disabled: !!backDisabled }}
           >
             <BackArrowIcon color={theme.text} />
-          </Pressable>
+          </Pressable> : <View style={styles.backButton} />}
           {!recovery && <View style={styles.brand}><MainLogo width={64} height={64} /></View>}
           <View style={recovery ? styles.recoveryMain : undefined}>
             <Text accessibilityRole="header" style={[recovery ? styles.recoveryHeading : styles.heading, { color: theme.text }]}>{title}</Text>
             <Text style={[styles.description, recovery && styles.recoveryDescription, { color: theme.textMuted }]}>{description}</Text>
             {children}
           </View>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
+      {notification}
+      </View>
     </SafeAreaView>
   );
 }

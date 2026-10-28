@@ -1,15 +1,16 @@
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { appendPhoto } from "@/shared/api/photo-upload";
+import { API_BASE_URL } from "@/shared/api/client";
 import type { ImagePickerAsset } from "expo-image-picker";
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
 
 export type ProfileDocument = {
   personalInfo?: {
     firstName?: string;
     lastName?: string;
     phoneNumber?: string;
+    first_name?: string;
+    last_name?: string;
+    phone_number?: string;
     email?: string;
     profileImageUrl?: string;
   };
@@ -19,7 +20,7 @@ export type ProfileDocument = {
 
 async function authToken() {
   const user = useAuthStore.getState().user;
-  if (!user) throw new Error("Sign in with Google to manage your profile.");
+  if (!user) throw new Error("Log in to manage your profile.");
   return user.getIdToken();
 }
 
@@ -33,9 +34,9 @@ async function readResponse<T>(response: Response): Promise<T> {
   return envelope.data;
 }
 
-export async function getProfile(): Promise<ProfileDocument> {
+export async function getProfile(firebaseToken: string): Promise<ProfileDocument> {
   return readResponse<ProfileDocument>(await fetch(`${API_BASE_URL}/profile/me`, {
-    headers: { Authorization: `Bearer ${await authToken()}` },
+    headers: { Authorization: `Bearer ${firebaseToken}` },
   }));
 }
 

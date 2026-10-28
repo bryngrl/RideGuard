@@ -13,7 +13,7 @@ import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { Keyboard, Text, View } from "react-native";
 import { styles } from "./provision-camera-screen.styles";
 
 export function ProvisionCameraScreen() {
@@ -60,7 +60,7 @@ export function ProvisionCameraScreen() {
       setAlertState({
         visible: true,
         status: "error",
-        message: "You must be signed in to connect a device.",
+        message: "Log in to connect a device.",
       });
 
       setTimeout(() => {
@@ -92,7 +92,8 @@ export function ProvisionCameraScreen() {
       });
 
       setTimeout(() => {
-        router.replace(fromSettings ? "/devices" : `/devices/camera/camera-preview?camera=${cameraNumber}` as never);
+        if (fromSettings) router.dismissTo("/devices");
+        else router.replace(`/devices/camera/camera-preview?camera=${cameraNumber}` as never);
       }, 1500);
     } catch (error: unknown) {
       const message =
@@ -120,20 +121,21 @@ export function ProvisionCameraScreen() {
       return;
     }
 
-    router.replace(fromSettings ? "/devices" : "/devices/button" as never);
+    if (fromSettings) router.dismissTo("/devices");
+    else router.replace("/devices/button" as never);
   };
 
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
-        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={8} size={6} /></View>}
-        <View style={styles.topSection}>
+        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={10} size={6} /></View>}
+        <View style={[styles.topSection, fromSettings && styles.settingsTopSection]}>
           <View style={styles.logoContainer}>
             <MainLogo width={64} height={64} />
           </View>
           <View style={styles.cameraNumber}>
             <Text style={styles.cameraNumberText}>
-              Camera {cameraNumber} of 2
+              {fromSettings ? `Camera ${cameraNumber}` : `Camera ${cameraNumber} of 2`}
             </Text>
           </View>
           <View style={styles.headerContainer}>
@@ -167,13 +169,16 @@ export function ProvisionCameraScreen() {
               onChangeText={(text) => {
                 setDeviceId(text);
                 if (deviceIdError) setDeviceIdError("");
+                if (validCameraId(text) && !validCameraId(deviceId)) {
+                  requestAnimationFrame(() => Keyboard.dismiss());
+                }
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
             />
           </View>
         </View>
 
-        <View style={styles.footerSection}>
+        <KeyboardHiddenView style={styles.footerSection}>
           <View style={styles.helpContainer}>
             <View style={styles.iconContainer}>
               <LightBulb width={24} height={24} />
@@ -195,7 +200,7 @@ export function ProvisionCameraScreen() {
             </View>
           </View>
 
-          <KeyboardHiddenView style={styles.buttonContainer}>
+          <View style={styles.buttonContainer}>
             <Button
               title="Connect"
               variant="primary"
@@ -204,7 +209,7 @@ export function ProvisionCameraScreen() {
               onPress={handleConnect}
               isLoading={isLoading}
             />
-            {isSecondCamera && (
+            {isSecondCamera && !fromSettings && (
               <Button
                 title="Skip for now"
                 variant="ghost"
@@ -215,8 +220,8 @@ export function ProvisionCameraScreen() {
                 style={{ marginTop: Spacing.two }}
               />
             )}
-          </KeyboardHiddenView>
-        </View>
+          </View>
+        </KeyboardHiddenView>
 
         <LoadingModal
           visible={alertState.visible}

@@ -141,6 +141,7 @@ test("a prechecked first SOS screen skips discovery, but resuming still checks",
 function permissionAdapter(getPermission, requestPermission, native = { Alert: { alert() {} }, Linking: { async openSettings() {} } }) {
   let dependencies;
   const imports = {
+    "@/shared/lib/branded-alert": { BrandedAlert: native.Alert },
     "@react-native-async-storage/async-storage": { default: {} },
     "expo-crypto": {},
     "expo-location": { getForegroundPermissionsAsync: getPermission, requestForegroundPermissionsAsync: requestPermission },

@@ -13,7 +13,7 @@ import {
 } from "@/modules/phone-camera";
 import { PHONE_CAPTURE_ENABLED } from "@/shared/constants/phone-capture";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, DeviceCardLayout, Spacing, Typography } from "@/shared/theme";
 import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { QuickActions } from "@/shared/ui/quick-actions";
@@ -243,8 +243,8 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
                   key={camera.deviceId}
                   title={label}
                   subtitle={camera.deviceId}
-                  status={camera.online ? "Online" : "Offline"}
-                  live={camera.online}
+                  status={error ? "Unavailable" : camera.online ? "Online" : "Offline"}
+                  live={!error && camera.online}
                   icon={<CameraIcon width={14} height={14} />}
                   selected={selected === camera.deviceId}
                   onPress={() => setPicked(camera.deviceId)}
@@ -254,6 +254,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
                 <View style={styles.tile}>
                   <Card
                     size="small"
+                    spacious
                     title="Add camera"
                     subtitle={`${MAX_EXTERNAL_CAMERAS - externals.length} left`}
                     titleColor={colors.accent}
@@ -284,7 +285,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
         ) : null}
       </KeyboardAvoidingWrapper>
 
-      <QuickActions />
+      <QuickActions homeLayout />
     </View>
   );
 }
@@ -349,6 +350,8 @@ function SourceTile({
     <View style={styles.tile}>
       <Card
         size="small"
+        spacious
+        style={styles.sourceCard}
         title={title}
         subtitle={subtitle}
         status={status}
@@ -469,12 +472,14 @@ const styles = StyleSheet.create({
   },
   // Same row as the home screen device cards.
   tiles: {
-    gap: Spacing.one,
+    gap: DeviceCardLayout.gap,
   },
   tile: {
-    width: 180,
+    width: DeviceCardLayout.width,
   },
+  sourceCard: { minHeight: DeviceCardLayout.minHeight },
   addTile: {
     borderStyle: "dashed",
+    minHeight: DeviceCardLayout.minHeight,
   },
 });

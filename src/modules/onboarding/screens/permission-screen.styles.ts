@@ -4,13 +4,13 @@ import { BorderRadius, Spacing } from "@/shared/theme";
 export const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: Spacing.five,
     paddingBottom: Spacing.five,
     paddingTop: Spacing.four,
   },
-  topSection: { flex: 1, paddingTop: Spacing.four },
-    stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
+  topSection: { flex: 1 },
+  stepperContainer: { alignItems: "center", marginBottom: Spacing.five },
 
   logoContainer: { alignItems: "flex-start", marginBottom: Spacing.five },
   logo: { width: 60, height: 60 },
@@ -29,6 +29,10 @@ export const styles = StyleSheet.create({
   textContainer: { flex: 1 },
   checkIcon: { width: 16, height: 16, marginLeft: Spacing.three },
   buttonContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: Spacing.three,
     paddingBottom: Spacing.three,
   },

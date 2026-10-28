@@ -13,7 +13,9 @@ export function MpinPrivacyCover() {
     const listener = AppState.addEventListener("change", (state) => setHidden(state !== "active"));
     return () => listener.remove();
   }, []);
-  if (!hidden || !authenticated) return null;
-  return <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.background, zIndex: 9999 }]}
-    accessibilityViewIsModal accessible accessibilityLabel="RideGuard is in the background" />;
+  const visible = hidden && authenticated;
+  return <View collapsable={false} pointerEvents={visible ? "auto" : "none"}
+    style={[StyleSheet.absoluteFill, { backgroundColor: theme.background, zIndex: 9999, opacity: visible ? 1 : 0 }]}
+    accessibilityElementsHidden={!visible} importantForAccessibility={visible ? "yes" : "no-hide-descendants"}
+    accessibilityViewIsModal={visible} accessible={visible} accessibilityLabel="RideGuard is in the background" />;
 }

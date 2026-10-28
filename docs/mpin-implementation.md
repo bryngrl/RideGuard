@@ -1,5 +1,20 @@
 # MPIN frontend — feat/mpin
 
+> Updated decision, 28 October 2026: MPIN email-code routes are now connected in
+> the existing screens. The backend still needs a real mail sender. The older
+> email-link plan below is superseded by [the current flow](MPIN_USER_FLOW.md).
+
+> **Current integration (2026-10-25):** Setup and unlock are now connected and enabled.
+> Cold launch and background return require MPIN for the signed-in account.
+> Email-link change/recovery remain unavailable because the current backend only
+> implements OTP routes with a missing email sender. See [the current user flow
+> and endpoint audit](MPIN_USER_FLOW.md). The sections below retain earlier design
+> and rollout notes and describe the previous disabled state.
+
+> This document records the current code-based MPIN flows. The planned
+> [Forgot MPIN email-link recovery](mpin-recovery-email-link.md) replaces only
+> the recovery OTP flow; the app and backend have not migrated to it yet.
+
 ## Scope and current security status
 
 This branch adds the 4-digit MPIN UI using existing Firebase authentication,

@@ -33,20 +33,20 @@ export default function RegisterScreen() {
     let isValid = true;
 
     if (!lastName.trim()) {
-      setLastNameError("Please enter your last name.");
+      setLastNameError("Enter your last name.");
       isValid = false;
     }
 
     if (!firstName.trim()) {
-      setFirstNameError("Please enter your first name.");
+      setFirstNameError("Enter your first name.");
       isValid = false;
     }
 
     if (!phone.trim()) {
-      setPhoneError("Please enter your phone number.");
+      setPhoneError("Enter your phone number.");
       isValid = false;
     } else if (!validNationalMobile(phone)) {
-      setPhoneError("Please enter a valid 10-digit Philippine mobile number.");
+      setPhoneError("Enter a valid 10-digit mobile number.");
       isValid = false;
     }
     if (!isValid) {
@@ -84,12 +84,16 @@ export default function RegisterScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             ref={lastNameRef}
+            autoComplete="family-name"
+            autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => firstNameRef.current?.focus()}
             label="Last Name"
             required
             labelStyle={{ color: BrandColors.primary }}
             value={lastName}
             error={lastNameError}
-            onBlur={() => { if (!lastName.trim()) setLastNameError("Please enter your last name."); }}
+            onBlur={() => { if (!lastName.trim()) setLastNameError("Enter your last name."); }}
             onChangeText={(text) => {
               updateDraft({ lastName: text });
               if (lastNameError) setLastNameError("");
@@ -99,12 +103,16 @@ export default function RegisterScreen() {
 
           <CustomTextInput
             ref={firstNameRef}
+            autoComplete="given-name"
+            autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => phoneRef.current?.focus()}
             label="First Name"
             required
             labelStyle={{ color: BrandColors.primary }}
             value={firstName}
             error={firstNameError}
-            onBlur={() => { if (!firstName.trim()) setFirstNameError("Please enter your first name."); }}
+            onBlur={() => { if (!firstName.trim()) setFirstNameError("Enter your first name."); }}
             onChangeText={(text) => {
               updateDraft({ firstName: text });
               if (firstNameError) setFirstNameError("");
@@ -124,8 +132,8 @@ export default function RegisterScreen() {
             inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneError}
             onBlur={() => {
-              if (!phone) setPhoneError("Please enter your phone number.");
-              else if (!validNationalMobile(phone)) setPhoneError("Please enter a valid 10-digit Philippine mobile number.");
+              if (!phone) setPhoneError("Enter your phone number.");
+              else if (!validNationalMobile(phone)) setPhoneError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={(text) => {
               updateDraft({ phone: text });

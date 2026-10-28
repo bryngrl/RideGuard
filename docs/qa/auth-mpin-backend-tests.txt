@@ -1,0 +1,59 @@
+
+> rideguard-node@0.0.1 test
+> jest --runInBand
+
+[Nest] 26244  - 10/28/2026, 8:04:36 AM     LOG [AutoArchiveProcessorService] Auto-archive run complete: archived 5 alert(s).
+[Nest] 26244  - 10/28/2026, 8:04:36 AM   ERROR [AutoArchiveProcessorService] Auto-archive failed for uid=bad: firestore down
+[Nest] 26244  - 10/28/2026, 8:04:36 AM   DEBUG [AutoArchiveProcessorService] Auto-archive run skipped — previous run still in progress.
+[Nest] 26244  - 10/28/2026, 8:04:38 AM     LOG [AccountDeletionProcessorService] Account deletion run complete: purged 1 account(s).
+[Nest] 26244  - 10/28/2026, 8:04:38 AM     LOG [AccountDeletionProcessorService] Account deletion run complete: purged 1 account(s).
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee accepted the message with a warning (SMS_PERMISSION_MISSING)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [TextBeeAdapter] TextBee rejected the credentials (HTTP 401)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [TextBeeAdapter] TextBee rejected the credentials (HTTP 403)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee rate or quota limit hit
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee rate or quota limit hit
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee rejected the request (HTTP 400)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee rejected the request (HTTP 400)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee rejected the request (HTTP 404)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee outcome unknown: server error (HTTP 500)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee outcome unknown: server error (HTTP 503)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] SMS send outcome unknown: request timed out after submission
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [TextBeeAdapter] SMS send outcome unknown: network error after submission
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [TextBeeAdapter] SMS send skipped: TEXTBEE_API_KEY is not configured
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH reported success through a non-SMS channel; not reporting as SMS delivery
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [SmsApiPhAdapter] SMS API PH rejected the credentials (HTTP 401)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [SmsApiPhAdapter] SMS API PH rejected the credentials (HTTP 403)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH rate limit hit
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH rejected the request (HTTP 400)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH outcome unknown: server error (HTTP 500)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH outcome unknown: server error (HTTP 503)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS API PH returned an unrecognized response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS send outcome unknown: request timed out after submission
+[Nest] 26244  - 10/28/2026, 8:04:39 AM    WARN [SmsApiPhAdapter] SMS send outcome unknown: network error after submission
+[Nest] 26244  - 10/28/2026, 8:04:39 AM   ERROR [SmsApiPhAdapter] SMS send skipped: SMS_API_PH_API_KEY is not configured
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized status response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized status response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized status response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] TextBee returned an unrecognized status response (HTTP 200)
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] SMS status unknown: timeout
+[Nest] 26244  - 10/28/2026, 8:04:40 AM    WARN [TextBeeAdapter] SMS status unknown: network error
+[Nest] 26244  - 10/28/2026, 8:04:40 AM   ERROR [TextBeeAdapter] SMS status lookup skipped: TEXTBEE_API_KEY or TEXTBEE_DEVICE_ID not set
+[Nest] 26244  - 10/28/2026, 8:04:40 AM   ERROR [TextBeeAdapter] SMS status lookup skipped: TEXTBEE_API_KEY or TEXTBEE_DEVICE_ID not set
+
+Test Suites: 3 skipped, 29 passed, 29 of 32 total
+Tests:       6 skipped, 314 passed, 320 total
+Snapshots:   0 total
+Time:        9.591 s, estimated 11 s
+Ran all test suites.

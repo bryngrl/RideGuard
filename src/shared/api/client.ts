@@ -1,8 +1,9 @@
 import { APIError } from "./errors";
 
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
+export const API_BASE_URL = (
+  process.env.EXPO_PUBLIC_API_BASE_URL?.trim() ||
+  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1"
+).replace(/\/+$/, "");
 
 export interface RequestOptions extends RequestInit {
   token?: string;
@@ -77,12 +78,18 @@ export class APIClient {
         }
       }
 
-      console.error("API ERROR:", {
-        status: response.status,
-        data,
-      });
+      // Azure and other gateways can return an HTML error page instead of
+      // the API's JSON envelope. Never surface that markup as an app message.
+      const contentType = response.headers.get("content-type") ?? "";
+      if (contentType.includes("text/html") || /^\s*</.test(rawResponse)) {
+        message = response.status === 503
+          ? "Service unavailable. Try again later."
+          : "Server error. Try again.";
+      }
 
-      throw new APIError(message, response.status, data);
+      // Keep only the route, never credentials, query values, or response data,
+      // available to callers that need to diagnose a failed request.
+      throw new APIError(message, response.status, data, endpoint.split("?")[0]);
     }
 
     return data as T;

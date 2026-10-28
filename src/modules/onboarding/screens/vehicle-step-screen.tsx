@@ -24,37 +24,45 @@ export default function RegisterStepTwoScreen() {
   const [vehicleBrandError, setVehicleBrandError] = useState("");
   const [vehicleModelError, setVehicleModelError] = useState("");
   const [plateNumberError, setPlateNumberError] = useState("");
+  const [colorError, setColorError] = useState("");
   const brandRef = useRef<TextInput>(null);
   const modelRef = useRef<TextInput>(null);
   const plateRef = useRef<TextInput>(null);
+  const colorRef = useRef<TextInput>(null);
 
   const handleNextStep = () => {
     setVehicleBrandError("");
     setVehicleModelError("");
     setPlateNumberError("");
+    setColorError("");
 
     let isValid = true;
 
     if (!vehicleBrand.trim()) {
-      setVehicleBrandError("Please enter your vehicle brand.");
+      setVehicleBrandError("Enter your vehicle brand.");
       isValid = false;
     }
 
     if (!vehicleModel.trim()) {
-      setVehicleModelError("Please enter your vehicle model.");
+      setVehicleModelError("Enter your vehicle model.");
       isValid = false;
     }
 
     if (!plateNumber.trim()) {
-      setPlateNumberError("Please enter your plate number.");
+      setPlateNumberError("Enter your plate number.");
       isValid = false;
     } else if (!validPlateInput(plateNumber)) {
       setPlateNumberError("Enter a valid vehicle plate number.");
       isValid = false;
     }
 
+    if (!color.trim()) {
+      setColorError("Enter your vehicle color.");
+      isValid = false;
+    }
+
     if (!isValid) {
-      (!vehicleBrand.trim() ? brandRef : !vehicleModel.trim() ? modelRef : plateRef).current?.focus();
+      (!vehicleBrand.trim() ? brandRef : !vehicleModel.trim() ? modelRef : !plateNumber.trim() || !validPlateInput(plateNumber) ? plateRef : colorRef).current?.focus();
       return;
     }
 
@@ -89,6 +97,8 @@ export default function RegisterStepTwoScreen() {
         <View style={styles.formContainer}>
           <CustomTextInput
             ref={brandRef}
+            returnKeyType="next"
+            onSubmitEditing={() => modelRef.current?.focus()}
             label="Vehicle Brand"
             required
             value={vehicleBrand}
@@ -102,6 +112,8 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             ref={modelRef}
+            returnKeyType="next"
+            onSubmitEditing={() => plateRef.current?.focus()}
             label="Vehicle Model"
             required
             value={vehicleModel}
@@ -115,6 +127,8 @@ export default function RegisterStepTwoScreen() {
 
           <CustomTextInput
             ref={plateRef}
+            returnKeyType="next"
+            onSubmitEditing={() => colorRef.current?.focus()}
             label="Plate Number"
             required
             autoCapitalize="characters"
@@ -131,10 +145,16 @@ export default function RegisterStepTwoScreen() {
           />
 
           <CustomTextInput
+            ref={colorRef}
+            returnKeyType="done"
+            onSubmitEditing={handleNextStep}
             label="Color"
+            required
             value={color}
+            error={colorError}
             onChangeText={(text) => {
               updateDraft({ color: text });
+              if (colorError) setColorError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />

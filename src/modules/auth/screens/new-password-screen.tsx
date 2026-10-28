@@ -1,4 +1,4 @@
-import { Stack, useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { Stack, useFocusEffect, useNavigation, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AppState, BackHandler, Keyboard, StyleSheet, TextInput, View } from "react-native";
 
@@ -14,8 +14,6 @@ import { getConfirmPasswordError, getPasswordError, PASSWORD_REQUIREMENTS } from
 
 export default function NewPasswordScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ preview?: string }>();
-  const preview = __DEV__ && params.preview === "1";
   const navigation = useNavigation("/");
   const session = usePasswordRecoveryStore((state) => state.session);
   const confirmRef = useRef<TextInput>(null);
@@ -29,7 +27,7 @@ export default function NewPasswordScreen() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
   const validSession = isResetSessionValid(session, now);
-  const canEdit = preview || validSession;
+  const canEdit = validSession;
   const passwordError = getPasswordError(password);
   const confirmationError = getConfirmPasswordError(password, confirmation);
 
@@ -51,12 +49,12 @@ export default function NewPasswordScreen() {
   }, []);
 
   useEffect(() => {
-    if (preview || validSession || loading) return;
+    if (validSession || loading) return;
     setPassword("");
     setConfirmation("");
     // Drop expired credentials immediately, retaining a clear recovery action.
     if (session) usePasswordRecoveryStore.getState().clear();
-  }, [preview, validSession, loading, session]);
+  }, [validSession, loading, session]);
 
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => pending.current);
@@ -66,6 +64,7 @@ export default function NewPasswordScreen() {
   const handleBack = () => {
     if (pending.current) return;
     Keyboard.dismiss();
+    usePasswordRecoveryStore.getState().clearVerifiedSession();
     if (router.canGoBack()) router.back();
     else router.replace("/(public)/forgot-password");
   };
@@ -83,12 +82,6 @@ export default function NewPasswordScreen() {
     if (pending.current) return;
     setSubmitted(true);
     setRequestError(null);
-    if (preview) {
-      if (passwordError || confirmationError) return;
-      Keyboard.dismiss();
-      setRequestError("Preview only. Your password has not been changed; the backend is not connected yet.");
-      return;
-    }
     if (!isResetSessionValid(session)) {
       setNow(Date.now());
       return;
@@ -132,9 +125,8 @@ export default function NewPasswordScreen() {
       onBack={handleBack} backDisabled={loading}>
       <Stack.Screen options={{ gestureEnabled: !loading }} />
       <View style={styles.form}>
-        {preview && <FormFeedback tone="info" message="Development preview. Test the fields and validation here; no password will be changed." />}
         {!canEdit && !loading && (
-          <FormFeedback message="Your reset session has expired or is invalid. Request a new code to continue." />
+          <FormFeedback message="Reset link expired. Request a new link." />
         )}
         <CustomTextInput label="New password" required isPassword
           value={password} onChangeText={(value) => { setPassword(value); setRequestError(null); }}
@@ -151,10 +143,10 @@ export default function NewPasswordScreen() {
           editable={canEdit && !loading} autoCapitalize="none" autoCorrect={false}
           autoComplete="new-password" textContentType="newPassword" returnKeyType="done" onSubmitEditing={handleSubmit}
           containerStyle={styles.field} inputWrapperStyle={styles.inputWrapper} />
-        {canEdit && requestError && <FormFeedback message={requestError} tone={preview ? "info" : "error"} />}
+        {canEdit && requestError && <FormFeedback message={requestError} tone="error" />}
         <Button title="Change Password" onPress={handleSubmit} isLoading={loading}
           disabled={!canEdit || !!passwordError || !!confirmationError} style={styles.submitButton} />
-        {!canEdit && !loading && <Button title="Request a new code" variant="ghost" onPress={restartRecovery} />}
+        {!canEdit && !loading && <Button title="Request a new link" variant="ghost" onPress={restartRecovery} />}
       </View>
     </AuthFormLayout>
   );

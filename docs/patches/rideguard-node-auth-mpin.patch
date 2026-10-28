@@ -1,0 +1,551 @@
+diff --git a/src/infra/logger/logger.config.ts b/src/infra/logger/logger.config.ts
+index 7a4efd5..eb53889 100644
+--- a/src/infra/logger/logger.config.ts
++++ b/src/infra/logger/logger.config.ts
+@@ -17,7 +17,9 @@ export const createLoggerOptions = (
+       // `redact` swaps those values for "[REDACTED]". Node stores header names
+       // in lower case, so we list them in lower case here.
+       redact: {
+-        paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]'],
++        paths: ['req.headers.authorization', 'req.headers.cookie', 'res.headers["set-cookie"]',
++          'req.body.pin', 'req.body.password', 'req.body.code', 'req.body.authorization',
++          'req.body.currentPinProof', 'req.body.token', 'req.body.idToken'],
+         censor: '[REDACTED]',
+       },
+       transport: usePrettyLogs
+diff --git a/src/modules/auth/auth.service.spec.ts b/src/modules/auth/auth.service.spec.ts
+index da5f034..82c03d9 100644
+--- a/src/modules/auth/auth.service.spec.ts
++++ b/src/modules/auth/auth.service.spec.ts
+@@ -18,6 +18,20 @@ describe('AuthService email-link registration', () => {
+     } as never;
+   }
+ 
++  it('exposes contextual verification recovery only after correct credentials', async () => {
++    const fetch = jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true,
++      json: async () => ({ localId: 'uid-1', email: 'rider@gmail.com' }) } as Response);
++    const auth = { getUser: jest.fn().mockResolvedValue({ emailVerified: false }) } as unknown as Auth;
++    const service = new AuthService(auth, {} as Rest, {} as Firestore, makeConfig());
++    try {
++      await expect(service.login({ identifier: 'rider@gmail.com', password: 'correct-fixture' })).rejects.toMatchObject({
++        response: { code: 'EMAIL_NOT_VERIFIED', email: 'rider@gmail.com' },
++      });
++      fetch.mockResolvedValue({ ok: false, json: async () => ({}) } as Response);
++      await expect(service.login({ identifier: 'rider@gmail.com', password: 'wrong-fixture' })).rejects.toThrow('Invalid username/email or password.');
++    } finally { fetch.mockRestore(); }
++  });
++
+   it('creates an unverified Firebase user without sending email from the backend', async () => {
+     const pendingRef = { set: jest.fn(), delete: jest.fn() };
+     const usernameRef = { delete: jest.fn() };
+diff --git a/src/modules/auth/auth.service.ts b/src/modules/auth/auth.service.ts
+index 9e25751..0af05c3 100644
+--- a/src/modules/auth/auth.service.ts
++++ b/src/modules/auth/auth.service.ts
+@@ -161,7 +161,10 @@ export class AuthService {
+       throw new UnauthorizedException(GENERIC_LOGIN_ERROR);
+     }
+     const user = await this.auth.getUser(body.localId);
+-    if (!user.emailVerified) throw new UnauthorizedException(GENERIC_LOGIN_ERROR);
++    // Only reveal verification status after Firebase accepted the password.
++    if (!user.emailVerified) throw new UnauthorizedException({
++      message: 'Email verification required', code: 'EMAIL_NOT_VERIFIED', email: body.email,
++    });
+     return { uid: body.localId, email: body.email };
+   }
+ 
+diff --git a/src/modules/auth/guards/firebase-auth.guard.ts b/src/modules/auth/guards/firebase-auth.guard.ts
+index 46ef46c..1951b5c 100644
+--- a/src/modules/auth/guards/firebase-auth.guard.ts
++++ b/src/modules/auth/guards/firebase-auth.guard.ts
+@@ -34,7 +34,7 @@ export class FirebaseAuthGuard implements CanActivate {
+     }
+ 
+     try {
+-      request.user = await this.authService.verifyToken(header.slice(7));
++      request.user = await this.authService.verifyToken(header.slice(7), true);
+       if (!request.user.email_verified) {
+         throw new UnauthorizedException('Email verification required');
+       }
+diff --git a/src/modules/mpin/mpin.controller.ts b/src/modules/mpin/mpin.controller.ts
+index 4bde442..e415425 100644
+--- a/src/modules/mpin/mpin.controller.ts
++++ b/src/modules/mpin/mpin.controller.ts
+@@ -64,6 +64,11 @@ export class MpinController {
+     return this.service.change(this.uid(req), b.authorization, b.pin);
+   }
+ 
++  @Post('change/direct')
++  changeDirect(@Req() req: Request, @Body() b: MpinAuthorizationDto) {
++    return this.service.changeWithCurrentProof(this.uid(req), b.authorization, b.pin);
++  }
++
+   @Post('recovery/code')
+   requestRecovery(@Req() req: Request) {
+     return this.service.requestRecovery(this.uid(req));
+diff --git a/src/modules/mpin/mpin.service.spec.ts b/src/modules/mpin/mpin.service.spec.ts
+index 8a94352..3b656ce 100644
+--- a/src/modules/mpin/mpin.service.spec.ts
++++ b/src/modules/mpin/mpin.service.spec.ts
+@@ -40,8 +40,20 @@ describe('MpinService', () => {
+ 
+   beforeEach(() => {
+     store.clear();
++    let transactionQueue = Promise.resolve();
+ 
+     mockFirestore = {
++      runTransaction: jest.fn((work) => {
++        const result = transactionQueue.then(async () => {
++          const writes: Array<() => Promise<void>> = [];
++          const value = await work({ get: (ref: any) => ref.get(),
++            set: (ref: any, data: any, options: any) => { writes.push(() => ref.set(data, options)); } });
++          for (const write of writes) await write();
++          return value;
++        });
++        transactionQueue = result.then(() => undefined, () => undefined);
++        return result;
++      }),
+       collection: jest.fn((collName: string) => ({
+         doc: jest.fn((docId: string) => ({
+           get: jest.fn(async () => {
+@@ -128,6 +140,51 @@ describe('MpinService', () => {
+       await service.create('uid-1', '1234');
+     });
+ 
++    it('changes with server-verified current PIN without an email code', async () => {
++      const proof = await service.authorizeChange('uid-1', '1234');
++      await expect(service.changeWithCurrentProof('uid-1', proof.token, '9876')).resolves.toEqual({ success: true });
++      expect(mockEmailSender.sendCode).not.toHaveBeenCalled();
++      await expect(service.unlock('uid-1', '1234')).rejects.toThrow(UnauthorizedException);
++      await expect(service.unlock('uid-1', '9876')).resolves.toEqual({ success: true });
++      await expect(service.changeWithCurrentProof('uid-1', proof.token, '4321')).rejects.toThrow(UnauthorizedException);
++    });
++
++    it('rejects reused PIN without consuming the proof', async () => {
++      const proof = await service.authorizeChange('uid-1', '1234');
++      await expect(service.changeWithCurrentProof('uid-1', proof.token, '1234')).rejects.toThrow(BadRequestException);
++      await expect(service.changeWithCurrentProof('uid-1', proof.token, '9876')).resolves.toEqual({ success: true });
++    });
++
++    it('rejects another account, expiry, tampering, and earlier PIN proofs', async () => {
++      const proof = await service.authorizeChange('uid-1', '1234');
++      const staleProof = await service.authorizeChange('uid-1', '1234');
++      await service.create('uid-2', '5678');
++      await expect(service.changeWithCurrentProof('uid-2', proof.token, '9876')).rejects.toThrow(UnauthorizedException);
++      await expect(service.changeWithCurrentProof('uid-1', 'tampered', '9876')).rejects.toThrow(UnauthorizedException);
++      const expired = await service.authorizeChange('uid-1', '1234');
++      const digest = require('node:crypto').createHash('sha256').update(expired.token).digest('hex');
++      getDoc(MPIN_GRANTS, digest).expiresAt = Date.now() - 1;
++      await expect(service.changeWithCurrentProof('uid-1', expired.token, '9876')).rejects.toThrow(UnauthorizedException);
++      await service.changeWithCurrentProof('uid-1', proof.token, '9876');
++      await expect(service.changeWithCurrentProof('uid-1', staleProof.token, '4321')).rejects.toThrow(UnauthorizedException);
++    });
++
++    it('commits only one concurrent change and counts concurrent incorrect attempts', async () => {
++      const proof = await service.authorizeChange('uid-1', '1234');
++      const changes = await Promise.allSettled([
++        service.changeWithCurrentProof('uid-1', proof.token, '9876'),
++        service.changeWithCurrentProof('uid-1', proof.token, '4321'),
++      ]);
++      expect(changes.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
++      await Promise.allSettled(Array.from({ length: 5 }, () => service.unlock('uid-1', '0000')));
++      expect((await service.status('uid-1')).locked).toBe(true);
++    });
++
++    it('does not overwrite a concurrently configured PIN', async () => {
++      const results = await Promise.allSettled([service.create('new-uid', '1234'), service.create('new-uid', '9876')]);
++      expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
++    });
++
+     it('enforces lockout on authorizeChange failed guesses', async () => {
+       for (let i = 0; i < 5; i++) {
+         await expect(service.authorizeChange('uid-1', '0000')).rejects.toThrow(UnauthorizedException);
+@@ -170,6 +227,18 @@ describe('MpinService', () => {
+       await service.create('uid-1', '1234');
+     });
+ 
++    it('allows verified email recovery when the old PIN is locked', async () => {
++      const challenge = await service.requestRecovery('uid-1');
++      const code = mockEmailSender.sendCode.mock.calls[0][1];
++      for (let i = 0; i < 5; i++) {
++        await expect(service.unlock('uid-1', '0000')).rejects.toThrow(UnauthorizedException);
++      }
++      expect((await service.status('uid-1')).locked).toBe(true);
++      const authorization = await service.verifyRecovery('uid-1', challenge.challengeId, code);
++      await expect(service.reset('uid-1', authorization.token, '9876')).resolves.toEqual({ success: true });
++      await expect(service.unlock('uid-1', '9876')).resolves.toEqual({ success: true });
++    });
++
+     it('sends recovery code and enforces resend cooldown', async () => {
+       const challenge = await service.requestRecovery('uid-1');
+       expect(mockEmailSender.sendCode).toHaveBeenCalledWith('user@gmail.com', expect.any(String), 'recovery');
+diff --git a/src/modules/mpin/mpin.service.ts b/src/modules/mpin/mpin.service.ts
+index d19bc83..6366c62 100644
+--- a/src/modules/mpin/mpin.service.ts
++++ b/src/modules/mpin/mpin.service.ts
+@@ -56,6 +56,7 @@ type Challenge = {
+   used?: boolean;
+   replaced?: boolean;
+   maskedDestination: string;
++  pinFingerprint: string;
+ };
+ 
+ type Grant = {
+@@ -63,6 +64,7 @@ type Grant = {
+   purpose: 'change-proof' | 'change' | 'reset';
+   expiresAt: number;
+   used?: boolean;
++  pinFingerprint?: string;
+ };
+ 
+ export const MPIN_EMAIL_SENDER = Symbol('MPIN_EMAIL_SENDER');
+@@ -99,61 +101,66 @@ export class MpinService {
+       serverTime: now,
+       emergencyAccessAllowed: false,
+       emergencyAlertIds: [],
++      directChangeEnabled: true,
+     };
+   }
+ 
+   async create(uid: string, pin: string) {
+     const ref = this.firestore.collection(MPIN_ACCOUNTS).doc(uid);
+-    const existing = await ref.get();
+-    if (existing.exists && (existing.data() as Account)?.pinHash) {
+-      throw new ConflictException('MPIN is already configured');
+-    }
+-    await ref.set(
+-      { pinHash: await this.hash(pin), failedAttempts: 0, updatedAt: FieldValue.serverTimestamp() },
+-      { merge: true },
+-    );
++    const pinHash = await this.hash(pin);
++    await this.firestore.runTransaction(async (transaction) => {
++      const existing = await transaction.get(ref);
++      if ((existing.data() as Account | undefined)?.pinHash) {
++        throw new ConflictException('MPIN is already configured');
++      }
++      transaction.set(ref, { pinHash, failedAttempts: 0, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
++    });
+     return { success: true as const };
+   }
+ 
+   async unlock(uid: string, pin: string) {
+-    const ref = this.firestore.collection(MPIN_ACCOUNTS).doc(uid);
+-    const snapshot = await ref.get();
+-    const account = (snapshot.data() ?? {}) as Account;
+-    const now = Date.now();
+-    if (!account.pinHash) throw new BadRequestException('MPIN is not configured');
+-    if ((account.lockedUntil ?? 0) > now) {
+-      throw new HttpException(
+-        { message: 'MPIN is locked', retryAt: account.lockedUntil },
+-        HttpStatus.TOO_MANY_REQUESTS,
+-      );
+-    }
+-    const currentFailed =
+-      account.lockedUntil && account.lockedUntil <= now ? 0 : (account.failedAttempts ?? 0);
+-    if (!(await this.matches(pin, account.pinHash))) {
+-      const failedAttempts = currentFailed + 1;
+-      await ref.set(
+-        {
+-          failedAttempts,
+-          ...(failedAttempts >= MPIN_ATTEMPT_LIMIT && { lockedUntil: now + MPIN_LOCK_MS }),
+-        },
+-        { merge: true },
+-      );
+-      throw new UnauthorizedException('Incorrect MPIN');
+-    }
+-    await ref.set(
+-      {
+-        failedAttempts: 0,
+-        lockedUntil: FieldValue.delete(),
+-        unlockExpiresAt: now + MPIN_UNLOCK_MS,
+-      },
+-      { merge: true },
+-    );
++    await this.verifyCurrent(uid, pin, true);
+     return { success: true as const };
+   }
+ 
+   async authorizeChange(uid: string, pin: string) {
+-    await this.verifyCurrent(uid, pin);
+-    return this.grant(uid, 'change-proof', MPIN_GRANT_MS);
++    const verifiedHash = await this.verifyCurrent(uid, pin);
++    return this.grant(uid, 'change-proof', MPIN_GRANT_MS, this.digest(verifiedHash));
++  }
++
++  /** Current-PIN proof is sufficient for this separate, non-email change flow. */
++  async changeWithCurrentProof(uid: string, authorization: string, pin: string) {
++    return this.replaceAuthorizedPin(uid, authorization, pin, 'change-proof');
++  }
++
++  private async replaceAuthorizedPin(uid: string, authorization: string, pin: string, purpose: Grant['purpose']) {
++    const accountRef = this.firestore.collection(MPIN_ACCOUNTS).doc(uid);
++    const proofRef = this.firestore.collection(MPIN_GRANTS).doc(this.digest(authorization));
++    const pinHash = await this.hash(pin);
++    await this.firestore.runTransaction(async (transaction) => {
++      const accountSnapshot = await transaction.get(accountRef);
++      const proofSnapshot = await transaction.get(proofRef);
++      const account = accountSnapshot.data() as Account | undefined;
++      const proof = proofSnapshot.data() as Grant | undefined;
++      if (!account?.pinHash || !proof || proof.uid !== uid || proof.purpose !== purpose ||
++        proof.used || proof.expiresAt <= Date.now() ||
++        proof.pinFingerprint !== this.digest(account.pinHash)) {
++        throw new UnauthorizedException('Invalid or expired authorization');
++      }
++      if (purpose !== 'reset' && (account.lockedUntil ?? 0) > Date.now()) {
++        throw new HttpException({ message: 'MPIN is locked', retryAt: account.lockedUntil }, HttpStatus.TOO_MANY_REQUESTS);
++      }
++      if (await this.matches(pin, account.pinHash)) {
++        throw new BadRequestException('Choose a different MPIN');
++      }
++      // The proof and replacement commit together. Replays and other outstanding
++      // proofs for the previous hash cannot authorize another change.
++      transaction.set(proofRef, { used: true }, { merge: true });
++      transaction.set(accountRef, { pinHash, failedAttempts: 0,
++        lockedUntil: FieldValue.delete(), unlockExpiresAt: FieldValue.delete(),
++        updatedAt: FieldValue.serverTimestamp() }, { merge: true });
++    });
++    return { success: true as const };
+   }
+ 
+   async requestChangeCode(uid: string, proof: string) {
+@@ -166,14 +173,12 @@ export class MpinService {
+   }
+ 
+   async verifyChangeCode(uid: string, challengeId: string, code: string) {
+-    await this.verifyCode(uid, challengeId, code, 'change-code');
+-    return this.grant(uid, 'change', MPIN_GRANT_MS);
++    const fingerprint = await this.verifyCode(uid, challengeId, code, 'change-code');
++    return this.grant(uid, 'change', MPIN_GRANT_MS, fingerprint);
+   }
+ 
+   async change(uid: string, authorization: string, pin: string) {
+-    await this.consumeGrant(uid, authorization, 'change', true);
+-    await this.replacePin(uid, pin);
+-    return { success: true as const };
++    return this.replaceAuthorizedPin(uid, authorization, pin, 'change');
+   }
+ 
+   async requestRecovery(uid: string) {
+@@ -185,64 +190,40 @@ export class MpinService {
+   }
+ 
+   async verifyRecovery(uid: string, challengeId: string, code: string) {
+-    await this.verifyCode(uid, challengeId, code, 'recovery');
+-    return this.grant(uid, 'reset', MPIN_GRANT_MS);
++    const fingerprint = await this.verifyCode(uid, challengeId, code, 'recovery');
++    return this.grant(uid, 'reset', MPIN_GRANT_MS, fingerprint);
+   }
+ 
+   async reset(uid: string, authorization: string, pin: string) {
+-    await this.consumeGrant(uid, authorization, 'reset', true);
+-    await this.replacePin(uid, pin);
+-    return { success: true as const };
++    return this.replaceAuthorizedPin(uid, authorization, pin, 'reset');
+   }
+ 
+-  private async verifyCurrent(uid: string, pin: string) {
++  private async verifyCurrent(uid: string, pin: string, unlock = false) {
+     const ref = this.firestore.collection(MPIN_ACCOUNTS).doc(uid);
+-    const snapshot = await ref.get();
+-    const account = (snapshot.data() ?? {}) as Account;
+-    const now = Date.now();
+-    if (!account.pinHash) throw new BadRequestException('MPIN is not configured');
+-    if ((account.lockedUntil ?? 0) > now) {
+-      throw new HttpException(
+-        { message: 'MPIN is locked', retryAt: account.lockedUntil },
+-        HttpStatus.TOO_MANY_REQUESTS,
+-      );
+-    }
+-    const currentFailed =
+-      account.lockedUntil && account.lockedUntil <= now ? 0 : (account.failedAttempts ?? 0);
+-    if (!(await this.matches(pin, account.pinHash))) {
+-      const failedAttempts = currentFailed + 1;
+-      await ref.set(
+-        {
+-          failedAttempts,
++    const result = await this.firestore.runTransaction(async (transaction) => {
++      const snapshot = await transaction.get(ref);
++      const account = (snapshot.data() ?? {}) as Account;
++      const now = Date.now();
++      if (!account.pinHash) throw new BadRequestException('MPIN is not configured');
++      if ((account.lockedUntil ?? 0) > now) {
++        throw new HttpException({ message: 'MPIN is locked', retryAt: account.lockedUntil }, HttpStatus.TOO_MANY_REQUESTS);
++      }
++      const currentFailed = account.lockedUntil && account.lockedUntil <= now ? 0 : (account.failedAttempts ?? 0);
++      if (!(await this.matches(pin, account.pinHash))) {
++        const failedAttempts = currentFailed + 1;
++        transaction.set(ref, { failedAttempts,
+           ...(failedAttempts >= MPIN_ATTEMPT_LIMIT && { lockedUntil: now + MPIN_LOCK_MS }),
+-        },
+-        { merge: true },
+-      );
+-      throw new UnauthorizedException('Incorrect MPIN');
+-    }
+-    await ref.set(
+-      {
+-        failedAttempts: 0,
+-        lockedUntil: FieldValue.delete(),
+-      },
+-      { merge: true },
+-    );
+-  }
+-
+-  private async replacePin(uid: string, pin: string) {
+-    await this.firestore
+-      .collection(MPIN_ACCOUNTS)
+-      .doc(uid)
+-      .set(
+-        {
+-          pinHash: await this.hash(pin),
+-          failedAttempts: 0,
+-          lockedUntil: FieldValue.delete(),
+-          unlockExpiresAt: FieldValue.delete(),
+-          updatedAt: FieldValue.serverTimestamp(),
+-        },
+-        { merge: true },
+-      );
++        }, { merge: true });
++        // Return, then throw outside the transaction so the failed attempt commits.
++        return { valid: false as const, pinHash: account.pinHash };
++      }
++      transaction.set(ref, { failedAttempts: 0, lockedUntil: FieldValue.delete(),
++        ...(unlock && { unlockExpiresAt: now + MPIN_UNLOCK_MS }),
++      }, { merge: true });
++      return { valid: true as const, pinHash: account.pinHash };
++    });
++    if (!result.valid) throw new UnauthorizedException('Incorrect MPIN');
++    return result.pinHash;
+   }
+ 
+   private async issueChallenge(
+@@ -254,6 +235,8 @@ export class MpinService {
+     if (!user.email || !user.emailVerified) {
+       throw new ForbiddenException('Registered email verification is required');
+     }
++    const account = await this.account(uid);
++    if (!account.pinHash) throw new BadRequestException('MPIN is not configured');
+     const now = Date.now();
+     const challengeId = randomBytes(18).toString('hex');
+     const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+@@ -265,6 +248,7 @@ export class MpinService {
+       resendAt: now + MPIN_RESEND_MS,
+       attempts: 0,
+       maskedDestination: this.mask(user.email),
++      pinFingerprint: this.digest(account.pinHash),
+     };
+     await this.emailSender.sendCode(user.email, code, emailPurpose);
+     await this.firestore.collection(MPIN_CHALLENGES).doc(challengeId).set(challenge);
+@@ -312,6 +296,7 @@ export class MpinService {
+     const ref = this.firestore.collection(MPIN_CHALLENGES).doc(challengeId);
+     const snapshot = await ref.get();
+     const challenge = snapshot.data() as Challenge | undefined;
++    const account = await this.account(uid);
+     const now = Date.now();
+     if (
+       !snapshot.exists ||
+@@ -320,7 +305,8 @@ export class MpinService {
+       challenge.purpose !== purpose ||
+       challenge.replaced ||
+       challenge.used ||
+-      challenge.expiresAt <= now
++      challenge.expiresAt <= now || !account.pinHash ||
++      challenge.pinFingerprint !== this.digest(account.pinHash)
+     ) {
+       throw new UnauthorizedException('Invalid or expired code');
+     }
+@@ -332,9 +318,13 @@ export class MpinService {
+       throw new UnauthorizedException('Invalid or expired code');
+     }
+     await ref.set({ used: true }, { merge: true });
++    return challenge.pinFingerprint;
+   }
+ 
+-  private async grant(uid: string, purpose: Grant['purpose'], lifetime: number) {
++  private async grant(uid: string, purpose: Grant['purpose'], lifetime: number, pinFingerprint?: string) {
++    const account = await this.account(uid);
++    if (!account.pinHash) throw new BadRequestException('MPIN is not configured');
++    const fingerprint = pinFingerprint ?? this.digest(account.pinHash);
+     const token = randomBytes(32).toString('base64url');
+     await this.firestore
+       .collection(MPIN_GRANTS)
+@@ -344,6 +334,7 @@ export class MpinService {
+         purpose,
+         expiresAt: Date.now() + lifetime,
+         used: false,
++        pinFingerprint: fingerprint,
+       } satisfies Grant);
+     return { token, expiresAt: Date.now() + lifetime, serverTime: Date.now() };
+   }
+@@ -355,21 +346,18 @@ export class MpinService {
+     consume: boolean,
+   ) {
+     const ref = this.firestore.collection(MPIN_GRANTS).doc(this.digest(token));
+-    const snapshot = await ref.get();
+-    const grant = snapshot.data() as Grant | undefined;
+-    if (
+-      !snapshot.exists ||
+-      !grant ||
+-      grant.uid !== uid ||
+-      grant.purpose !== purpose ||
+-      grant.used ||
+-      grant.expiresAt <= Date.now()
+-    ) {
+-      throw new UnauthorizedException('Invalid or expired authorization');
+-    }
+-    if (consume) {
+-      await ref.set({ used: true }, { merge: true });
+-    }
++    await this.firestore.runTransaction(async (transaction) => {
++      const snapshot = await transaction.get(ref);
++      const accountRef = this.firestore.collection(MPIN_ACCOUNTS).doc(uid);
++      const accountSnapshot = await transaction.get(accountRef);
++      const grant = snapshot.data() as Grant | undefined;
++      const account = accountSnapshot.data() as Account | undefined;
++      if (!account?.pinHash || !grant || grant.uid !== uid || grant.purpose !== purpose ||
++        grant.used || grant.expiresAt <= Date.now() || grant.pinFingerprint !== this.digest(account.pinHash)) {
++        throw new UnauthorizedException('Invalid or expired authorization');
++      }
++      if (consume) transaction.set(ref, { used: true }, { merge: true });
++    });
+   }
+ 
+   private account(uid: string) {
+diff --git a/src/modules/auth/guards/firebase-auth.guard.spec.ts b/src/modules/auth/guards/firebase-auth.guard.spec.ts
+new file mode 100644
+--- /dev/null
++++ b/src/modules/auth/guards/firebase-auth.guard.spec.ts
+@@ -0,0 +1,34 @@
++import { UnauthorizedException } from '@nestjs/common';
++import { FirebaseAuthGuard } from './firebase-auth.guard';
++
++describe('FirebaseAuthGuard security checks', () => {
++  function harness() {
++    const service = { verifyToken: jest.fn().mockResolvedValue({ uid: 'owner', email_verified: true }),
++      isDeletionScheduled: jest.fn().mockResolvedValue(false) };
++    const reflector = { getAllAndOverride: jest.fn().mockReturnValue(false) };
++    const request = { headers: { authorization: 'Bearer fixture-token' } };
++    const context = { getHandler: () => () => {}, getClass: () => class {},
++      switchToHttp: () => ({ getRequest: () => request }) };
++    return { service, context, guard: new FirebaseAuthGuard(service as never, reflector as never) };
++  }
++
++  it('requests revoked/disabled-token verification before protected access', async () => {
++    const { service, context, guard } = harness();
++    await expect(guard.canActivate(context as never)).resolves.toBe(true);
++    expect(service.verifyToken).toHaveBeenCalledWith('fixture-token', true);
++  });
++
++  it('rejects revoked/expired Firebase tokens before profile lookup', async () => {
++    const { service, context, guard } = harness();
++    service.verifyToken.mockRejectedValue(new Error('fixture revoked token'));
++    await expect(guard.canActivate(context as never)).rejects.toThrow(UnauthorizedException);
++    expect(service.isDeletionScheduled).not.toHaveBeenCalled();
++  });
++
++  it('rejects unverified sessions', async () => {
++    const { service, context, guard } = harness();
++    service.verifyToken.mockResolvedValue({ uid: 'owner', email_verified: false });
++    await expect(guard.canActivate(context as never)).rejects.toThrow('Email verification required');
++    expect(service.isDeletionScheduled).not.toHaveBeenCalled();
++  });
++});

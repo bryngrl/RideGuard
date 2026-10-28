@@ -5,6 +5,7 @@ import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTimin
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { PinLayout, Spacing, Typography } from "@/shared/theme";
+import { useScrollFocusedInput } from "./keyboard-aware-form-scroll-view";
 
 /** Shared six-digit email-code input for password and MPIN verification. */
 export function VerificationCodeInput({ value, onChange, disabled = false, error = false }: {
@@ -12,11 +13,13 @@ export function VerificationCodeInput({ value, onChange, disabled = false, error
 }) {
   const theme = useTheme();
   const input = useRef<TextInput>(null);
+  const field = useRef<View>(null);
+  const scrollFocusedInput = useScrollFocusedInput();
   const [focused, setFocused] = useState(false);
   const reducedMotion = useReducedMotion();
   const pressedOpacity = useSharedValue(0);
   const pressedStyle = useAnimatedStyle(() => ({ opacity: pressedOpacity.value }));
-  return <View style={styles.container}>
+  return <View ref={field} style={styles.container}>
     <Pressable onPress={() => input.current?.focus()} disabled={disabled} style={styles.boxes}
       feedbackEnabled={false}
       onPressIn={() => { pressedOpacity.value = reducedMotion ? PRESSED_STATE_OPACITY : withTiming(PRESSED_STATE_OPACITY, { duration: 120 }); }}
@@ -28,7 +31,7 @@ export function VerificationCodeInput({ value, onChange, disabled = false, error
       }]}><Animated.View pointerEvents="none" style={[styles.boxFeedback, { backgroundColor: theme.primary }, pressedStyle]} /><Text style={[Typography.h3, { color: theme.text }]}>{value[index] ?? ""}</Text></View>)}
     </Pressable>
     <TextInput ref={input} value={value} onChangeText={(next) => onChange(next.replace(/\D/g, "").slice(0, 6))}
-      onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      onFocus={(event) => { setFocused(true); scrollFocusedInput(event.nativeEvent.target, field); }} onBlur={() => setFocused(false)}
       style={styles.input} keyboardType="number-pad" autoComplete="one-time-code"
       textContentType="oneTimeCode" editable={!disabled}
       accessibilityLabel="Six-digit email verification code" />

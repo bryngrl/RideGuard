@@ -1,0 +1,52 @@
+const assert = require("node:assert/strict");
+const { test } = require("node:test");
+const { readFileSync } = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+const ts = require("typescript");
+const react = { useState: (value) => [typeof value === "function" ? value() : value, () => {}],
+  useRef: (value) => ({ current: value }), useEffect() {}, useCallback: (work) => work };
+function load(file, modules) {
+  const context = { exports: {}, require: (name) => {
+    assert.ok(name in modules, name); return modules[name];
+  } };
+  vm.runInNewContext(ts.transpileModule(readFileSync(path.join(__dirname, "..", file), "utf8"), {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
+  }).outputText, context);
+  return context.exports;
+}
+test("Account Edit has a safe destination when opened without back history", () => {
+  for (const history of [true, false]) {
+    const actions = [];
+    const profile = { firstName: "Ana", lastName: "", vehicleBrand: "", vehicleModel: "" };
+    const { AccountEditScreen } = load("src/modules/settings/screens/account-edit/account-edit-screen.tsx", {
+      "@/shared/lib/branded-alert": { BrandedAlert: { alert() {} } },
+      react, "react/jsx-runtime": require("react/jsx-runtime"),
+      "react-native": { StyleSheet: { create: (value) => value }, View: "View", ActivityIndicator: "Spinner" },
+      "expo-router": { useRouter: () => ({ canGoBack: () => history, back: () => actions.push("back"), replace: (route) => actions.push(route) }), useFocusEffect() {} },
+      "expo-image-picker": {},
+      "@/modules/auth/store/auth.store": { useAuthStore: (selector) => selector({ isDemo: false }) },
+      "@/modules/settings/components/settings-page-layout": { SettingsPageLayout: "Layout" },
+      "@/shared/hooks/use-theme": { useTheme: () => ({}) }, "@/shared/lib/input-formats": {},
+      "@/shared/theme": { Spacing: {}, Typography: {}, BorderRadius: {} }, "@/shared/ui": {},
+      "@/shared/ui/feedback-pressable": {}, "@/shared/ui/photo-options-bottom-sheet": {}, "@/shared/ui/keyboard-hidden-view": {},
+      "../../hooks/use-account-edit": { useAccountEdit: () => ({ changed: false, saving: false }) },
+      "../../hooks/use-profile": { useProfile: () => ({ profile, isLoading: true }) }, "../../services/profile.api": {},
+    });
+    AccountEditScreen().props.onBack();
+    assert.deepEqual(actions, [history ? "back" : "/settings/account"]);
+  }
+});
+test("Search closes safely with or without navigation history", () => {
+  for (const history of [true, false]) {
+    const actions = [];
+    const { SearchScreen } = load("src/modules/settings/screens/search/search-screen.tsx", {
+      "react/jsx-runtime": require("react/jsx-runtime"),
+      "expo-router": { useRouter: () => ({ canGoBack: () => history, back: () => actions.push("back"), replace: (route) => actions.push(route) }) },
+      "@/shared/ui": { KeyboardAvoidingWrapper: "Wrapper" }, "@/shared/theme": { Spacing: {} },
+      "../../components/settings-search": { SettingsSearch: "Search" },
+    });
+    SearchScreen().props.children.props.onClose();
+    assert.deepEqual(actions, [history ? "back" : "/settings"]);
+  }
+});

@@ -1,14 +1,15 @@
 import { Typography } from "@/constants/theme";
 import {
   BorderRadius,
+  DeviceCardLayout,
   Colors,
   FontFamily,
   Spacing,
 } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
-export const CAMERA_CARD_WIDTH = 166;
-export const CAMERA_CARD_GAP = Spacing.two;
+export const CAMERA_CARD_WIDTH = DeviceCardLayout.width;
+export const CAMERA_CARD_GAP = DeviceCardLayout.gap;
 export const CAMERA_CAROUSEL_END_PADDING = Spacing.four;
 
 export const styles = StyleSheet.create({
@@ -76,7 +77,7 @@ export const styles = StyleSheet.create({
     width: CAMERA_CARD_WIDTH,
   },
   deviceCard: {
-    minHeight: 94,
+    minHeight: DeviceCardLayout.minHeight,
   },
   monitoringCard: {
     minHeight: 150,

@@ -1,15 +1,17 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, BackHandler, Image, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
+import { BackHandler, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { actionFooterPadding, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/shared/ui/button";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
@@ -17,6 +19,7 @@ import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/shared/ui/text-input";
+import { CachedPhoto } from "@/shared/ui/cached-photo";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./edit-contact-screen.styles";
 import { RelationshipPicker } from "../components/relationship-picker";
@@ -27,6 +30,7 @@ type ConfirmationType = "discard" | "delete" | null;
 export function EditContactScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   const {
     contactId,
@@ -53,7 +57,6 @@ export function EditContactScreen() {
   const [profileImage, setProfileImage] = useState<string | null>(
     initialProfileImage || null,
   );
-  const [photoFailed, setPhotoFailed] = useState(false);
   const [photoAsset, setPhotoAsset] = useState<ImagePicker.ImagePickerAsset | null>(null);
   const [pickingPhoto, setPickingPhoto] = useState(false);
   const pickingPhotoRef = useRef(false);
@@ -103,7 +106,6 @@ export function EditContactScreen() {
       if (!result.canceled && result.assets[0]?.uri) {
         setProfileImage(result.assets[0].uri);
         setPhotoAsset(result.assets[0]);
-        setPhotoFailed(false);
       }
     } catch (error) {
       Alert.alert("Could not take photo", error instanceof Error ? error.message : "Please try again.");
@@ -138,7 +140,6 @@ export function EditContactScreen() {
       if (!result.canceled && result.assets[0]?.uri) {
         setProfileImage(result.assets[0].uri);
         setPhotoAsset(result.assets[0]);
-        setPhotoFailed(false);
       }
     } catch (error) {
       Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
@@ -167,20 +168,20 @@ export function EditContactScreen() {
     const trimmedPhone = phoneNumber.trim();
 
     if (!trimmedName) {
-      setContactNameError("Please enter an emergency contact name.");
+      setContactNameError("Enter the contact name.");
       isValid = false;
     }
 
     if (!trimmedPhone) {
-      setPhoneNumberError("Please enter a phone number.");
+      setPhoneNumberError("Enter a phone number.");
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
-      setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+      setPhoneNumberError("Enter a valid 10-digit mobile number.");
       isValid = false;
     }
 
     if (!relationship.trim()) {
-      setRelationshipError("Please select a relationship.");
+      setRelationshipError("Select a relationship.");
       isValid = false;
     }
 
@@ -209,7 +210,6 @@ export function EditContactScreen() {
     setPhoneNumber(normalizePhoneNumber(initialPhoneNumber ?? ""));
     setRelationship(initialRelationship ?? "");
     setProfileImage(initialProfileImage || null);
-    setPhotoFailed(false);
     setPhotoAsset(null);
     setContactNameError("");
     setPhoneNumberError("");
@@ -230,13 +230,18 @@ export function EditContactScreen() {
   const handleConfirmDiscard = () => {
     setActiveConfirmation(null);
     resetForm();
-    if (discardLeaving) router.back();
+    if (discardLeaving) leaveContact();
     setDiscardLeaving(false);
   };
 
   const handleCancelConfirmation = () => {
     setActiveConfirmation(null);
     setDiscardLeaving(false);
+  };
+
+  const leaveContact = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/contact");
   };
 
   const handleBack = () => {
@@ -246,15 +251,19 @@ export function EditContactScreen() {
       setActiveConfirmation("discard");
       return;
     }
-    router.back();
+    leaveContact();
   };
   useFocusEffect(useCallback(() => {
+    if (!contactId) {
+      router.replace("/contact");
+      return;
+    }
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
       handleBack();
       return true;
     });
     return () => subscription.remove();
-  }, [contactName, phoneNumber, relationship, photoAsset, isEditing, pickingPhoto, router]));
+  }, [contactId, contactName, phoneNumber, relationship, photoAsset, isEditing, pickingPhoto, router]));
 
   const handleSave = async () => {
     if (savingRef.current || pickingPhoto || !hasChanges()) return;
@@ -318,12 +327,9 @@ export function EditContactScreen() {
       <View style={styles.previewContainer}>
         <View style={styles.profileSection}>
           <View style={[styles.profileImage, styles.previewImage]}>
-            {profileImage && !photoFailed ? (
-              <Image
-                source={{ uri: profileImage }}
-                style={styles.profileImagePreview}
-                onError={() => setPhotoFailed(true)}
-              />
+            {profileImage ? (
+              <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
+                placeholder={<ProfilePlaceholder width={120} height={120} />} />
             ) : (
               <ProfilePlaceholder width={120} height={120} />
             )}
@@ -401,12 +407,9 @@ export function EditContactScreen() {
               profileImage ? "Change contact photo" : "Add contact photo"
             }
           >
-            {profileImage && !photoFailed ? (
-              <Image
-                source={{ uri: profileImage }}
-                style={styles.profileImagePreview}
-                onError={() => setPhotoFailed(true)}
-              />
+            {profileImage ? (
+              <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
+                placeholder={<ProfilePlaceholder width={112} height={112} />} />
             ) : (
               <ProfilePlaceholder width={112} height={112} />
             )}
@@ -440,7 +443,7 @@ export function EditContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Enter the contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
               if (contactNameError) setContactNameError("");
@@ -458,7 +461,7 @@ export function EditContactScreen() {
             inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
             error={phoneNumberError}
             onBlur={() => {
-              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Please enter a valid 10-digit mobile number.");
+              if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
           />
@@ -538,7 +541,8 @@ export function EditContactScreen() {
         )
       }
     >
-      <View style={[styles.pageContent, isEditing ? styles.editPageContent : styles.previewPageContent]}>
+      <View style={[styles.pageContent, isEditing ? styles.editPageContent : styles.previewPageContent,
+        isEditing && { paddingBottom: actionFooterPadding(bottom) - Spacing.two }]}>
         <LinearGradient
           colors={["#FFFFFF", "#E5EDFC"]}
           start={{ x: 0.5, y: 0 }}

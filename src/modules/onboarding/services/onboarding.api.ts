@@ -7,7 +7,7 @@ export interface ProfilePayload {
   brand: string;
   model: string;
   plate_number: string;
-  color?: string;
+  color: string;
   contact_name?: string;
   emergency_phone_number?: string;
   relationship?: string;
@@ -26,7 +26,7 @@ export function submitProfile(
   payload: ProfilePayload,
   firebaseToken: string,
 ) {
-  return apiClient.post("/profile/personal-info", payload, firebaseToken);
+  return apiClient.post<DeviceApiResponse>("/profile/personal-info", payload, firebaseToken);
 }
 
 export function claimDevice(

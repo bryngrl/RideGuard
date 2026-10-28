@@ -9,11 +9,11 @@ import {
   View,
   ViewStyle,
 } from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { Edge, SafeAreaView } from "react-native-safe-area-context";
+import { KeyboardAwareFormScrollView } from "./keyboard-aware-form-scroll-view";
+import { Edge, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
-import { MaxContentWidth, Spacing } from "@/shared/theme";
+import { actionFooterPadding, MaxContentWidth, Spacing } from "@/shared/theme";
 
 export interface KeyboardAvoidingWrapperProps {
   children: React.ReactNode;
@@ -31,9 +31,10 @@ export function KeyboardAvoidingWrapper({
   safeAreaEdges = ["top", "bottom"],
 }: KeyboardAvoidingWrapperProps) {
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   const content = (
-    <View style={[styles.innerContainer, contentContainerStyle]}>
+    <View style={[styles.innerContainer, { paddingBottom: actionFooterPadding(bottom, safeAreaEdges.includes("bottom")) }, contentContainerStyle]}>
       {children}
     </View>
   );
@@ -45,20 +46,17 @@ export function KeyboardAvoidingWrapper({
     >
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={Platform.OS === "ios" ? 20 : 0}
       >
         {enableScrollView ? (
-          <KeyboardAwareScrollView
+          <KeyboardAwareFormScrollView
             style={styles.flex}
             contentContainerStyle={styles.scrollContent}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
             showsVerticalScrollIndicator={false}
-            enableOnAndroid
-            enableAutomaticScroll
-            extraScrollHeight={20}
-            extraHeight={100}
+            keyboardGap={Spacing.four}
           >
             <TouchableWithoutFeedback
               onPress={Keyboard.dismiss}
@@ -66,7 +64,7 @@ export function KeyboardAvoidingWrapper({
             >
               {content}
             </TouchableWithoutFeedback>
-          </KeyboardAwareScrollView>
+          </KeyboardAwareFormScrollView>
         ) : (
           <TouchableWithoutFeedback
             onPress={Keyboard.dismiss}

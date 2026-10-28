@@ -12,7 +12,9 @@ const compiled = ts.transpileModule(readFileSync(path.join(__dirname,
 
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
-function setup(getToken) {
+class APIError extends Error { constructor(status) { super("Internal server error"); this.status = status; } }
+
+function setup(getToken, options = {}) {
   let cleanup;
   let resume;
   let tokenListener;
@@ -21,6 +23,7 @@ function setup(getToken) {
   let timerId = 0;
   const timers = new Map();
   const registrations = [];
+  const warnings = [], errors = [];
   const user = { uid: "test-user", getIdToken: async () => "test-auth-token" };
   const mocks = {
     react: { useRef: (value) => ({ current: value }), useEffect: (effect) => { cleanup = effect(); } },
@@ -34,12 +37,16 @@ function setup(getToken) {
       Platform: { OS: "android" },
       AppState: { addEventListener: (_, callback) => { resume = callback; return { remove: () => removed++ }; } },
     },
-    "@/modules/auth/store/auth.store": { useAuthStore: (selector) => selector({ user }) },
+    "@/modules/auth/store/auth.store": { useAuthStore: (selector) => selector({ user, isCheckingAuth: false, isOldUser: true, ...options.auth }) },
+    "@/shared/api/errors": { APIError },
+    "expo-router": { useSegments: () => options.segments ?? ["(app)"], useGlobalSearchParams: () => options.params ?? {} },
     "../services/installation-id": { getInstallationId: async () => "test-installation" },
-    "../services/notifications.api": { registerPushNotification: async (...args) => { registrations.push(args); } },
+    "../services/notifications.api": { registerPushNotification: async (...args) => {
+      registrations.push(args); if (options.register) await options.register(...args);
+    } },
   };
   const context = { exports: {}, Error, String,
-    console: { log() {}, error() {} },
+    console: { log() {}, warn: (...args) => warnings.push(args), error: (...args) => errors.push(args) },
     require: (name) => { if (!(name in mocks)) throw new Error(`Unexpected import: ${name}`); return mocks[name]; },
     setTimeout: (callback, delay) => { const id = ++timerId; timers.set(id, { callback, delay }); return id; },
     clearTimeout: (id) => timers.delete(id),
@@ -47,8 +54,8 @@ function setup(getToken) {
   vm.runInNewContext(compiled, context);
   context.exports.usePushRegistration();
   return {
-    timers, registrations,
-    cleanup: () => cleanup(), resume: () => resume("active"),
+    timers, registrations, warnings, errors,
+    cleanup: () => cleanup?.(), resume: () => resume?.("active"),
     rotate: (token) => tokenListener({ data: token }),
     requests: () => tokenRequests, removed: () => removed,
     runTimer() {
@@ -59,6 +66,53 @@ function setup(getToken) {
     },
   };
 }
+
+test("push registration waits until profile and onboarding are complete", async () => {
+  for (const options of [{ auth: { isOldUser: false } }, { auth: { isOldUser: null } },
+    { auth: { isCheckingAuth: true } }, { segments: ["(onboarding)", "register", "mpin"] }]) {
+    const flow = setup(async () => ({ data: "test-token" }), options);
+    await flush();
+    assert.equal(flow.requests(), 0);
+    assert.equal(flow.registrations.length, 0);
+    flow.cleanup();
+  }
+});
+
+test("settings hardware setup keeps push registration enabled", async () => {
+  const flow = setup(async () => ({ data: "test-token" }), {
+    segments: ["(onboarding)", "devices", "camera"], params: { source: "settings" },
+  });
+  await flush();
+  assert.equal(flow.registrations.length, 1);
+  flow.cleanup();
+});
+
+test("backend failures do not open LogBox and retry on resume without claiming success", async () => {
+  let fail = true;
+  const flow = setup(async () => ({ data: "test-token" }), { register: async () => {
+    if (fail) throw new APIError(500);
+  } });
+  await flush();
+  assert.equal(flow.errors.length, 0);
+  assert.equal(flow.warnings[0][1], "HTTP 500");
+  fail = false; flow.resume(); await flush();
+  assert.equal(flow.registrations.length, 2);
+  flow.resume(); await flush();
+  assert.equal(flow.registrations.length, 2);
+  flow.cleanup();
+});
+
+test("failed token rotation retries registration on resume", async () => {
+  let fail = false;
+  const flow = setup(async () => ({ data: "rotated-token" }), { register: async () => {
+    if (fail) throw new APIError(500);
+  } });
+  await flush();
+  fail = true; flow.rotate("rotated-token"); await flush();
+  fail = false; flow.resume(); await flush();
+  assert.equal(flow.registrations.length, 3);
+  flow.cleanup();
+});
 
 test("temporary Firebase failures retry with backoff and stop after successful registration", async () => {
   const flow = setup(async (attempt) => {

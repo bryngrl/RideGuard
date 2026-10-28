@@ -1,10 +1,8 @@
 import type { TokenRequest } from "ably";
+import type { User } from "firebase/auth";
 
 import { apiClient } from "@/shared/api";
-
-const API_BASE_URL =
-  process.env.EXPO_PUBLIC_API_BASE_URL ||
-  "https://rideguard-api-gvanehe0gbdvf9bw.japaneast-01.azurewebsites.net/v1";
+import { APIError } from "@/shared/api/errors";
 
 /**
  * Standard success envelope wrapped around every backend response.
@@ -16,12 +14,19 @@ interface StandardEnvelope<T> {
   timestamp: string;
 }
 
+function unwrap<T>(envelope: StandardEnvelope<T>): T {
+  if (!envelope.success) throw new Error(envelope.message || "The request failed.");
+  return envelope.data;
+}
+
 /**
- * Signed-in user's profile as returned by GET /auth/me. Field casing isn't
- * guaranteed, so both snake_case and camelCase variants are accepted and
- * unwrapped by `getMe`.
+ * Identity from GET /auth/me. Older name fields remain optional so existing
+ * profile displays can still read accounts created before this contract.
  */
 export interface CurrentUser {
+  uid?: string;
+  emailVerified?: boolean;
+  name?: string | null;
   first_name?: string | null;
   last_name?: string | null;
   firstName?: string | null;
@@ -29,6 +34,80 @@ export interface CurrentUser {
   email?: string | null;
   // Google's profile photo, from the Firebase token's "picture" claim.
   picture?: string | null;
+}
+
+export async function registerAccount(input: { username: string; email: string; password: string }) {
+  const response = await apiClient.post<StandardEnvelope<{ email: string }>>("/auth/register", {
+    ...input,
+    username: input.username.trim().toLowerCase(),
+    email: input.email.trim().toLowerCase(),
+  });
+  return unwrap(response);
+}
+
+export async function loginAccount(identifier: string, password: string) {
+  const response = await apiClient.post<StandardEnvelope<{ uid: string; email: string }>>(
+    "/auth/login",
+    { identifier, password },
+  );
+  return unwrap(response);
+}
+
+export async function verifyRegisteredAccount(firebaseToken: string) {
+  const response = await apiClient.post<StandardEnvelope<{ uid: string; email: string }>>(
+    "/auth/register/verify",
+    undefined,
+    firebaseToken,
+  );
+  return unwrap(response);
+}
+
+export async function requestPasswordReset(email: string) {
+  const response = await apiClient.post<StandardEnvelope<Record<string, unknown>>>("/auth/forgot-password", { email });
+  return unwrap(response);
+}
+
+const profileChecks = new Map<string, Promise<boolean>>();
+
+function isRegistrationNoLongerPending(error: unknown): error is APIError {
+  return error instanceof APIError && /registration is no longer pending/i.test(error.message);
+}
+
+async function hasRegistrationProfile(token: string): Promise<boolean> {
+  const response = await apiClient.get<StandardEnvelope<Record<string, unknown> | null>>("/profile/me", token);
+  const profile = unwrap(response);
+  return profile !== null && typeof profile === "object";
+}
+
+/** Share the verification request between login and the auth-state listener. */
+export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
+  const existing = profileChecks.get(user.uid);
+  if (existing) return existing;
+  const pending = (async () => {
+    const token = await user.getIdToken(true);
+    const hasProfile = await checkIsOldUser(token);
+    if (hasProfile) return true;
+    if (await hasRegistrationProfile(token)) return false;
+    try {
+      await verifyRegisteredAccount(token);
+    } catch (error) {
+      if (!isRegistrationNoLongerPending(error)) throw error;
+
+        // Another request may have completed registration between the status
+        // check and verify. Only accept that result if the profile now exists.
+      const freshToken = await user.getIdToken(true);
+      if (await hasRegistrationProfile(freshToken)) return checkIsOldUser(freshToken);
+      throw new Error(
+        "Your email is verified, but your RideGuard profile could not be found. Please contact support to finish account setup.",
+      );
+    }
+    // Verification creates an identity stub. The backend now reports old-user
+    // only after personalInfo exists, so do not skip unfinished onboarding.
+    return checkIsOldUser(await user.getIdToken(true));
+  })();
+  profileChecks.set(user.uid, pending);
+  void pending.finally(() => profileChecks.delete(user.uid)).catch(() => undefined);
+  return pending;
 }
 
 /**
@@ -43,52 +122,27 @@ export const getCurrentUser = async (
     firebaseToken,
   );
 
-  return envelope.data;
+  return unwrap(envelope);
 };
 
 export const checkIsOldUser = async (
   firebaseToken: string,
 ): Promise<boolean> => {
-  const response = await fetch(`${API_BASE_URL}/auth/is-old-user`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${firebaseToken}`,
-      "Content-Type": "application/json",
-    },
-  });
+  const data = await apiClient.get<StandardEnvelope<boolean>>("/auth/is-old-user", firebaseToken);
 
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to check user status.");
-  }
-
-  // to handle server response that is not a booolean value.
+  // Reject an unexpected payload instead of interpreting it as a new user.
   if (typeof data?.data !== "boolean") {
     throw new Error(
       "The server returned an invalid user status. Please try again.",
     );
   }
 
-  return data.data;
+  return unwrap(data);
 };
 
 export const getAblyToken = async (
   firebaseToken: string,
 ): Promise<TokenRequest> => {
-  const response = await fetch(`${API_BASE_URL}/auth/ably-token`, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${firebaseToken}`,
-      "Content-Type": "application/json",
-    },
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    throw new Error(data.message || "Failed to fetch Ably token.");
-  }
-
-  return data.data;
+  const data = await apiClient.get<StandardEnvelope<TokenRequest>>("/auth/ably-token", firebaseToken);
+  return unwrap(data);
 };

@@ -1,3 +1,4 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { auth } from "@/lib/firebase";
 import { useAlertsStore } from "@/modules/alerts/store/alerts.store";
 import { signOutGoogle } from "@/modules/auth";
@@ -11,7 +12,6 @@ import { stopPhoneCapture } from "@/modules/phone-camera";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useState } from "react";
-import { Alert } from "react-native";
 export function useLogout() {
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
@@ -55,7 +55,7 @@ export function useLogout() {
       returnToWelcome();
     } catch (error) {
       console.error("Logout error:", error);
-      Alert.alert("Logout failed", "Something went wrong while logging out.");
+      Alert.alert("Logout failed", "Couldn't log out. Try again.");
     }
   };
   return {

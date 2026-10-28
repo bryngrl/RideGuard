@@ -18,12 +18,15 @@ export async function appendPhoto(body: FormData, asset: ImagePickerAsset) {
   }
   const name = asset.fileName || `photo.${mimeType.split("/")[1]}`;
   if (Platform.OS === "web") {
-    const blob = await (await fetch(asset.uri)).blob();
+    const response = await fetch(asset.uri);
+    if (!response.ok) throw new Error("Photo unavailable. Choose it again.");
+    const blob = await response.blob();
+    if (!blob.size) throw new Error("Photo unavailable. Choose it again.");
     if (blob.size > MAX_BYTES) throw new Error("Choose a photo smaller than 5 MB.");
     body.append("photo", blob, name);
   } else {
     const file = new File(asset.uri);
-    if (!file.exists) throw new Error("The selected photo is no longer available. Choose it again.");
+    if (!file.exists || !file.size) throw new Error("Photo unavailable. Choose it again.");
     if (file.size > MAX_BYTES) throw new Error("Choose a photo smaller than 5 MB.");
     body.append("photo", file);
   }

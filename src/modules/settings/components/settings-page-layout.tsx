@@ -1,6 +1,6 @@
 import type { ComponentProps } from "react";
 
-import { Spacing } from "@/shared/theme";
+import { actionFooterPadding, Spacing } from "@/shared/theme";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,8 +12,8 @@ export function SettingsPageLayout({ contentStyle, footerStyle, ...props }: Sett
   return (
     <PageLayout
       {...props}
-      contentStyle={[{ paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: Spacing.four + bottom }, contentStyle]}
-      footerStyle={[{ paddingHorizontal: Spacing.four, paddingBottom: Spacing.four + bottom }, footerStyle]}
+      contentStyle={[{ paddingHorizontal: Spacing.four, paddingTop: Spacing.four, paddingBottom: actionFooterPadding(bottom) }, contentStyle]}
+      footerStyle={[{ paddingHorizontal: Spacing.four, paddingBottom: actionFooterPadding(bottom) }, footerStyle]}
     />
   );
 }

@@ -1,15 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BrandColors, Typography } from "@/shared/theme";
+import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { PageLayout } from "@/shared/ui/page-layout";
 import { useFocusEffect, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   BackHandler,
   RefreshControl,
   SectionList,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import Animated, {
@@ -19,14 +21,17 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { END_REACHED_THRESHOLD } from "../constants";
 import { useAlertsList, type AlertListStatus } from "../hooks/use-alerts";
 import { AlertItem } from "../components/alert-item";
+import { AlertsSkeleton } from "../components/alerts-skeleton";
 import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
 import type { AlertFields, AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alerts-screen.styles";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useLoadingCountsStore, type LoadingList } from "@/shared/store/loading-counts.store";
 
 type TabFilter = "active" | "unread" | "archived";
 
@@ -45,13 +50,17 @@ const TAB_STATUS: Record<TabFilter, AlertListStatus> = {
 };
 
 // Date Grouping Helper
+function localDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
 function getDateLabel(isoDate: string): string {
   const today = new Date();
-  const todayStr = today.toISOString().split("T")[0];
+  const todayStr = localDateKey(today);
 
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split("T")[0];
+  const yesterdayStr = localDateKey(yesterday);
 
   if (isoDate === todayStr) return "Today";
   if (isoDate === yesterdayStr) return "Yesterday";
@@ -76,7 +85,8 @@ function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
 
   for (const alert of sorted) {
     // Get the date from timeStamp
-    const dateStr = alert.timeStamp.split("T")[0];
+    const date = new Date(alert.timeStamp);
+    const dateStr = Number.isNaN(date.getTime()) ? "unknown" : localDateKey(date);
     const mappedItem = mapAlertFieldsToItem(alert);
 
     if (!mappedItem) continue; // Skip invalid alerts
@@ -86,21 +96,46 @@ function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
   }
 
   return Array.from(map.entries()).map(([date, data]) => ({
-    title: getDateLabel(date),
+    title: date === "unknown" ? "Unknown date" : getDateLabel(date),
     data,
   }));
 }
 
 // Screen
-export function AlertsScreen() {
+export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean } = {}) {
   const theme = useTheme();
   const router = useRouter();
-  const [filter, setFilter] = useState<TabFilter>("active");
+  const [filter, setFilter] = useState<TabFilter>(archivedOnly ? "archived" : "active");
+  const { bottom } = useSafeAreaInsets();
+  const uid = useAuthStore((state) => state.user?.uid);
+  const countKey: LoadingList = `alerts:${filter}`;
+  const loadingCount = useLoadingCountsStore((state) => uid ? state.counts[uid]?.[countKey] : undefined);
+  const rememberCount = useLoadingCountsStore((state) => state.remember);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [menuTop, setMenuTop] = useState(68);
+  const [menuTop, setMenuTop] = useState(0);
+  const [menuRight, setMenuRight] = useState(24);
+  const [listHeight, setListHeight] = useState(0);
+  const screenRef = useRef<View>(null);
+  const filterRef = useRef<View>(null);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const reducedMotion = useReducedMotion();
   const menuProgress = useSharedValue(0);
-  const selectedFilter = FILTERS.find((item) => item.key === filter)!;
+  const availableFilters = FILTERS;
+  const selectedFilter = availableFilters.find((item) => item.key === filter) ?? FILTERS[0];
+
+  const positionMenu = useCallback((openAfterMeasure = false) => {
+    filterRef.current?.measureInWindow((filterX, filterY, filterWidth, filterHeight) => {
+      screenRef.current?.measureInWindow((screenX, screenY, screenWidth) => {
+        setMenuTop(Math.max(0, filterY - screenY + filterHeight + 6));
+        setMenuRight(Math.max(12, screenWidth - (filterX - screenX + filterWidth)));
+        if (openAfterMeasure) setMenuOpen(true);
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (menuOpen) positionMenu();
+  }, [menuOpen, positionMenu, windowWidth, windowHeight]);
 
   useEffect(() => {
     menuProgress.value = reducedMotion
@@ -128,7 +163,7 @@ export function AlertsScreen() {
 
   // The selected view loads saved alerts with its own cursor and the existing
   // periodic/focus/foreground refresh (see useAlertsList).
-  const { visibleAlerts, isRefreshing, isLoadingMore, hasMore, refresh, loadMore } =
+  const { visibleAlerts, isRefreshing, isLoadingMore, isInitialLoading, error: loadError, hasMore, refresh, loadMore } =
     useAlertsList(TAB_STATUS[filter]);
 
   // Unread filters the active view to unseen rows. Archive membership is
@@ -144,6 +179,12 @@ export function AlertsScreen() {
   const sections = useMemo<AlertSection[]>(() => {
     return groupAlertsByDate(filtered);
   }, [filtered]);
+  const showSkeleton = sections.length === 0 && isInitialLoading;
+  useEffect(() => {
+    if (uid && !isInitialLoading && !isRefreshing && !isLoadingMore && !loadError) {
+      rememberCount(uid, countKey, sections.reduce((total, section) => total + section.data.length, 0));
+    }
+  }, [uid, countKey, sections, isInitialLoading, isRefreshing, isLoadingMore, loadError, rememberCount]);
 
   const handleAlertPress = (item: AlertItemType) => {
     router.push({
@@ -152,8 +193,71 @@ export function AlertsScreen() {
     });
   };
 
+  const list = (
+<SectionList
+        onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
+        sections={sections}
+        keyExtractor={(item) => item.alertId}
+        stickySectionHeadersEnabled={false}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.listContent, archivedOnly && { paddingTop: Spacing.three, paddingBottom: bottom + Spacing.four }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing && !showSkeleton}
+            onRefresh={refresh}
+            tintColor={theme.textMuted}
+          />
+        }
+        onEndReached={() => {
+          if (hasMore && !isLoadingMore) loadMore();
+        }}
+        onEndReachedThreshold={END_REACHED_THRESHOLD}
+        renderSectionHeader={({ section }) => (
+          <Text
+            style={[
+              Typography.medium,
+              styles.sectionHeader,
+              { color: theme.textMuted },
+            ]}
+          >
+            {section.title}
+          </Text>
+        )}
+        renderItem={({ item }) => (
+          <AlertItem alert={item} onPress={() => handleAlertPress(item)} />
+        )}
+        SectionSeparatorComponent={() => (
+          <View style={styles.sectionSeparator} />
+        )}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator
+              style={styles.footerSpinner}
+              size="small"
+              color={theme.textMuted}
+            />
+          ) : null
+        }
+        ListEmptyComponent={showSkeleton ? (
+          <AlertsSkeleton viewportHeight={listHeight} count={loadingCount} />
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={[Typography.medium, { color: theme.textMuted }]}>
+              {filter === "unread" ? "No unread alerts."
+                : filter === "archived" ? "No archived alerts."
+                : "No active alerts yet."}
+            </Text>
+          </View>
+        )}
+      />
+  );
+
+  if (archivedOnly) return <PageLayout title="Archives" scrollable={false} contentFlush
+    onBack={() => router.canGoBack() ? router.back() : router.replace("/settings")}>{list}</PageLayout>;
+
   return (
     <SafeAreaView
+      ref={screenRef}
       style={[styles.container, { backgroundColor: theme.background }]}
       edges={["top"]}
     >
@@ -169,15 +273,12 @@ export function AlertsScreen() {
         <Text style={[Typography.largeTitle, { color: theme.text }]}>
           Alerts
         </Text>
-        <View
-          style={styles.filterAnchor}
-          onLayout={(event) => {
-            const { y, height } = event.nativeEvent.layout;
-            setMenuTop(y + height + 6);
-          }}
-        >
+        <View ref={filterRef} style={styles.filterAnchor}>
           <Pressable
-            onPress={() => setMenuOpen((open) => !open)}
+            onPress={() => {
+              if (menuOpen) setMenuOpen(false);
+              else positionMenu(true);
+            }}
             style={styles.filterButton}
             feedbackRadius={20}
             feedbackBehindContent
@@ -200,10 +301,10 @@ export function AlertsScreen() {
         pointerEvents={menuOpen ? "auto" : "none"}
         accessibilityElementsHidden={!menuOpen}
         importantForAccessibility={menuOpen ? "auto" : "no-hide-descendants"}
-        style={[styles.menu, { top: menuTop }, menuMotion]}
+        style={[styles.menu, { top: menuTop, right: menuRight }, menuMotion]}
       >
         <View style={styles.menuSurface}>
-          {FILTERS.map((option, index) => {
+          {availableFilters.map((option, index) => {
             const selected = filter === option.key;
             return (
               <Pressable
@@ -232,57 +333,7 @@ export function AlertsScreen() {
       </Animated.View>
 
       {/* Alert Sections List */}
-      <SectionList
-        sections={sections}
-        keyExtractor={(item) => item.alertId}
-        stickySectionHeadersEnabled={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor={theme.textMuted}
-          />
-        }
-        onEndReached={() => {
-          if (hasMore && !isLoadingMore) loadMore();
-        }}
-        onEndReachedThreshold={END_REACHED_THRESHOLD}
-        renderSectionHeader={({ section }) => (
-          <Text
-            style={[
-              Typography.bodyLarge,
-              styles.sectionHeader,
-              { color: theme.textMuted },
-            ]}
-          >
-            {section.title}
-          </Text>
-        )}
-        renderItem={({ item }) => (
-          <AlertItem alert={item} onPress={() => handleAlertPress(item)} />
-        )}
-        SectionSeparatorComponent={() => (
-          <View style={styles.sectionSeparator} />
-        )}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <ActivityIndicator
-              style={styles.footerSpinner}
-              size="small"
-              color={theme.textMuted}
-            />
-          ) : null
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={[Typography.medium, { color: theme.textMuted }]}>
-              {filter === "unread" ? "No unread alerts." : filter === "archived" ? "No archived alerts." : "No active alerts yet."}
-            </Text>
-          </View>
-        }
-      />
+      {list}
     </SafeAreaView>
   );
 }

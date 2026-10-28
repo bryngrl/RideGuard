@@ -7,10 +7,12 @@ import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useLoadingCountsStore } from "@/shared/store/loading-counts.store";
 import { EmergencyContactList } from "../components/emergency-contact-list";
-import { listContacts } from "../services/contacts.api";
+import { ContactsSkeleton } from "../components/contacts-skeleton";
+import { getCachedContacts, listContacts } from "../services/contacts.api";
 import type { EmergencyContact } from "../types/emergency-contact.types";
 import { styles } from "./contact-list-screen.styles";
 
@@ -19,7 +21,9 @@ export function ContactListScreen() {
   const router = useRouter();
 
   const isDemo = useAuthStore((state) => state.isDemo);
-  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
+  const uid = useAuthStore((state) => state.user?.uid);
+  const loadingCount = useLoadingCountsStore((state) => uid ? state.counts[uid]?.contacts : undefined);
+  const [contacts, setContacts] = useState<EmergencyContact[]>(getCachedContacts);
   const [loading, setLoading] = useState(!isDemo);
   const [hasLoaded, setHasLoaded] = useState(isDemo);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -34,9 +38,11 @@ export function ContactListScreen() {
       return;
     }
     let active = true;
+    const saved = getCachedContacts();
+    if (saved.length) { setContacts(saved); setHasLoaded(true); }
     setLoading(true);
     setLoadError(null);
-    listContacts().then((items) => {
+    listContacts({ force: retryCount > 0 }).then((items) => {
       if (active) {
         setContacts(items);
         setHasLoaded(true);
@@ -124,10 +130,7 @@ export function ContactListScreen() {
             </Pressable>
           </View>
         ) : loading && contacts.length === 0 ? (
-          <View style={styles.loadingState}>
-            <ActivityIndicator color={colors.primary} />
-            <Text style={{ color: colors.textMuted }}>Loading contacts…</Text>
-          </View>
+          <ContactsSkeleton count={loadingCount} />
         ) : contacts.length === 0 ? (
           <EmptyContacts colors={colors} onAdd={handleAddContact} />
         ) : (

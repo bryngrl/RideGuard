@@ -5,6 +5,7 @@ import type {
   SettingsProfile,
   ThemePreference,
 } from "../types/settings.types";
+import { toE164 } from "@/shared/lib/phone-utils";
 
 /*
  * BACKEND GUIDE
@@ -13,7 +14,7 @@ import type {
  * PATCH /settings/notifications -> updateNotifications
  * PATCH /settings/location -> updateLocationSharing
  * PATCH /settings/theme -> updateTheme
- * Profile and vehicle editing need backend update routes before they can save.
+ * PATCH /profile/me -> updateAccountDetails
  */
 
 interface StandardEnvelope<T> {
@@ -36,7 +37,7 @@ export async function getSettings() {
   return null;
 }
 
-/** GET /settings/auto-archive -> the account's saved period (null = Never). */
+/** GET /settings/auto-archive -> the account's saved period. */
 export async function getAutoArchive(
   firebaseToken: string,
 ): Promise<AutoArchiveHours> {
@@ -57,7 +58,9 @@ export async function updateAutoArchive(
     { autoArchiveHours: value },
     firebaseToken,
   );
-  return normalizeHours(envelope?.data?.autoArchiveHours);
+  const saved = normalizeHours(envelope?.data?.autoArchiveHours);
+  if (saved !== value) throw new Error("The server did not save the selected auto-archive period.");
+  return saved;
 }
 
 export async function updateNotifications(payload: {
@@ -83,19 +86,25 @@ export async function updateTheme(value: ThemePreference) {
   return value;
 }
 
-export async function updateProfile(
-  profile: Pick<SettingsProfile, "firstName" | "lastName" | "phone">,
-) {
-  void profile;
-  throw new Error("Profile editing is not available from the current API yet.");
-}
+type EditableAccountField = "firstName" | "lastName" | "phone" |
+  "vehicleBrand" | "vehicleModel" | "plateNumber";
 
-export async function updateVehicle(
-  vehicle: Pick<
-    SettingsProfile,
-    "vehicleBrand" | "vehicleModel" | "plateNumber"
-  >,
-) {
-  void vehicle;
-  throw new Error("Vehicle editing is not available from the current API yet.");
+/** Send only changed fields so one edit cannot overwrite another server value. */
+export async function updateAccountDetails(
+  changes: Partial<Pick<SettingsProfile, EditableAccountField>>,
+  firebaseToken: string,
+): Promise<void> {
+  const body = {
+    ...(changes.firstName !== undefined && { first_name: changes.firstName }),
+    ...(changes.lastName !== undefined && { last_name: changes.lastName }),
+    ...(changes.phone !== undefined && { phone_number: toE164(changes.phone) }),
+    ...(changes.vehicleBrand !== undefined && { brand: changes.vehicleBrand }),
+    ...(changes.vehicleModel !== undefined && { model: changes.vehicleModel }),
+    ...(changes.plateNumber !== undefined && { plate_number: changes.plateNumber }),
+  };
+  if (!Object.keys(body).length) return;
+  const envelope = await apiClient.patch<StandardEnvelope<unknown>>(
+    "/profile/me", body, firebaseToken,
+  );
+  if (!envelope?.success) throw new Error(envelope?.message || "Unable to save your account.");
 }

@@ -3,8 +3,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
-import { Button, ButtonVariant } from "@/shared/ui";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
+import { Button, type ButtonVariant } from "@/shared/ui/button";
 
 export type SweetAlertType = "info" | "success" | "warning" | "error";
 
@@ -61,17 +61,17 @@ export function SweetAlert({
   const getIconColor = () => {
     switch (type) {
       case "success":
-        return "#22C55E";
+        return theme.success;
 
       case "warning":
-        return BrandColors.primary;
+        return theme.primary;
 
       case "error":
         return theme.error;
 
       case "info":
       default:
-        return BrandColors.primary;
+        return theme.primary;
     }
   };
 
@@ -143,7 +143,7 @@ export function SweetAlert({
                   Typography.bodyLarge,
                   styles.title,
                   {
-                    color: BrandColors.primary,
+                    color: theme.text,
                   },
                 ]}
               >
@@ -168,12 +168,21 @@ export function SweetAlert({
 
           {/* BUTTONS */}
           <View style={styles.buttonContainer}>
+            <Button
+              title={primaryButtonText}
+              variant={primaryButtonVariant}
+              size="md"
+              fullWidth
+              isLoading={isLoading}
+              onPress={onPrimaryPress}
+              style={[styles.primaryButton, { paddingHorizontal: Spacing.two, borderRadius: buttonBorderRadius }]}
+            />
             {secondaryButtonText && (
               <Button
                 title={secondaryButtonText}
                 variant={secondaryButtonVariant}
                 size="md"
-                fullWidth={false}
+                fullWidth
                 disabled={isLoading}
                 onPress={handleSecondaryPress}
                 style={[
@@ -187,21 +196,6 @@ export function SweetAlert({
                 ]}
               />
             )}
-            <Button
-              title={primaryButtonText}
-              variant={primaryButtonVariant}
-              size="md"
-              fullWidth={false}
-              isLoading={isLoading}
-              onPress={onPrimaryPress}
-              style={[
-                styles.primaryButton,
-                {
-                  paddingHorizontal: Spacing.two,
-                  borderRadius: buttonBorderRadius,
-                },
-              ]}
-            />
           </View>
         </Pressable>
       </Pressable>
@@ -250,17 +244,19 @@ const styles = StyleSheet.create({
   },
 
   buttonContainer: {
-    flexDirection: "row",
+    flexDirection: "column",
     justifyContent: "flex-end",
     gap: Spacing.two,
     marginTop: Spacing.four,
   },
 
   secondaryButton: {
-    flex: 1,
+    width: "100%",
+    minHeight: 44,
   },
 
   primaryButton: {
-    flex: 1,
+    width: "100%",
+    minHeight: 44,
   },
 });

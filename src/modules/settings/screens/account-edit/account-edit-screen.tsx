@@ -1,3 +1,4 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -10,7 +11,7 @@ import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, BackHandler, Linking, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, BackHandler, Linking, Pressable as NativePressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { useAccountEdit } from "../../hooks/use-account-edit";
 import { useProfile } from "../../hooks/use-profile";
 import { uploadProfilePhoto } from "../../services/profile.api";
@@ -18,7 +19,7 @@ import { uploadProfilePhoto } from "../../services/profile.api";
 export function AccountEditScreen() {
   const router = useRouter();
   const colors = useTheme();
-  const { profile, setPhotoUrl } = useProfile();
+  const { profile, isLoading, setPhotoUrl } = useProfile();
   const isDemo = useAuthStore((state) => state.isDemo);
   const edit = useAccountEdit(profile);
   const savedName = `${profile.firstName} ${profile.lastName}`.trim();
@@ -83,9 +84,13 @@ export function AccountEditScreen() {
     edit.setField("vehicleBrand", brand);
     edit.setField("vehicleModel", model);
   };
+  const leaveAccount = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/settings/account");
+  };
   const cancel = () => {
     if (savingRef.current || pickingPhotoRef.current) return;
-    edit.changed || photoAsset ? setConfirm(true) : router.back();
+    edit.changed || photoAsset ? setConfirm(true) : leaveAccount();
   };
   useFocusEffect(useCallback(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
@@ -163,6 +168,14 @@ export function AccountEditScreen() {
   };
 
   const canSave = (edit.changed || photoAsset !== null) && !edit.saving && !savingPhoto && !pickingPhoto;
+
+  if (isLoading) return (
+    <SettingsPageLayout title="Account" onBack={cancel} contentStyle={styles.content}>
+      <View style={{ height: 148, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator color={colors.accent} accessibilityLabel="Loading account" />
+      </View>
+    </SettingsPageLayout>
+  );
 
   return (
     <SettingsPageLayout title="Account" onBack={cancel} contentStyle={styles.content}>
@@ -250,15 +263,6 @@ export function AccountEditScreen() {
       )}
       <KeyboardHiddenView style={styles.buttons}>
         <Pressable
-          onPress={cancel}
-          disabled={edit.saving || savingPhoto || pickingPhoto}
-          style={[styles.cancel, { borderColor: colors.primary }]}
-          feedbackRadius={BorderRadius.full}
-          accessibilityRole="button"
-        >
-          <Text style={[Typography.button, { color: colors.primary }]}>Cancel</Text>
-        </Pressable>
-        <Pressable
           disabled={!canSave}
           onPress={save}
           style={[styles.save, { backgroundColor: canSave ? colors.primary : colors.border }]}
@@ -269,6 +273,15 @@ export function AccountEditScreen() {
           <Text style={[Typography.button, { color: canSave ? colors.textInverse : colors.buttonMuted }]}>
             {edit.saving || savingPhoto ? "Saving..." : "Save"}
           </Text>
+        </Pressable>
+        <Pressable
+          onPress={cancel}
+          disabled={edit.saving || savingPhoto || pickingPhoto}
+          style={[styles.cancel, { borderColor: colors.primary }]}
+          feedbackRadius={BorderRadius.full}
+          accessibilityRole="button"
+        >
+          <Text style={[Typography.button, { color: colors.primary }]}>Cancel</Text>
         </Pressable>
       </KeyboardHiddenView>
       <ConfirmationModal
@@ -282,7 +295,7 @@ export function AccountEditScreen() {
           setConfirm(false);
           edit.reset();
           setPhotoAsset(null);
-          router.back();
+          leaveAccount();
         }}
         onSecondaryPress={() => setConfirm(false)}
       />
@@ -307,13 +320,13 @@ const styles = StyleSheet.create({
   photoLink: { minHeight: 28, justifyContent: "center" },
   linkText: { fontFamily: "Geist-Medium" },
   form: { gap: Spacing.two, paddingHorizontal: Spacing.two },
-  buttons: { flexDirection: "row", gap: Spacing.three, marginTop: "auto", paddingTop: Spacing.four, paddingHorizontal: Spacing.two },
+  buttons: { flexDirection: "column", gap: Spacing.two, marginTop: "auto", paddingTop: Spacing.four, paddingHorizontal: Spacing.two },
   cancel: {
-    flex: 1, minHeight: 48, borderWidth: 1, borderRadius: BorderRadius.full,
+    width: "100%", minHeight: 48, borderWidth: 1, borderRadius: BorderRadius.full,
     alignItems: "center", justifyContent: "center",
   },
   save: {
-    flex: 1, minHeight: 48, borderRadius: BorderRadius.full,
+    width: "100%", minHeight: 48, borderRadius: BorderRadius.full,
     alignItems: "center", justifyContent: "center",
   },
 });

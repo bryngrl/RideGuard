@@ -12,13 +12,16 @@ import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 import { CustomTextInput } from "@/shared/ui/text-input";
+import { FormFeedback } from "@/shared/ui/form-feedback";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
-import { useState } from "react";
-import { Alert, Text, View } from "react-native";
+import { APIError } from "@/shared/api/errors";
+import { useRef, useState } from "react";
+import { Keyboard, Text, TextInput, View } from "react-native";
 import { ProfilePayload, submitProfile } from "../services/onboarding.api";
 import { useOnboardingStore } from "../store/onboarding.store";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 export default function RegisterStepThreeScreen() {
   const router = useRouter();
@@ -27,6 +30,10 @@ export default function RegisterStepThreeScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isRelationshipOpen, setIsRelationshipOpen] = useState(false);
   const [isSkipAlertVisible, setIsSkipAlertVisible] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const submitting = useRef(false);
+  const nameRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
 
   const [contactNameError, setContactNameError] = useState("");
   const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
@@ -41,9 +48,20 @@ export default function RegisterStepThreeScreen() {
   const executeSubmission = async (
     validateEmergencyContact: boolean,
   ): Promise<boolean> => {
+    if (submitting.current) return false;
+    setSaveError(null);
     setContactNameError("");
     setEmergencyPhoneError("");
     setRelationshipError("");
+
+    if (!store.firstName.trim() || !store.lastName.trim() || !validNationalMobile(store.phone)) {
+      router.replace("/(onboarding)/register/profile");
+      return false;
+    }
+    if (!store.vehicleBrand.trim() || !store.vehicleModel.trim() || !store.plateNumber.trim() || !store.color.trim()) {
+      router.replace("/(onboarding)/register/vehicle");
+      return false;
+    }
 
     const payload: ProfilePayload = {
       first_name: store.firstName.trim(),
@@ -61,24 +79,27 @@ export default function RegisterStepThreeScreen() {
       let isValid = true;
 
       if (!store.contactName.trim()) {
-        setContactNameError("Please enter an emergency contact name.");
+        setContactNameError("Enter the contact name.");
         isValid = false;
       }
 
       if (!store.emergencyPhone.trim()) {
-        setEmergencyPhoneError("Please enter a phone number.");
+        setEmergencyPhoneError("Enter a phone number.");
         isValid = false;
       } else if (!validNationalMobile(store.emergencyPhone.trim())) {
-        setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
+        setEmergencyPhoneError("Enter a valid 10-digit mobile number.");
         isValid = false;
       }
 
       if (!store.relationship.trim()) {
-        setRelationshipError("Please select a relationship.");
+        setRelationshipError("Select a relationship.");
         isValid = false;
       }
 
       if (!isValid) {
+        if (!store.contactName.trim()) nameRef.current?.focus();
+        else if (!validNationalMobile(store.emergencyPhone)) phoneRef.current?.focus();
+        else { Keyboard.dismiss(); setIsRelationshipOpen(true); }
         return false;
       }
 
@@ -92,38 +113,42 @@ export default function RegisterStepThreeScreen() {
       payload.relationship = store.relationship.trim();
     }
 
-    console.log("Payload:", payload);
+    const snapshot = JSON.stringify(payload);
+    // Returning through earlier screens must not repeat a confirmed create.
+    if (store.savedProfile === snapshot) return true;
 
     try {
+      submitting.current = true;
+      Keyboard.dismiss();
       setIsLoading(true);
 
       const auth = getAuth();
       const user = auth.currentUser;
 
       if (!user) {
-        Alert.alert(
-          "Auth Error",
-          "You must be signed in to complete registration.",
-        );
+        setSaveError("Session expired. Log in again.");
 
         return false;
       }
 
       const firebaseToken = await user.getIdToken();
 
-      await submitProfile(payload, firebaseToken);
+      const response = await submitProfile(payload, firebaseToken);
+      if (response?.success !== true) throw new Error("Profile save was not confirmed.");
+      store.updateDraft({ savedProfile: snapshot });
+      useAuthStore.getState().setIsOldUser(true);
 
       return true;
     } catch (error: unknown) {
-      console.error("PROFILE SUBMISSION ERROR:", error);
-
-      Alert.alert(
-        "Error",
-        error instanceof Error ? error.message : "Failed to submit profile.",
+      setSaveError(
+        error instanceof APIError && error.status === 422
+          ? "Profile already exists. Contact support to save these details."
+          : "Couldn't save details. Try again.",
       );
 
       return false;
     } finally {
+      submitting.current = false;
       setIsLoading(false);
     }
   };
@@ -132,7 +157,7 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(true);
 
     if (success) {
-      router.replace("/(onboarding)/register/permission");
+      router.push("/(onboarding)/register/permission");
     }
   };
   const handleSkipPress = () => {
@@ -147,13 +172,13 @@ export default function RegisterStepThreeScreen() {
     const success = await executeSubmission(false);
 
     if (success) {
-      router.replace("/register/permission");
+      router.push("/(onboarding)/register/permission");
     }
   };
 
   const handleAddContact = async () => {
     setIsSkipAlertVisible(false);
-    await executeSubmission(true);
+    nameRef.current?.focus();
   };
 
   return (
@@ -184,7 +209,12 @@ export default function RegisterStepThreeScreen() {
           </View>
 
           <View style={styles.formContainer}>
+            {saveError ? <FormFeedback message={saveError} /> : null}
             <CustomTextInput
+              ref={nameRef}
+              autoCapitalize="words"
+              returnKeyType="next"
+              onSubmitEditing={() => phoneRef.current?.focus()}
               label="Contact Name"
               required
               value={store.contactName}
@@ -197,15 +227,17 @@ export default function RegisterStepThreeScreen() {
             />
 
             <CustomTextInput
+              ref={phoneRef}
               label="Phone Number"
               required
               prefix="+63"
               keyboardType="phone-pad"
+              placeholder="9XX XXX XXXX"
               value={store.emergencyPhone}
               inputFormat={{ normalize: nationalMobile, format: formatNationalMobile }}
               error={emergencyPhoneError}
               onBlur={() => {
-                if (store.emergencyPhone && !validNationalMobile(store.emergencyPhone)) setEmergencyPhoneError("Please enter a valid 10-digit mobile number.");
+                if (store.emergencyPhone && !validNationalMobile(store.emergencyPhone)) setEmergencyPhoneError("Enter a valid 10-digit mobile number.");
               }}
               onChangeText={(text) => {
                 store.updateDraft({ emergencyPhone: text });
@@ -249,8 +281,12 @@ export default function RegisterStepThreeScreen() {
                     { label: "Parent", value: "Parent" },
                     { label: "Sibling", value: "Sibling" },
                     { label: "Spouse", value: "Spouse" },
+                    { label: "Partner", value: "Partner" },
                     { label: "Child", value: "Child" },
                     { label: "Friend", value: "Friend" },
+                    { label: "Colleague", value: "Colleague" },
+                    { label: "Mentor", value: "Mentor" },
+                    { label: "Student", value: "Student" },
                     { label: "Other", value: "Other" },
                   ].map((item) => (
                     <Pressable
@@ -292,11 +328,12 @@ export default function RegisterStepThreeScreen() {
                 }
                 textStyle={{ color: theme.text }}
                 onPress={() => router.back()}
+                disabled={isLoading}
                 style={{ width: "48%" }}
               />
 
               <Button
-                title={hasAnyInput ? "Submit" : "Skip"}
+                title={hasAnyInput ? "Next" : "Skip"}
                 variant={hasAnyInput ? "primary" : "primary"}
                 size="md"
                 fullWidth={false}

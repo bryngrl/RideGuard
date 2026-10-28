@@ -16,7 +16,7 @@ function harness({ cameras = [], cameraError = false } = {}) {
   let cameraList = cameras;
   let history = [];
   const clients = [];
-  const auth = { user: { uid: "user-1", getIdToken: async () => "test-token" } };
+  const auth = { user: { uid: "user-1", getIdToken: async () => "test-token" }, isCheckingAuth: false, isOldUser: true };
   const devices = { camera1DeviceId: "", camera2DeviceId: "", buttonDeviceId: "" };
   const store = {
     alerts: [],
@@ -77,6 +77,8 @@ function harness({ cameras = [], cameraError = false } = {}) {
   }
   const imports = {
     react,
+    "expo-router": { useSegments: () => ["(app)"], useGlobalSearchParams: () => ({}) },
+    "@/shared/api/errors": { APIError: class APIError extends Error {} },
     ably: { Realtime },
     "react-native": { AppState: { addEventListener: (_, handler) => {
       foreground = handler;

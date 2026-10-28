@@ -1,17 +1,7 @@
+import { BrandedAlert as RNAlert } from "@/shared/lib/branded-alert";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import {
-  ActivityIndicator,
-  Image,
-  Modal,
-  Alert as RNAlert,
-  AppState,
-  FlatList,
-  ScrollView,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { ActivityIndicator, Image, Modal, AppState, FlatList, ScrollView, Text, useWindowDimensions, View } from "react-native";
 import { useEffect, useState } from "react";
 
 import InformationIcon from "@/assets/icons/misc/information.svg";
@@ -374,8 +364,7 @@ export function AlertDetailScreen() {
       showBackButton
       scrollable={false}
       contentFlush
-      footer={
-        !isFalseAlarm ? (
+      footer={!isFalseAlarm ? (
           <Button
             title="Mark as false alarm"
             variant="danger"
@@ -385,8 +374,7 @@ export function AlertDetailScreen() {
             style={footerStyles.flagButton}
             textStyle={footerStyles.flagButtonText}
           />
-        ) : null
-      }
+      ) : null}
     >
       <ScrollView
         showsVerticalScrollIndicator={false}

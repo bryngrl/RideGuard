@@ -10,12 +10,16 @@ export function isResetSessionValid(
 ): session is VerifiedResetSession {
   return !!session && typeof session.resetToken === "string" &&
     session.resetToken.trim().length > 0 &&
-    Number.isFinite(session.expiresAt) && session.expiresAt > now;
+    (session.provider === "firebase" || (typeof session.expiresAt === "number" && Number.isFinite(session.expiresAt) && session.expiresAt > now));
 }
 
 interface PasswordRecoveryStore {
   session: ResetSession | null;
   completed: boolean;
+  requestedEmail: string | null;
+  resendAt: number;
+  markRequested: (email: string, resendAt: number) => void;
+  clearVerifiedSession: () => void;
   setVerifiedSession: (destination: string, session: VerifiedResetSession) => boolean;
   complete: (resetToken: string) => boolean;
   clear: () => void;
@@ -25,6 +29,10 @@ interface PasswordRecoveryStore {
 export const usePasswordRecoveryStore = create<PasswordRecoveryStore>((set, get) => ({
   session: null,
   completed: false,
+  requestedEmail: null,
+  resendAt: 0,
+  markRequested: (email, resendAt) => set({ requestedEmail: email.trim().toLowerCase(), resendAt, session: null, completed: false }),
+  clearVerifiedSession: () => set({ session: null, completed: false }),
   setVerifiedSession: (destination, session) => {
     if (!isResetSessionValid(session)) {
       set({ session: null, completed: false });
@@ -39,5 +47,5 @@ export const usePasswordRecoveryStore = create<PasswordRecoveryStore>((set, get)
     set({ session: null, completed: true });
     return true;
   },
-  clear: () => set({ session: null, completed: false }),
+  clear: () => set({ session: null, completed: false, requestedEmail: null, resendAt: 0 }),
 }));

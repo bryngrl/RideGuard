@@ -1,7 +1,8 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Crypto from "expo-crypto";
 import * as Location from "expo-location";
-import { Alert, Linking } from "react-native";
+import { Linking } from "react-native";
 import { useStore } from "zustand";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { listContacts } from "@/modules/emergency-contacts/services/contacts.api";

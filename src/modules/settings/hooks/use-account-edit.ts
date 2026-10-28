@@ -1,12 +1,14 @@
 import { useOnboardingStore } from "@/modules/onboarding";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
 import {
   isValidPhoneNumber,
   normalizePhoneNumber,
 } from "@/shared/lib/phone-utils";
 import { validPlateInput } from "@/shared/lib/input-formats";
 import { useEffect, useState } from "react";
-import { updateProfile, updateVehicle } from "../services/settings.api";
+import { updateAccountDetails } from "../services/settings.api";
 import type { SettingsProfile } from "../types/settings.types";
+import { useProfileCacheStore } from "../store/profile-cache.store";
 
 // Photo uploads have a separate endpoint, so the text draft omits it.
 type EditableProfile = Omit<SettingsProfile, "photoUrl">;
@@ -25,6 +27,7 @@ function normalizeProfile(profile: EditableProfile): EditableProfile {
 }
 
 export function useAccountEdit(profile: SettingsProfile) {
+  const authUid = useAuthStore((state) => state.user?.uid);
   const updateDraft = useOnboardingStore((state) => state.updateDraft);
   const [initialProfile, setInitialProfile] = useState(() =>
     normalizeProfile(profile),
@@ -72,21 +75,13 @@ export function useAccountEdit(profile: SettingsProfile) {
     setSaving(true);
     setError("");
     try {
-      if (changedFields.some((field) => field === "firstName" || field === "lastName" || field === "phone")) {
-        await updateProfile({
-          firstName: normalizedForm.firstName,
-          lastName: normalizedForm.lastName,
-          phone: normalizedForm.phone,
-        });
-      }
-      if (changedFields.some((field) => field === "vehicleBrand" || field === "vehicleModel" || field === "plateNumber")) {
-        await updateVehicle({
-          vehicleBrand: normalizedForm.vehicleBrand,
-          vehicleModel: normalizedForm.vehicleModel,
-          plateNumber: normalizedForm.plateNumber,
-        });
-      }
+      const user = useAuthStore.getState().user;
+      if (!user || user.uid !== authUid) throw new Error("Sign in to save your account.");
+      const changes = Object.fromEntries(changedFields.map((field) => [field, normalizedForm[field]]));
+      await updateAccountDetails(changes, await user.getIdToken());
+      if (useAuthStore.getState().user?.uid !== user.uid) return false;
       updateDraft({ ...normalizedForm });
+      if (authUid) useProfileCacheStore.getState().updateDetails(authUid, normalizedForm);
       return true;
     } catch (cause) {
       setError(

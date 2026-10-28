@@ -2,10 +2,10 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useRouter } from "expo-router";
 import { ReactNode } from "react";
 import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks";
-import { FontFamily, Spacing, Typography } from "@/shared/theme";
+import { actionFooterPadding, FontFamily, Spacing, Typography } from "@/shared/theme";
 import { KeyboardAvoidingWrapper } from "./keyboard-avoiding-wrapper";
 import { BACK_ARROW_TOUCH_LEFT, BACK_ARROW_TOUCH_SIZE, BackArrowIcon } from "./back-arrow-icon";
 
@@ -49,6 +49,7 @@ export function PageLayout({
   overlay,
 }: PageLayoutProps) {
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
   const router = useRouter();
 
   const pageBackgroundColor = backgroundColor ?? theme.background;
@@ -77,6 +78,7 @@ export function PageLayout({
   const renderContent = () => {
     const contentStyles = [
       styles.content,
+      { paddingBottom: actionFooterPadding(bottom) },
       contentFlush && styles.flushContent,
       contentStyle,
     ];
@@ -177,6 +179,7 @@ export function PageLayout({
         <View
           style={[
             styles.footer,
+            { paddingBottom: actionFooterPadding(bottom) },
             {
               backgroundColor: pageBackgroundColor,
             },

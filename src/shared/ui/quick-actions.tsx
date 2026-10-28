@@ -1,3 +1,4 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import SosIcon from "@/assets/icons/home/echo-sos.svg";
 import ContactIcon from "@/assets/icons/home/filled-contact.svg";
@@ -5,7 +6,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { ActivityIndicator, Alert, AppState, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, AppState, StyleSheet, Text, View } from "react-native";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { sosStore } from "@/modules/sos/store/sos.store";
 import { resolveSosEntry } from "@/modules/sos/store/sos-entry";
@@ -89,9 +90,9 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.two,
   },
   actions: {
-    alignItems: "center",
-    flexDirection: "row",
-    gap: Spacing.one,
+    alignItems: "stretch",
+    flexDirection: "column",
+    gap: Spacing.two,
   },
   contactsButton: {
     alignItems: "center",

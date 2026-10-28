@@ -1,0 +1,9 @@
+
+> rideguard-node@0.0.1 test
+> jest --runInBand modules/mpin/mpin.service.spec.ts
+
+Test Suites: 1 passed, 1 total
+Tests:       14 passed, 14 total
+Snapshots:   0 total
+Time:        8.263 s
+Ran all test suites matching modules/mpin/mpin.service.spec.ts.

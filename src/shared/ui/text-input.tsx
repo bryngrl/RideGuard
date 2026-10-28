@@ -7,6 +7,7 @@ import Animated, { FadeIn, useAnimatedStyle, useReducedMotion, useSharedValue, w
 import { useTheme } from "@/shared/hooks";
 import { formatInputEdit, type InputFormat } from "@/shared/lib/input-formats";
 import { BorderRadius, FontFamily, Spacing, Typography } from "@/shared/theme";
+import { useScrollFocusedInput } from "./keyboard-aware-form-scroll-view";
 
 function FieldPressTarget({
   onPress,
@@ -79,6 +80,9 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     ref,
   ) => {
     const theme = useTheme();
+    const scrollFocusedInput = useScrollFocusedInput();
+    const fieldRef = useRef<View>(null);
+    const focusedTarget = useRef<number | null>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [selection, setSelection] = useState<{ start: number; end: number } | undefined>();
@@ -107,6 +111,11 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     };
 
     const hasError = !!error;
+    useEffect(() => {
+      if (isFocused && focusedTarget.current !== null) {
+        scrollFocusedInput(focusedTarget.current, fieldRef);
+      }
+    }, [error, hint, isFocused, scrollFocusedInput]);
     const reduceMotion = useReducedMotion();
     const borderColor = useSharedValue<string>(theme.border);
     useEffect(() => {
@@ -116,7 +125,12 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
     const focusStyle = useAnimatedStyle(() => ({ borderColor: borderColor.value }));
 
     return (
-      <View style={[styles.container, containerStyle]}>
+      <View ref={fieldRef} style={[styles.container, containerStyle]}
+        onLayout={() => {
+          if (isFocused && focusedTarget.current !== null) {
+            scrollFocusedInput(focusedTarget.current, fieldRef);
+          }
+        }}>
         {label && (
           <Text
             style={[
@@ -213,10 +227,13 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
             autoCorrect={isPassword ? false : undefined}
             onFocus={(e) => {
               setIsFocused(true);
+              focusedTarget.current = e.nativeEvent.target;
+              scrollFocusedInput(e.nativeEvent.target, fieldRef);
               onFocus?.(e);
             }}
             onBlur={(e) => {
               setIsFocused(false);
+              focusedTarget.current = null;
               if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
               selectionRelease.current = null;
               setSelection(undefined);

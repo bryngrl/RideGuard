@@ -4,8 +4,9 @@ import {
   default as InactiveCameraIcon,
 } from "@/assets/icons/navigation/active-camera.svg";
 import ErrorIcon from "@/assets/icons/status/error.svg";
-import { useCurrentUser } from "@/modules/auth";
+import { useProfile } from "@/modules/settings/hooks/use-profile";
 import { useDeviceStore } from "@/modules/devices";
+import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
 import { ToggleSwitch } from "@/modules/settings/components/toggle-switch";
@@ -45,7 +46,7 @@ export function HomeScreen() {
   const colors = useTheme();
   const reduceMotion = useReducedMotion();
 
-  const { firstName } = useCurrentUser();
+  const { profile, isLoading: isProfileLoading } = useProfile();
 
   const [isRideActive, setIsRideActive] = useState(false);
   const [showEndRideAlert, setShowEndRideAlert] = useState(false);
@@ -63,6 +64,9 @@ export function HomeScreen() {
   );
 
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const { cameras, isLoading: camerasLoading, error: camerasError } = useCameras();
+  const cameraOnline = (id: string | null) => !camerasLoading && !camerasError && cameras.some((camera) => camera.deviceId === id && camera.online);
+  const cameraStatus = (id: string | null) => !id ? "Offline" : camerasLoading ? "Checking…" : camerasError ? "Unavailable" : cameraOnline(id) ? "Online" : "Offline";
 
   const isCamera1Connected = Boolean(camera1DeviceId);
   const isCamera2Connected = Boolean(camera2DeviceId);
@@ -72,7 +76,7 @@ export function HomeScreen() {
   // const isCamera2Connected = false;
   // const isButtonConnected = true;
 
-  const displayName = firstName?.trim() || "there";
+  const displayName = profile.firstName.trim() || "there";
 
   const hasCameraConnected = isCamera1Connected || isCamera2Connected;
   const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
@@ -205,7 +209,7 @@ export function HomeScreen() {
               adjustsFontSizeToFit
               minimumFontScale={0.75}
             >
-              {displayName}!
+              {isProfileLoading ? " " : `${displayName}!`}
             </Text>
           </View>
         </View>
@@ -300,9 +304,9 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Camera 1"
                 subtitle={camera1DeviceId || "Not paired"}
-                status={isCamera1Connected ? "Connected" : "Not connected"}
+                status={cameraStatus(camera1DeviceId)}
                 connectionState={
-                  isCamera1Connected ? "connected" : "disconnected"
+                  cameraOnline(camera1DeviceId) ? "connected" : "disconnected"
                 }
                 icon={
                   isCamera1Connected ? (
@@ -322,9 +326,9 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Camera 2"
                 subtitle={camera2DeviceId || "Not paired"}
-                status={isCamera2Connected ? "Connected" : "Not connected"}
+                status={cameraStatus(camera2DeviceId)}
                 connectionState={
-                  isCamera2Connected ? "connected" : "disconnected"
+                  cameraOnline(camera2DeviceId) ? "connected" : "disconnected"
                 }
                 icon={
                   isCamera2Connected ? (
@@ -344,7 +348,7 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Button"
                 subtitle={buttonDeviceId || "Not paired"}
-                status={isButtonConnected ? "Connected" : "Not connected"}
+                status={isButtonConnected ? "Paired" : "Not paired"}
                 connectionState={
                   isButtonConnected ? "connected" : "disconnected"
                 }

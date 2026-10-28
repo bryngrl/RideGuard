@@ -11,7 +11,7 @@ import {
 } from "react-native";
 
 export function getProfileDisplayName(firstName: string, lastName: string) {
-  return `${firstName} ${lastName}`.trim() || "Guest";
+  return `${firstName} ${lastName}`.trim() || "Your account";
 }
 
 export interface ProfileAvatarProps {

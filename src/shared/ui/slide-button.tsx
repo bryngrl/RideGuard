@@ -1,6 +1,7 @@
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { useRef } from "react";
+import { useReducedMotion } from "react-native-reanimated";
 import {
   Animated,
   PanResponder,
@@ -40,6 +41,10 @@ export function SlideButton({
   thumbSymbol,
 }: SlideButtonProps) {
   const theme = useTheme();
+  const reduceMotion = useReducedMotion();
+  const reduceMotionRef = useRef(reduceMotion);
+  reduceMotionRef.current = reduceMotion;
+  const completedRef = useRef(false);
 
   const translateX = useRef(new Animated.Value(0)).current;
 
@@ -71,12 +76,12 @@ export function SlideButton({
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => {
-        return !disabledRef.current && maxTranslateX.current > 0;
+        return !disabledRef.current && !completedRef.current && maxTranslateX.current > 0;
       },
 
       onMoveShouldSetPanResponder: (_, gestureState) => {
         return (
-          !disabledRef.current &&
+          !disabledRef.current && !completedRef.current &&
           maxTranslateX.current > 0 &&
           Math.abs(gestureState.dx) > 5
         );
@@ -98,6 +103,7 @@ export function SlideButton({
       },
 
       onPanResponderRelease: (_, gestureState) => {
+        if (disabledRef.current || completedRef.current) return;
         const max = maxTranslateX.current;
 
         if (max <= 0) {
@@ -109,16 +115,23 @@ export function SlideButton({
 
         const correctDirection = directionRef.current === "right" ? gestureState.dx > 0 : gestureState.dx < 0;
         if (correctDirection && draggedDistance >= completionThreshold) {
+          completedRef.current = true;
+          if (reduceMotionRef.current) {
+            translateX.setValue(directionRef.current === "right" ? max : 0);
+            onCompleteRef.current();
+            return;
+          }
           Animated.timing(translateX, {
             toValue: directionRef.current === "right" ? max : 0,
             duration: 150,
             useNativeDriver: true,
-          }).start(() => {
-            onCompleteRef.current();
+          }).start(({ finished }) => {
+            if (finished && !disabledRef.current) onCompleteRef.current();
           });
 
           return;
         }
+        if (reduceMotionRef.current) { translateX.setValue(restingPosition()); return; }
         Animated.spring(translateX, {
           toValue: restingPosition(),
           useNativeDriver: true,
@@ -127,6 +140,7 @@ export function SlideButton({
       },
 
       onPanResponderTerminate: () => {
+        if (reduceMotionRef.current) { translateX.setValue(restingPosition()); return; }
         Animated.spring(translateX, {
           toValue: restingPosition(),
           useNativeDriver: true,
@@ -176,7 +190,19 @@ export function SlideButton({
         accessibilityLabel={label}
         accessibilityHint={`Slide ${direction} to confirm, or double tap with a screen reader`}
         accessibilityState={{ disabled }}
-        onAccessibilityTap={() => { if (!disabledRef.current) onCompleteRef.current(); }}
+        accessibilityActions={[{ name: "activate", label }]}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === "activate" && !disabledRef.current && !completedRef.current) {
+            completedRef.current = true;
+            onCompleteRef.current();
+          }
+        }}
+        onAccessibilityTap={() => {
+          if (!disabledRef.current && !completedRef.current) {
+            completedRef.current = true;
+            onCompleteRef.current();
+          }
+        }}
         {...panResponder.panHandlers}
         style={[
           styles.thumb,

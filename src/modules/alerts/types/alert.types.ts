@@ -8,6 +8,8 @@ export interface AlertItem {
   alertId: string;
   title: string;
   time: string;
+  /** Presentation badge; only set when the source is explicitly known. */
+  manual?: boolean;
   severity: AlertSeverity;
   read: boolean;
   subLabel?: string;

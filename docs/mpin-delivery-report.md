@@ -1,5 +1,8 @@
 # RideGuard MPIN implementation report
 
+> Historical report. Current integration uses six-digit MPIN email codes; see
+> [the current user flow](MPIN_USER_FLOW.md) and [backend checklist](auth-backend-requirements.md).
+
 Branch: `feat/mpin`. This report includes the existing uncommitted MPIN work and
 the lifecycle/security refinements requested in the complete MPIN task.
 

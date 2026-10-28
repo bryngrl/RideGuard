@@ -18,9 +18,8 @@ export const mockProfile: SettingsProfile = {
 
 // BACKEND: replace with GET /settings response defaults.
 export const mockSettings = {
-  // Default Never until the user explicitly chooses a period; the server is the
-  // source of truth and overwrites this on load.
-  autoArchiveHours: null as AutoArchiveHours,
+  // Default to 24 hours until the server's saved preference is loaded.
+  autoArchiveHours: 24 as AutoArchiveHours,
   alertsEnabled: true,
   pushEnabled: true,
   soundEnabled: false,

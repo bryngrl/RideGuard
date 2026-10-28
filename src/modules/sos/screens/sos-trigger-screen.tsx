@@ -1,5 +1,6 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useEffect } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
@@ -42,11 +43,11 @@ export function SosTriggerScreen() {
     <View style={styles.sosSection}>
       <View style={styles.sosWrapper}>
         <View pointerEvents="none" style={styles.innerRing} />
-        <Pressable disabled={disabled} onPress={requestHelp}
+        <Pressable disabled={disabled} onLongPress={requestHelp} delayLongPress={650}
           style={[styles.sosButton, disabled && styles.disabledButton]} accessibilityRole="button" accessibilityLabel="Request help for yourself"
-          accessibilityHint="Starts a five-second countdown before texting your emergency contacts" accessibilityState={{ disabled }}>
+          accessibilityHint="Press and hold to start a five-second countdown before texting your emergency contacts" accessibilityState={{ disabled }}>
           <Text style={styles.sosText}>SOS</Text>
-          <Text style={styles.sosHint}>Tap to start</Text>
+          <Text style={styles.sosHint}>Press and hold</Text>
         </Pressable>
       </View>
       <View style={styles.cancelHintBlock}>

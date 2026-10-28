@@ -2,8 +2,10 @@ import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 import { AppState, Platform } from "react-native";
+import { useGlobalSearchParams, useSegments } from "expo-router";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { APIError } from "@/shared/api/errors";
 
 import { getInstallationId } from "../services/installation-id";
 import { registerPushNotification } from "../services/notifications.api";
@@ -16,6 +18,12 @@ import { registerPushNotification } from "../services/notifications.api";
  */
 export function usePushRegistration() {
   const user = useAuthStore((state) => state.user);
+  const checkingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const profileComplete = useAuthStore((state) => state.isOldUser);
+  const segments = useSegments();
+  const { source } = useGlobalSearchParams<{ source?: string }>();
+  const onboarding = segments.some((segment) => segment === "(onboarding)");
+  const enabled = !checkingAuth && profileComplete === true && (!onboarding || source === "settings");
 
   // Avoid re-running the whole flow on every token refresh / user-object change.
   const registeredUidRef = useRef<string | null>(null);
@@ -25,6 +33,7 @@ export function usePushRegistration() {
       registeredUidRef.current = null;
       return;
     }
+    if (!enabled) return;
 
     let cancelled = false;
     let inFlight = false;
@@ -51,7 +60,11 @@ export function usePushRegistration() {
 
         if (!cancelled) registeredUidRef.current = user.uid;
       } catch (error) {
-        if (!cancelled) console.error("[Push] Failed to register push token:", error);
+        if (!cancelled) {
+          registeredUidRef.current = null;
+          console.warn("[Push] Registration unavailable; retrying on resume.",
+            error instanceof APIError ? `HTTP ${error.status}` : "Request failed");
+        }
       }
     };
 
@@ -96,7 +109,7 @@ export function usePushRegistration() {
             console.log("[Push] Service still unavailable; will retry when the app resumes.");
           }
         } else {
-          console.error("[Push] Registration flow failed:", error);
+          console.warn("[Push] Registration unavailable; retrying on resume.");
         }
       } finally {
         inFlight = false;
@@ -134,5 +147,5 @@ export function usePushRegistration() {
       subscription.remove();
       appStateSubscription.remove();
     };
-  }, [user]);
+  }, [user, enabled]);
 }

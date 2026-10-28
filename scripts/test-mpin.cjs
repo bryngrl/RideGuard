@@ -10,13 +10,18 @@ function load(relativePath, overrides = {}) {
   const filename = path.resolve(__dirname, "..", relativePath);
   if (!Object.keys(overrides).length && cache.has(filename)) return cache.get(filename);
   const output = ts.transpileModule(readFileSync(filename, "utf8"), {
-    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const context = {
-    exports: {}, Date, Error, TypeError, AbortController, Promise, setTimeout, clearTimeout,
+    exports: {}, Date, Error, TypeError, AbortController, URLSearchParams, Promise, setTimeout, clearTimeout,
     ...overrides,
     require: (name) => {
       if (overrides.modules && name in overrides.modules) return overrides.modules[name];
+      if (name === "@/shared/api") return { apiClient: { request: async () => {
+        const { APIError } = load("src/shared/api/errors.ts");
+        throw new APIError("Service unavailable", 503);
+      } } };
+      if (name === "@/shared/api/errors") return load("src/shared/api/errors.ts");
       if (name.startsWith(".")) return load(path.relative(path.resolve(__dirname, ".."), path.resolve(path.dirname(filename), name + ".ts")));
       return require(name);
     },
@@ -30,6 +35,201 @@ const policy = load("src/modules/mpin/utils/mpin-policy.ts");
 const api = load("src/modules/mpin/services/mpin.api.ts");
 const { useMpinStore: store } = load("src/modules/mpin/store/mpin.store.ts");
 const grant = () => ({ token: "server-grant-fixture", expiresAt: Date.now() + 60000 });
+
+test("current-PIN change capability must be an explicit server boolean", () => {
+  const status = { configured: true, requiresUnlock: true };
+  assert.equal(policy.validMpinStatus({ ...status, directChangeEnabled: true }), true);
+  assert.equal(policy.validMpinStatus({ ...status, directChangeEnabled: false }), true);
+  assert.equal(policy.validMpinStatus({ ...status, directChangeEnabled: "true" }), false);
+});
+
+test("direct change uses the server proof and preserves PIN string values", async () => {
+  const calls = [];
+  const direct = load("src/modules/mpin/services/mpin.api.ts", { modules: {
+    "@/shared/api": { apiClient: { request: async (route, options) => {
+      calls.push({ route, ...options }); return { success: true, data: { success: true } };
+    } } },
+  } });
+  await direct.mpinApi.changeDirect("id-token", "server-proof", "0123", new AbortController().signal);
+  assert.equal(calls[0].route, "/mpin/change/direct");
+  assert.equal(calls[0].token, "id-token");
+  assert.deepEqual(JSON.parse(calls[0].body), { authorization: "server-proof", pin: "0123" });
+});
+
+test("email-code recovery routes carry only authenticated challenge IDs and grants", async () => {
+  const calls = [];
+  const adapter = load("src/modules/mpin/services/mpin.api.ts", { modules: {
+    "@/shared/api": { apiClient: { request: async (route, options) => {
+      calls.push({ route, ...options }); return { success: true, data: { success: true } };
+    } } },
+  } }).mpinApi;
+  const signal = new AbortController().signal;
+  await adapter.requestRecovery("session", signal);
+  await adapter.resendRecovery("session", "challenge", signal);
+  await adapter.verifyRecovery("session", "challenge", "012345", signal);
+  await adapter.reset("session", "reset-proof", "0123", signal);
+  assert.deepEqual(calls.map(({ route, body }) => [route, body ? JSON.parse(body) : null]), [
+    ["/mpin/recovery/code", null], ["/mpin/recovery/code/resend", { challengeId: "challenge" }],
+    ["/mpin/recovery/code/verify", { challengeId: "challenge", code: "012345" }],
+    ["/mpin/recovery/reset", { authorization: "reset-proof", pin: "0123" }],
+  ]);
+  assert.equal(calls.every((call) => call.token === "session"), true);
+});
+
+test("delivery failures and request throttling never masquerade as code-attempt exhaustion", async () => {
+  const { APIError } = load("src/shared/api/errors.ts");
+  for (const [status, message, expected] of [
+    [503, "MPIN email delivery is not configured", "email-delivery-unavailable"],
+    [429, "ThrottlerException: Too Many Requests", "request-limit"],
+    [429, "Too many code attempts", "attempt-limit"],
+    [429, "Code cannot be resent yet", "resend-cooldown"],
+    [401, "Invalid or expired code", "invalid-code"],
+  ]) {
+    const adapter = load("src/modules/mpin/services/mpin.api.ts", { modules: {
+      "@/shared/api": { apiClient: { request: async () => { throw new APIError(message, status); } } },
+    } }).mpinApi;
+    await assert.rejects(adapter.verifyRecovery("session", "challenge", "012345", new AbortController().signal),
+      (error) => error.code === expected);
+  }
+});
+
+test("only a valid reset grant can bypass the old PIN's guessing lockout", () => {
+  assert.equal(policy.isMpinEntryBlocked(true, "reset", { ...grant(), mode: "reset" }), false);
+  assert.equal(policy.isMpinEntryBlocked(true, "reset", null), true);
+  assert.equal(policy.isMpinEntryBlocked(true, "change", { ...grant(), mode: "change" }), true);
+  assert.equal(policy.isMpinEntryBlocked(true, "reset", { ...grant(), mode: "change" }), true);
+  assert.equal(policy.isMpinEntryBlocked(true, "reset", { token: "expired", mode: "reset", expiresAt: Date.now() - 1 }), true);
+});
+
+function emailFlow(step, methods = {}, mode = "reset") {
+  store.getState().reset(); store.getState().setOwner("flow-owner");
+  store.getState().setStatus("flow-owner", { configured: true, requiresUnlock: true });
+  let cursor = 0;
+  const slots = [], routes = [], dismissals = [];
+  const task = { error: null, loading: false, setError: (error) => { task.error = error; },
+    isPending: () => task.loading, cancel: () => {}, pending: null,
+    run: (work, success) => {
+      task.pending = (async () => { task.loading = true; task.error = null;
+        try { success(await work("session", new AbortController().signal)); }
+        catch (error) { task.error = api.mpinErrorMessage(error); task.failure(error); }
+        finally { task.loading = false; }
+      })(); return task.pending;
+    } };
+  const auth = { user: { uid: "flow-owner", email: "rider@gmail.com" }, isAuthenticated: true, isCheckingAuth: false };
+  const fakeReact = { useState: (initial) => { const i = cursor++; if (!(i in slots)) slots[i] = initial;
+      return [slots[i], (value) => { slots[i] = typeof value === "function" ? value(slots[i]) : value; }]; },
+    useRef: (value) => { const i = cursor++; return slots[i] ??= { current: value }; },
+    useEffect: () => {}, useCallback: (work) => work };
+  const screen = load("src/modules/mpin/screens/mpin-flow-screen.tsx", { modules: {
+    react: fakeReact, "react/jsx-runtime": require("react/jsx-runtime"),
+    "expo-router": { useLocalSearchParams: () => ({ step, mode }), useSegments: () => ["(mpin)", "mpin"],
+      useRouter: () => ({ push: (route) => routes.push(route), replace: (route) => routes.push(route),
+        dismissTo: (route) => { dismissals.push(route); routes.push(route); } }),
+      useNavigation: () => ({ dispatch: () => {} }), useFocusEffect: () => {}, Redirect: "Redirect" },
+    "react-native": { Text: "Text", View: "View", AppState: { currentState: "active" }, Keyboard: { dismiss: () => {} } },
+    "@/modules/auth/store/auth.store": { useAuthStore: (selector) => selector(auth) },
+    "@/modules/auth/services/registration-progress": { saveOnboardingStep: async () => {} },
+    "@/modules/settings/hooks/use-logout": { useLogout: () => ({ logout: () => {} }) },
+    "@/shared/hooks/use-theme": { useTheme: () => ({}) },
+    "@/shared/ui/button": { Button: "Button" }, "@/shared/ui/pin-pad": { PinPad: "PinPad" },
+    "@/shared/ui/verification-code-input": { VerificationCodeInput: "CodeInput" },
+    "../components/mpin-layout": { MpinLayout: "Layout", mpinStyles: {} },
+    "../components/mpin-unlock-experience": { MpinUnlockExperience: "Unlock" },
+    "../hooks/use-mpin-request": { useMpinRequest: (failure) => { task.failure = failure; return task; } },
+    "../services/mpin.api": { ...api, mpinApi: { ...api.mpinApi, ...methods } },
+    "../store/mpin.store": { useMpinStore: Object.assign(() => store.getState(), { getState: store.getState }) },
+    "../utils/mpin-policy": policy,
+  } }).default;
+  return { routes, dismissals, task, render: () => { cursor = 0; const outer = screen(); return outer.type(outer.props); } };
+}
+
+test("unlock dismisses to the original contact instead of replacing its form", async () => {
+  const flow = emailFlow("login", {
+    unlock: async () => ({ success: true }),
+    status: async () => ({ configured: true, requiresUnlock: false }),
+  }, "setup");
+  const destination = policy.mpinReturnPath("/contact/edit-contact", {
+    contactId: "contact-1", contactName: "Ana & Jo", phoneNumber: "+639123456789", relationship: "Sibling",
+  });
+  store.getState().setReturnTo(destination);
+  flow.render().props.onComplete("0123");
+  await flow.task.pending;
+  assert.equal(flow.task.error, null);
+  assert.equal(store.getState().unlocked, true);
+  assert.deepEqual(flow.dismissals, [destination]);
+});
+
+test("contact return targets preserve encoded identity but reject injected or missing params", () => {
+  const params = { contactId: "abc", contactName: "Ana & Jo", profileImage: "https://example.test/a?x=1&y=2" };
+  const target = policy.mpinReturnPath("/contact/edit-contact", params);
+  assert.equal(policy.safeReturnPath(target), target);
+  const query = new URLSearchParams(target.split("?")[1]);
+  assert.equal(query.get("contactName"), params.contactName);
+  assert.equal(query.get("profileImage"), params.profileImage);
+  assert.equal(policy.mpinReturnPath("/contact/edit-contact", {}), "/contact");
+  assert.equal(policy.safeReturnPath("/contact/edit-contact?contactId=abc&returnTo=https://evil.test"), "/contact");
+  assert.equal(policy.safeReturnPath("/contact/edit-contact?contactId=%ZZ"), "/contact");
+});
+function findControl(tree, predicate) {
+  if (!tree || typeof tree !== "object") return undefined;
+  if (predicate(tree)) return tree;
+  for (const child of [tree.props?.children].flat(Infinity)) {
+    const found = findControl(child, predicate); if (found) return found;
+  }
+}
+
+test("Forgot MPIN stays on the request screen when backend mail delivery fails", async () => {
+  const flow = emailFlow("forgot", { requestRecovery: async () => { throw new api.MpinError("email-delivery-unavailable"); } });
+  findControl(flow.render(), (node) => node.props?.title === "Send reset code").props.onPress();
+  await flow.task.pending;
+  assert.equal(flow.routes.length, 0);
+  assert.equal(store.getState().delivery, null);
+  assert.match(flow.render().props.error, /Email delivery unavailable/);
+});
+
+test("Forgot MPIN opens the existing code step only after a valid server challenge", async () => {
+  const flow = emailFlow("forgot", { requestRecovery: async () => ({ challengeId: "server-challenge",
+    maskedDestination: "r***@gmail.com", expiresAt: Date.now() + 600000, resendAt: Date.now() + 60000 }) });
+  findControl(flow.render(), (node) => node.props?.title === "Send reset code").props.onPress();
+  await flow.task.pending;
+  assert.equal(flow.routes[0].params.step, "verify-identity");
+  assert.equal(flow.routes[0].params.mode, "reset");
+  assert.equal(store.getState().delivery.challengeId, "server-challenge");
+});
+
+test("six-digit verification opens New MPIN only after a real reset grant", async () => {
+  let submitted;
+  const flow = emailFlow("verify-identity", { verifyRecovery: async (_token, challenge, code) => {
+    submitted = { challenge, code }; return grant();
+  } });
+  store.getState().setDelivery({ challengeId: "challenge", maskedDestination: "r***@gmail.com",
+    expiresAt: Date.now() + 600000, resendAt: Date.now() + 60000 });
+  findControl(flow.render(), (node) => node.type === "CodeInput").props.onChange("012345");
+  findControl(flow.render(), (node) => node.props?.title === "Verify code").props.onPress();
+  await flow.task.pending;
+  assert.deepEqual(submitted, { challenge: "challenge", code: "012345" });
+  assert.equal(flow.routes[0].params.step, "create");
+  assert.equal(store.getState().authorization.mode, "reset");
+  assert.equal(store.getState().unlocked, false);
+});
+
+test("Change MPIN uses current-PIN proof to request the existing change-code challenge", async () => {
+  const calls = [];
+  const flow = emailFlow("current", {
+    authorizeChange: async (_token, pin) => { calls.push(["current", pin]); return grant(); },
+    requestChangeCode: async (_token, proof) => { calls.push(["send", proof]); return {
+      challengeId: "change-challenge", maskedDestination: "r***@gmail.com",
+      expiresAt: Date.now() + 600000, resendAt: Date.now() + 60000,
+    }; },
+  }, "change");
+  findControl(flow.render(), (node) => node.type === "PinPad").props.onComplete("0123");
+  await flow.task.pending;
+  assert.deepEqual(calls, [["current", "0123"], ["send", "server-grant-fixture"]]);
+  assert.equal(flow.routes[0].params.step, "verify-identity");
+  assert.equal(flow.routes[0].params.mode, "change");
+  assert.equal(store.getState().delivery.mode, "change");
+  assert.equal(store.getState().authorization, null);
+});
 
 test("MPIN accepts exactly four digits without inventing stronger backend rules", () => {
   for (const value of ["", "7", "73", "739", "73925", "73a2", " 7392", "7392 "]) assert.equal(policy.isCompleteMpin(value), false);
@@ -72,7 +272,8 @@ test("unintegrated rollout and demo mode do not pretend to enforce MPIN", () => 
   const state = { enabled: false, demo: false, uid: "account-a", owner: null, status: null, unlocked: false };
   assert.equal(policy.resolveMpinAccess(state), "allowed");
   assert.equal(policy.resolveMpinAccess({ ...state, enabled: true, demo: true }), "allowed");
-  assert.equal(api.mpinApi.enabled, false);
+  assert.equal(api.mpinApi.enabled, true);
+  assert.equal(api.mpinApi.emailCodesEnabled, true);
 });
 
 test("switching accounts clears PIN drafts, authorization, completion and unlock state", () => {
@@ -133,8 +334,29 @@ test("explicit lock clears grants and drafts without clearing full authenticatio
 test("ordinary screen navigation does not require another MPIN", () => {
   store.getState().reset(); store.getState().setOwner("a");
   store.getState().setStatus("a", { configured: true, requiresUnlock: false });
+  store.getState().acceptUnlock("a");
   store.getState().clearFlow();
   assert.equal(store.getState().unlocked, true);
+});
+
+test("a backend unlock window alone never unlocks a fresh app instance", () => {
+  store.getState().reset(); store.getState().setOwner("a");
+  store.getState().setStatus("a", { configured: true, requiresUnlock: false, unlockExpiresAt: Date.now() + 60000 });
+  assert.equal(store.getState().unlocked, false);
+  assert.equal(store.getState().requiresLocalUnlock, true);
+  assert.equal(store.getState().acceptUnlock("wrong-account"), false);
+});
+
+test("background or expired sessions cannot reopen from another device's valid window", () => {
+  for (const invalidate of [() => store.getState().lock(), () => store.getState().setStatus("a", { configured: true, requiresUnlock: true })]) {
+    store.getState().reset(); store.getState().setOwner("a");
+    store.getState().setStatus("a", { configured: true, requiresUnlock: false });
+    assert.equal(store.getState().acceptUnlock("a"), true);
+    invalidate();
+    store.getState().setStatus("a", { configured: true, requiresUnlock: false, unlockExpiresAt: Date.now() + 60000 });
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().requiresLocalUnlock, true);
+  }
 });
 
 test("return destination accepts app routes and rejects external or recovery redirects", () => {
@@ -145,9 +367,9 @@ test("return destination accepts app routes and rejects external or recovery red
   }
 });
 
-test("all unconnected MPIN operations fail explicitly rather than fabricate security", async () => {
+test("unavailable backend operations fail explicitly rather than fabricate security", async () => {
   for (const [name, method] of Object.entries(api.mpinApi)) {
-    if (name === "enabled") continue;
+    if (typeof method !== "function") continue;
     await assert.rejects(() => method(), (error) => error instanceof api.MpinError && error.code === "unavailable");
   }
 });
@@ -234,7 +456,7 @@ test("timeouts stop processing and show actionable feedback", async () => {
   await flush();
   h.timeout();
   await pending;
-  assert.equal(h.events.some((event) => typeof event === "string" && event.includes("took too long")), true);
+  assert.equal(h.events.some((event) => typeof event === "string" && event.includes("timed out")), true);
 });
 
 test("leaving a verification screen discards late results", async () => {
@@ -260,10 +482,10 @@ test("emergency navigation can cancel a pending MPIN request immediately", async
 });
 
 test("incorrect MPIN and server lockouts preserve error meaning without invented limits", () => {
-  assert.equal(api.mpinErrorMessage(new api.MpinError("incorrect-pin")), "Incorrect MPIN. Please try again.");
-  assert.match(api.mpinErrorMessage(new api.MpinError("locked")), /Too many incorrect attempts/);
-  assert.match(api.mpinErrorMessage(new api.MpinError("expired-authorization")), /Verify your identity again/);
-  assert.match(api.mpinErrorMessage(new api.MpinError("expired-session")), /log in again/);
+  assert.equal(api.mpinErrorMessage(new api.MpinError("incorrect-pin")), "Incorrect MPIN. Try again.");
+  assert.match(api.mpinErrorMessage(new api.MpinError("locked")), /MPIN locked/);
+  assert.match(api.mpinErrorMessage(new api.MpinError("expired-authorization")), /Verify again/);
+  assert.match(api.mpinErrorMessage(new api.MpinError("expired-session")), /log in again/i);
 });
 
 test("server unlock status, expiry and lockout override a stale local unlocked flag", () => {
@@ -295,12 +517,13 @@ test("server time corrects local clock skew for codes, grants and unlock expiry"
   assert.equal(store.getState().setAuthorization({ token: "x", serverTime, expiresAt: serverTime + 60000 }, "change"), true);
   assert.ok(store.getState().authorization.expiresAt > Date.now());
   store.getState().setStatus("a", { configured: true, requiresUnlock: false, serverTime, unlockExpiresAt: serverTime + 60000 });
+  assert.equal(store.getState().acceptUnlock("a"), true);
   assert.equal(store.getState().unlocked, true);
   assert.ok(store.getState().status.unlockExpiresAt > Date.now());
 });
 
 const { createMpinSessionChecker } = load("src/modules/mpin/services/mpin-session.ts");
-test("server recheck preserves a brief-interruption unlock but locks when server requires it", async () => {
+test("server recheck preserves a locally verified session and respects server expiry", async () => {
   const original = api.mpinApi.status;
   const checker = createMpinSessionChecker();
   const user = { uid: "a", getIdToken: async () => "fixture" };
@@ -310,6 +533,8 @@ test("server recheck preserves a brief-interruption unlock but locks when server
     const pending = checker.check(user);
     assert.equal(store.getState().checkingStatus, true);
     await pending;
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().acceptUnlock("a"), true);
     assert.equal(store.getState().unlocked, true);
     assert.equal(store.getState().checkingStatus, false);
     api.mpinApi.status = async () => ({ configured: true, requiresUnlock: true });
@@ -387,21 +612,23 @@ function lifecycleHarness() {
   };
 }
 
-test("lifecycle checks launch and background return without locking valid brief switches", async () => {
+test("cold launch and background return require MPIN while inactive interruptions do not", async () => {
   const original = api.mpinApi.status;
   let calls = 0;
   api.mpinApi.enabled = true;
   api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: false }; };
   const h = lifecycleHarness();
   try {
-    await flush(); assert.equal(calls, 1); assert.equal(store.getState().unlocked, true);
+    await flush(); assert.equal(calls, 1); assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().acceptUnlock("a"), true);
     h.state("inactive"); h.state("active"); await flush(); assert.equal(calls, 1);
-    h.state("background"); h.state("active"); await flush(); assert.equal(calls, 2);
     assert.equal(store.getState().unlocked, true);
+    h.state("background"); h.state("active"); await flush(); assert.equal(calls, 2);
+    assert.equal(store.getState().unlocked, false);
     api.mpinApi.status = async () => ({ configured: true, requiresUnlock: true });
     h.state("background"); h.state("active"); await flush();
     assert.equal(store.getState().unlocked, false);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = false; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
 });
 
 test("foreground expiry checks status and disabled rollout never invokes the adapter", async () => {
@@ -412,13 +639,14 @@ test("foreground expiry checks status and disabled rollout never invokes the ada
   const h = lifecycleHarness();
   try {
     await flush();
+    assert.equal(store.getState().acceptUnlock("a"), true);
     api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: true }; };
     h.expire(); assert.equal(store.getState().checkingStatus, true); await flush();
     assert.equal(store.getState().unlocked, false);
     api.mpinApi.enabled = false;
     h.state("background"); h.state("active"); await flush();
     assert.equal(calls, 2);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = false; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
 });
 
 test("emergency permission is explicit and restricted to SOS or a specific allowed alert", () => {

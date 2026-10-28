@@ -45,6 +45,7 @@ export function FeedbackPressable({
   return (
     <Pressable
       {...props}
+      collapsable={false}
       style={style}
       disabled={disabled}
       onPressIn={(event) => {
@@ -104,6 +105,7 @@ export function FeedbackPressable({
         const left = inset?.left ?? border;
         const overlay = feedbackEnabled ? (
           <Animated.View
+            collapsable={false}
             pointerEvents="none"
             style={[
               StyleSheet.absoluteFill,

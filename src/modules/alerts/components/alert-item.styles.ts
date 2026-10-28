@@ -1,4 +1,4 @@
-import { BorderRadius, Spacing } from "@/shared/theme";
+import { BorderRadius, BrandColors, Spacing } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const styles = StyleSheet.create({
@@ -14,6 +14,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     width: "100%",
     paddingLeft: Spacing.five,
+    paddingRight: Spacing.five,
+    paddingVertical: 12,
   },
 
   // Left icon
@@ -29,7 +31,29 @@ export const styles = StyleSheet.create({
     marginRight: Spacing.three,
   },
   label: {
+    fontSize: 15,
+    lineHeight: 21,
+    flexShrink: 1,
+  },
+  timeRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: Spacing.two,
     marginBottom: 2,
+    rowGap: 2,
+  },
+  manualBadge: {
+    borderColor: BrandColors.primary,
+    borderRadius: BorderRadius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+  },
+  manualBadgeText: {
+    color: BrandColors.primary,
+    fontSize: 11,
+    lineHeight: 15,
   },
   pendingCircle: {
     alignItems: "center",
@@ -47,8 +71,8 @@ export const styles = StyleSheet.create({
   statusDot: {
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: Spacing.three,
-    width: 18,
+    marginLeft: Spacing.two,
+    width: 16,
   },
   subLabel: {
     marginTop: 2,
@@ -63,8 +87,8 @@ export const styles = StyleSheet.create({
     marginTop: 1,
   },
   unreadDot: {
-    borderRadius: 5,
-    height: 10,
-    width: 10,
+    borderRadius: 4,
+    height: 8,
+    width: 8,
   },
 });

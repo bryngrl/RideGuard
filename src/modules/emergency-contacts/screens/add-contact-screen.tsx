@@ -1,20 +1,23 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { Alert, BackHandler, Image, Keyboard, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
+import { BackHandler, Keyboard, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
 import HelpIcon from "@/assets/icons/actions/help.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
-import { Typography } from "@/shared/theme";
+import { actionFooterPadding, Typography } from "@/shared/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/shared/ui/button";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { PageLayout } from "@/shared/ui/page-layout";
 import { PhotoOptionsBottomSheet } from "@/shared/ui/photo-options-bottom-sheet";
 import { CustomTextInput } from "@/shared/ui/text-input";
+import { CachedPhoto } from "@/shared/ui/cached-photo";
 import { createContact, listContacts } from "../services/contacts.api";
 import { RelationshipPicker } from "../components/relationship-picker";
 import { styles } from "./add-contact-screen.styles";
@@ -22,6 +25,7 @@ import { styles } from "./add-contact-screen.styles";
 export function AddContactScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   const [contactName, setContactName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -39,7 +43,6 @@ export function AddContactScreen() {
   const savingRef = useRef(false);
   const pickingPhotoRef = useRef(false);
   const [pickingPhoto, setPickingPhoto] = useState(false);
-  const [photoFailed, setPhotoFailed] = useState(false);
 
   const [showPhotoOptions, setShowPhotoOptions] = useState(false);
 
@@ -67,7 +70,6 @@ export function AddContactScreen() {
       if (!result.canceled && result.assets[0]?.uri) {
         setProfileImage(result.assets[0].uri);
         setPhotoAsset(result.assets[0]);
-        setPhotoFailed(false);
       }
     } catch (error) {
       Alert.alert("Could not take photo", error instanceof Error ? error.message : "Please try again.");
@@ -96,7 +98,6 @@ export function AddContactScreen() {
       if (!result.canceled && result.assets[0]?.uri) {
         setProfileImage(result.assets[0].uri);
         setPhotoAsset(result.assets[0]);
-        setPhotoFailed(false);
       }
     } catch (error) {
       Alert.alert("Could not choose photo", error instanceof Error ? error.message : "Please try again.");
@@ -125,12 +126,12 @@ export function AddContactScreen() {
     const trimmedPhone = phoneNumber.trim();
 
     if (!trimmedName) {
-      setContactNameError("Please enter an emergency contact name.");
+      setContactNameError("Enter the contact name.");
       isValid = false;
     }
 
     if (!trimmedPhone) {
-      setPhoneNumberError("Please enter a phone number.");
+      setPhoneNumberError("Enter a phone number.");
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Enter a valid 10-digit mobile number.");
@@ -138,7 +139,7 @@ export function AddContactScreen() {
     }
 
     if (!relationship.trim()) {
-      setRelationshipError("Please select a relationship.");
+      setRelationshipError("Select a relationship.");
       isValid = false;
     }
 
@@ -161,7 +162,7 @@ export function AddContactScreen() {
       setIsLoading(true);
       Keyboard.dismiss();
       const existing = await listContacts();
-      if (existing.length >= 5) throw new Error("You can have up to five emergency contacts.");
+      if (existing.length >= 5) throw new Error("Maximum of five contacts allowed.");
       await createContact({
         name: contactName.trim(),
         phone: `+63${phoneNumber}`,
@@ -186,16 +187,21 @@ export function AddContactScreen() {
     }
   };
 
+  const leaveContact = () => {
+    if (router.canGoBack()) router.back();
+    else router.replace("/contact");
+  };
+
   const handleCancel = () => {
     if (savingRef.current || pickingPhotoRef.current) return;
     if (contactName.trim() || phoneNumber || relationship || photoAsset) {
       Alert.alert("Discard changes?", "Your new contact has not been saved.", [
         { text: "Keep editing", style: "cancel" },
-        { text: "Discard", style: "destructive", onPress: () => router.back() },
+        { text: "Discard", style: "destructive", onPress: leaveContact },
       ]);
       return;
     }
-    router.back();
+    leaveContact();
   };
 
   useFocusEffect(useCallback(() => {
@@ -232,7 +238,7 @@ export function AddContactScreen() {
         </Pressable>
       }
     >
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingBottom: actionFooterPadding(bottom) }]}>
         <View style={styles.photoSection}>
           <Pressable
             onPress={handleAddPhoto}
@@ -240,12 +246,9 @@ export function AddContactScreen() {
             accessibilityRole="button"
             accessibilityLabel="Add contact photo"
           >
-            {profileImage && !photoFailed ? (
-              <Image
-                source={{ uri: profileImage }}
-                style={styles.profileImagePreview}
-                onError={() => setPhotoFailed(true)}
-              />
+            {profileImage ? (
+              <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
+                placeholder={<ProfilePlaceholder width={96} height={96} />} />
             ) : (
               <ProfilePlaceholder width={96} height={96} />
             )}
@@ -279,7 +282,7 @@ export function AddContactScreen() {
             required
             value={contactName}
             error={contactNameError}
-            onBlur={() => { if (!contactName.trim()) setContactNameError("Please enter an emergency contact name."); }}
+            onBlur={() => { if (!contactName.trim()) setContactNameError("Enter the contact name."); }}
             onChangeText={(text) => {
               setContactName(text);
 

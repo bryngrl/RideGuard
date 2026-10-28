@@ -67,15 +67,21 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
 
         {/* time + label */}
         <View style={styles.textBlock}>
-          <Text
-            style={[Typography.medium, styles.label, { color: "#000000" }]}
-            numberOfLines={1}
-          >
-            {alert.time}
-          </Text>
+          <View style={styles.timeRow}>
+            <Text
+              style={[Typography.medium, styles.label, { color: "#000000" }]}
+            >
+              {alert.time}
+            </Text>
+            {alert.manual ? (
+              <View style={styles.manualBadge}>
+                <Text style={styles.manualBadgeText}>Manual</Text>
+              </View>
+            ) : null}
+          </View>
 
           <Text
-            style={[Typography.medium, styles.timeRange, { color: labelColor }]}
+            style={[Typography.bodySmall, styles.timeRange, { color: labelColor }]}
             numberOfLines={1}
           >
             {alert.title}
@@ -98,7 +104,7 @@ export function AlertItem({ alert, onPress }: AlertItemProps) {
         {/* right-side status indicator */}
         <View style={styles.statusDot}>
           {alert.pending ? (
-            <ClockIcon height={20} width={20} />
+            <ClockIcon height={16} width={16} />
           ) : isUnread ? (
             <View style={[styles.unreadDot, { backgroundColor: "#0064D1" }]} />
           ) : null}

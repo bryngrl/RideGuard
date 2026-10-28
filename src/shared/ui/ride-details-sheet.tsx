@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
-import { Button } from "@/shared/ui";
+import { Button } from "@/shared/ui/button";
 
 import RideCompleteIcon from "@/assets/icons/status/success.svg";
 

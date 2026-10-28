@@ -9,7 +9,7 @@ import { createMpinSessionChecker } from "../services/mpin-session";
 
 export function useMpinLifecycle() {
   const segments = useSegments();
-  const inMpin = segments.some((segment) => segment === "(mpin)");
+  const inMpin = segments.some((segment) => segment === "(mpin)" || segment === "mpin");
   useEffect(() => {
     const checker = createMpinSessionChecker();
     let expiryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -47,7 +47,11 @@ export function useMpinLifecycle() {
         checker.cancel(); clearTimeout(expiryTimer);
         useMpinStore.getState().clearFlow();
       }
-      if (state === "background") { backgrounded = true; backgroundAt = Date.now(); }
+      if (state === "background") {
+        backgrounded = true;
+        backgroundAt = Date.now();
+        if (mpinApi.enabled && useMpinStore.getState().owner) useMpinStore.getState().lock();
+      }
       if (state === "active") {
         if (backgrounded || useMpinStore.getState().checkingStatus) {
           backgrounded = false;

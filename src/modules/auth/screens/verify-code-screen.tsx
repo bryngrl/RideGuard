@@ -1,7 +1,8 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, ScrollView, Text, View } from "react-native";
+import { AppState, BackHandler, Keyboard, KeyboardAvoidingView, Platform, Text, View } from "react-native";
+import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -28,14 +29,12 @@ export default function VerifyCodeScreen() {
     destination?: string;
     expiresAt?: string;
     resendAt?: string;
-    preview?: string;
   }>();
   const destination = params.destination ?? "";
-  const preview = __DEV__ && params.preview === "1";
   const initialExpiry = Number(params.expiresAt);
   const initialResend = Number(params.resendAt);
   const [delivery, setDelivery] = useState<CodeDelivery | null>(
-    !preview && initialExpiry > Date.now() && initialResend > 0
+    initialExpiry > Date.now() && initialResend > 0
       ? { expiresAt: initialExpiry, resendAt: initialResend }
       : null,
   );
@@ -99,20 +98,15 @@ export default function VerifyCodeScreen() {
       return;
     }
     if (code.length !== CODE_LENGTH) {
-      setError("Enter the complete six-digit code.");
-      return;
-    }
-    if (preview) {
-      setCode("");
-      router.push({ pathname: "/(public)/new-password", params: { preview: "1" } });
+      setError("Enter the six-digit code.");
       return;
     }
     if (!delivery) {
-      setError("No code has been sent. Password recovery is not connected yet.");
+      setError("Password recovery unavailable. No code sent.");
       return;
     }
     if (Date.now() >= delivery.expiresAt) {
-      setError("That code has expired. Request a new code.");
+      setError("Code expired. Request a new one.");
       return;
     }
 
@@ -123,7 +117,7 @@ export default function VerifyCodeScreen() {
       const result = await verifyResetCode(destination, code);
       if (!active.current) return;
       if (!usePasswordRecoveryStore.getState().setVerifiedSession(destination, result)) {
-        setError("Your reset session is invalid or expired. Request a new code.");
+        setError("Reset session expired. Request a new code.");
         return;
       }
       setCode("");
@@ -172,10 +166,11 @@ export default function VerifyCodeScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <ScrollView
+        <KeyboardAwareFormScrollView
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          keyboardGap={Spacing.four}
         >
           <Pressable
             onPress={backToRecovery}
@@ -198,9 +193,7 @@ export default function VerifyCodeScreen() {
                 ? "Your code is verified. Continue to create a new password."
                 : delivery
                 ? "An email was sent to the address connected to this account."
-                : preview
-                  ? "Design preview only. Enter any six digits to view the new-password design. No code is sent or verified."
-                  : "Code delivery is not connected yet."}
+                : "Code delivery is not connected yet."}
             </Text>
 
             {!verified && <VerificationCodeInput value={code} onChange={handleCodeChange}
@@ -217,7 +210,7 @@ export default function VerifyCodeScreen() {
               </Text>
             )}
             <Button
-              title={preview ? "Preview new password" : verified ? "Continue" : "Confirm"}
+              title={verified ? "Continue" : "Confirm"}
               onPress={handleConfirm}
               isLoading={isVerifying}
               disabled={isResending}
@@ -248,7 +241,7 @@ export default function VerifyCodeScreen() {
               </Pressable>
             </View>}
           </View>
-        </ScrollView>
+        </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
