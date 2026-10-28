@@ -1,6 +1,6 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useRef, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
 
 import { auth } from "@/lib/firebase";
 import { useTheme } from "@/shared/hooks";
@@ -8,9 +8,12 @@ import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { ConfirmationModal } from "@/shared/ui/confirmation-modal";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
+import { NotificationSheet } from "@/shared/ui/notification-sheet";
+import { APIError } from "@/shared/api/errors";
 
 import { releaseDevice } from "../services/devices.api";
 import { useDeviceStore } from "../store/devices.store";
+import { useDeviceClaimLifecycle } from "../hooks/use-device-claim-lifecycle";
 
 type DeviceStatus = {
   name: string;
@@ -27,6 +30,17 @@ export function DeviceStatusScreen() {
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deviceToDisconnect, setDeviceToDisconnect] = useState<DeviceStatus | null>(null);
+  const lifecycle = useDeviceClaimLifecycle(() => {
+    disconnectAbort.current?.abort();
+    setDisconnectingId(null); setDeviceToDisconnect(null); setNotice(null);
+  });
+  const disconnectAbort = useRef<AbortController | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const hideNotice = useCallback(() => setNotice(null), []);
+  useFocusEffect(useCallback(() => {
+    setDisconnectingId(null); setDeviceToDisconnect(null); setNotice(null);
+    return () => disconnectAbort.current?.abort();
+  }, []));
 
   const devices: DeviceStatus[] = [
     {
@@ -74,36 +88,48 @@ export function DeviceStatusScreen() {
   };
 
   const disconnectDevice = async (device: DeviceStatus) => {
-    if (disconnectingId) return;
     const user = auth.currentUser;
     if (!user) {
-      Alert.alert("Sign in required", "Sign in to disconnect this device.");
+      setNotice({ message: "Sign in to disconnect this device.", type: "error" });
       return;
     }
-
+    const current = useDeviceStore.getState();
+    const selectedId = device.type === "button" ? current.buttonDeviceId
+      : device.cameraNumber === 2 ? current.camera2DeviceId : current.camera1DeviceId;
+    if (!device.deviceId || current.ownerUid !== user.uid || selectedId !== device.deviceId) return;
+    const attempt = lifecycle.begin(user.uid);
+    if (!attempt) return;
+    const controller = new AbortController();
+    disconnectAbort.current = controller;
+    let rejectWait: (error: Error) => void = () => {};
+    const interrupted = new Promise<never>((_resolve, reject) => { rejectWait = reject; });
+    const stopWaiting = () => rejectWait(new Error("Disconnect interrupted"));
+    controller.signal.addEventListener("abort", stopWaiting, { once: true });
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     setDisconnectingId(device.deviceId);
+    setNotice(null);
     try {
-      await releaseDevice(device.deviceId, await user.getIdToken(true));
-      const state = useDeviceStore.getState();
-      if (state.camera1DeviceId === device.deviceId) {
-        state.setCamera1DeviceId("");
-        state.setCamera1Activated(false);
-      }
-      if (state.camera2DeviceId === device.deviceId) {
-        state.setCamera2DeviceId("");
-        state.setCamera2Activated(false);
-      }
-      if (state.buttonDeviceId === device.deviceId) {
-        state.setButtonDeviceId("");
-        state.setButtonActivated(false);
+      const token = await Promise.race([user.getIdToken(true), interrupted]);
+      if (!lifecycle.isCurrent(attempt) || controller.signal.aborted) return;
+      await releaseDevice(device.deviceId, token, device.type, controller.signal);
+      if (!lifecycle.isCurrent(attempt)) return;
+      if (useDeviceStore.getState().clearDisconnectedDevice(user.uid, device.deviceId)) {
+        setNotice({ message: `${device.name} disconnected and unpaired.`, type: "success" });
       }
     } catch (error) {
-      Alert.alert(
-        "Could not disconnect",
-        error instanceof Error ? error.message : "Please try again.",
-      );
+      if (!lifecycle.isCurrent(attempt)) return;
+      const message = error instanceof APIError && error.status === 401 ? "Session expired. Log in again."
+        : error instanceof APIError && error.status === 403 ? "You can't disconnect this device."
+        : error instanceof APIError && error.status === 404 ? "Hardware unpairing is not available yet."
+        : controller.signal.aborted ? "Request timed out. Try again."
+        : "Couldn't unpair device. Try again.";
+      setNotice({ message, type: "error" });
     } finally {
-      setDisconnectingId(null);
+      clearTimeout(timeout);
+      controller.signal.removeEventListener("abort", stopWaiting);
+      if (disconnectAbort.current === controller) disconnectAbort.current = null;
+      if (lifecycle.isCurrent(attempt)) setDisconnectingId(null);
+      lifecycle.finish(attempt);
     }
   };
 
@@ -115,7 +141,9 @@ export function DeviceStatusScreen() {
   };
 
   return (
-    <SettingsPageLayout title="Camera and quick button">
+    <SettingsPageLayout title="Camera and quick button" overlay={
+      <NotificationSheet visible={!!notice} message={notice?.message ?? ""} type={notice?.type} onHide={hideNotice} />
+    }>
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
@@ -196,8 +224,8 @@ export function DeviceStatusScreen() {
       </View>
       <ConfirmationModal
         visible={deviceToDisconnect !== null}
-        title={`Disconnect ${deviceToDisconnect?.name ?? "device"}?`}
-        description="This device will no longer be linked to your account until you connect it again."
+        title={`Disconnect and unpair ${deviceToDisconnect?.name ?? "device"}?`}
+        description="This will remove the hardware from your account so another account and phone can connect it."
         primaryButtonText="Disconnect"
         secondaryButtonText="Cancel"
         primaryButtonColor={theme.error}
