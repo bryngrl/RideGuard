@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { CachedPhoto } from "@/shared/ui/cached-photo";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatLocalMobile, localMobile, validLocalMobile } from "@/shared/lib/input-formats";
@@ -17,23 +17,16 @@ export function EmergencyContactItem({
   profileImage,
 }: EmergencyContactItemProps) {
   const colors = useTheme();
-  const [photoFailed, setPhotoFailed] = useState(false);
-  useEffect(() => setPhotoFailed(false), [profileImage]);
 
   const localNumber = localMobile(phoneNumber);
   const displayPhone = validLocalMobile(localNumber) ? formatLocalMobile(localNumber) : phoneNumber;
+  const placeholder = <View style={[styles.avatar, { backgroundColor: colors.backgroundSelected }]}>
+    <Text style={[Typography.bodyLarge, styles.initial, { color: colors.text }]}>{name.trim().charAt(0).toUpperCase()}</Text>
+  </View>;
 
   return (
     <View style={styles.container}>
-      {profileImage && !photoFailed ? (
-        <Image source={{ uri: profileImage }} style={styles.avatar} onError={() => setPhotoFailed(true)} />
-      ) : (
-        <View style={[styles.avatar, { backgroundColor: colors.backgroundSelected }]}>
-          <Text style={[Typography.bodyLarge, styles.initial, { color: colors.text }]}>
-            {name.trim().charAt(0).toUpperCase()}
-          </Text>
-        </View>
-      )}
+      {profileImage ? <CachedPhoto uri={profileImage} style={styles.avatar} placeholder={placeholder} /> : placeholder}
 
       <View style={styles.info}>
         <Text

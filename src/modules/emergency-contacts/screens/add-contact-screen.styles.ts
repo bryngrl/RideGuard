@@ -4,7 +4,7 @@ import { StyleSheet } from "react-native";
 export const styles = StyleSheet.create({
   actions: {
     marginTop: "auto",
-    paddingBottom: Spacing.four,
+    paddingBottom: 0,
     paddingTop: Spacing.four,
   },
 
