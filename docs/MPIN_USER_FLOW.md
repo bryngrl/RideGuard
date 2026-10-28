@@ -1,11 +1,11 @@
 # RideGuard MPIN flow and endpoint audit
 
-Verified against `XpnsiveSharks/rideguard-node`, branch `development`, commit
-`9b40d3d36b5ec80441388f745cffe77509b6f4f4` on 2026-10-25.
+Updated against `XpnsiveSharks/rideguard-node` remote HEAD,
+`398e2f268779dbc8e70c59b522c0e730ade983f4` on 2026-10-28.
 
-Source: [MPIN controller](https://github.com/XpnsiveSharks/rideguard-node/blob/9b40d3d36b5ec80441388f745cffe77509b6f4f4/src/modules/mpin/mpin.controller.ts),
-[MPIN service](https://github.com/XpnsiveSharks/rideguard-node/blob/9b40d3d36b5ec80441388f745cffe77509b6f4f4/src/modules/mpin/mpin.service.ts),
-and [profile service](https://github.com/XpnsiveSharks/rideguard-node/blob/9b40d3d36b5ec80441388f745cffe77509b6f4f4/src/modules/profile/profile.service.ts).
+Source: [MPIN controller](https://github.com/XpnsiveSharks/rideguard-node/blob/398e2f268779dbc8e70c59b522c0e730ade983f4/src/modules/mpin/mpin.controller.ts),
+[MPIN service](https://github.com/XpnsiveSharks/rideguard-node/blob/398e2f268779dbc8e70c59b522c0e730ade983f4/src/modules/mpin/mpin.service.ts),
+and [profile service](https://github.com/XpnsiveSharks/rideguard-node/blob/398e2f268779dbc8e70c59b522c0e730ade983f4/src/modules/profile/profile.service.ts).
 
 ## Purpose
 
@@ -33,6 +33,29 @@ session; a separate, memory-only MPIN state protects normal app screens.
 Mismatch, timeout, network failure, malformed response, or a failed save keeps the
 user in the flow. If saving may have succeeded but the response was lost, check
 status before creating again. An existing PIN is unlocked, never overwritten.
+
+Onboarding MPIN steps use `/(onboarding)/register/mpin?step=…` throughout setup,
+including existing-PIN unlocking. They must not switch to the normal app's MPIN
+navigator, whose completed-profile guard can redirect unfinished accounts.
+Status-driven redirects run only while their MPIN screen is focused. The normal
+MPIN navigator shows a loading indicator while authentication/profile checks run.
+
+The connected phone's console showed duplicate React child keys when opening
+the keypad: the empty bottom-left cell used numeric key `0`, colliding with the
+digit `"0"`. The empty cell now uses a distinct placeholder key. Regression tests
+render the real keypad JSX and verify sibling-key uniqueness and zero entry.
+The earlier Android crash buffer did not contain a RideGuard native crash.
+On 2026-10-27 the user supplied a Fabric `addViewAt` / child-already-parented
+stack trace. See [the native mounting diagnosis and validation](MPIN_ANDROID_MOUNT_CRASH.md)
+for the separate native-view stability changes and device verification.
+
+The phone's other two LogBox errors came from background camera discovery
+(`GET /devices/cameras`) and push registration (`POST /notifications/register`),
+both reporting `Internal server error`. These requests now wait for completed
+profile/onboarding; settings hardware setup keeps background monitoring enabled.
+Failures retain warning diagnostics and retry on resume instead of interrupting
+MPIN with a red error overlay. A failed rotated push token also remains retryable.
+This does not repair server-side errors or pretend push registration succeeded.
 
 ## Returning user
 
@@ -81,40 +104,40 @@ The API base includes `/v1` once. Every MPIN request uses the Firebase ID token 
 | Status | `GET /mpin/status?reason=launch` | None | Enabled |
 | Setup | `POST /mpin/setup` | `{ pin }` | Enabled |
 | Unlock | `POST /mpin/unlock` | `{ pin }` | Enabled |
-| Current-PIN proof | `POST /mpin/change/authorize` | `{ pin }` | Adapter matches backend; change UI unavailable |
-| Change challenge | `POST /mpin/change/code` | `{ authorization }` | Legacy OTP; not used by link flow |
-| Resend change code | `POST /mpin/change/code/resend` | `{ challengeId }` | Legacy OTP |
-| Verify change code | `POST /mpin/change/code/verify` | `{ challengeId, code }` | Legacy OTP |
+| Current-PIN proof | `POST /mpin/change/authorize` | `{ pin }` | Connected |
+| Change challenge | `POST /mpin/change/code` | `{ authorization }` | Connected; requires email sender |
+| Resend change code | `POST /mpin/change/code/resend` | `{ challengeId }` | Connected |
+| Verify change code | `POST /mpin/change/code/verify` | `{ challengeId, code }` | Connected |
 | Save change | `POST /mpin/change` | `{ authorization, pin }` | Requires backend-issued change grant |
-| Recovery challenge | `POST /mpin/recovery/code` | None | Legacy OTP; not used by link flow |
-| Resend recovery code | `POST /mpin/recovery/code/resend` | `{ challengeId }` | Legacy OTP |
-| Verify recovery code | `POST /mpin/recovery/code/verify` | `{ challengeId, code }` | Legacy OTP |
+| Recovery challenge | `POST /mpin/recovery/code` | None | Connected; requires email sender |
+| Resend recovery code | `POST /mpin/recovery/code/resend` | `{ challengeId }` | Connected |
+| Verify recovery code | `POST /mpin/recovery/code/verify` | `{ challengeId, code }` | Connected |
 | Save reset | `POST /mpin/recovery/reset` | `{ authorization, pin }` | Requires backend-issued reset grant |
 
 Responses use `{ success: true, data: ... }`. Successful writes additionally return
 `data.success: true`. Status requests send `reason` only: the current backend's
-optional `inactiveForMs` query field uses `@IsNumber()` without conversion from a
-query string, and its service ignores that value. The local foreground policy
-therefore does not depend on that unsupported numeric query parameter.
+service currently ignores the optional `inactiveForMs` value. The local foreground
+policy therefore does not depend on that value establishing a server lock policy.
 
-## Forgot MPIN and Change MPIN: backend work still needed
+## Forgot MPIN and Change MPIN: six-digit email codes
 
-The required recovery experience uses an email link, not six-digit OTP entry.
-The current backend only has code-based routes and injects `MissingMpinEmailSender`,
-which returns 503. Changing endpoint names in the frontend cannot implement links.
+On 28 October the user approved the backend's existing six-digit email-code flow.
+The existing screens are connected to those routes. `MissingMpinEmailSender` still
+returns 503 until a real backend sender is configured; the app displays that failure
+and does not navigate to code verification as if mail were sent.
 
-Required flow: Forgot MPIN → request email link → open link → backend verifies its
-single-use, expiring, account-bound token → issue reset authorization → create and
-confirm new MPIN → save reset → explicitly unlock with the new PIN.
+Forgot MPIN → Send reset code → Verify six-digit email code → backend reset grant →
+New MPIN → Confirm → Save reset → explicitly unlock with the new PIN.
 
-For Change MPIN, first verify the current PIN, then complete the email-link proof
-before accepting a replacement PIN. A `change-proof` grant cannot directly save a
-new PIN; the backend requires a separate `change` grant.
+Change MPIN → Current PIN → Send/verify email code → backend change grant →
+New MPIN → Confirm → Save change. A current-PIN proof cannot be passed directly to
+the existing `/mpin/change` route. If status explicitly advertises direct change,
+the optional patched `/mpin/change/direct` route supports skipping the code step.
 
-Until these contracts and mail delivery exist, the app shows a short unavailable
-message for change/recovery and allows returning to unlock or logging out. It does
-not request legacy OTP codes or pretend that a recovery link was sent. See
-[the recovery link requirements](mpin-recovery-email-link.md) for the backend ticket.
+The app respects server challenge deadlines, clears temporary proofs on background
+and account changes, and requires a valid reset grant to bypass the old PIN lockout.
+Exhausted code guesses permit resend after its cooldown. Request throttles are
+separate from challenge-attempt exhaustion. See [the current backend checklist](auth-backend-requirements.md).
 
 ## Other endpoint findings
 
@@ -123,13 +146,25 @@ not request legacy OTP codes or pretend that a recovery link was sent. See
   frontend now preserves that distinction when verifying and restoring accounts.
 - Existing account edits use the implemented `PATCH /profile/me`; profile photos
   and contact CRUD routes already match the controller.
-- `DELETE /devices/claim-device/:id` does not exist in the inspected backend.
-  Disconnect now reports unavailability without sending an invented request or
-  clearing the device locally. A release-device contract is still needed.
+- Hardware Disconnect now means unpairing for another account/phone. The frontend
+  targets the required `POST /devices/release` contract and accepts only an explicit
+  ownership-removal response. That endpoint is not yet implemented in the inspected
+  backend; `/devices/disconnect` merely stops a session and is not used as a fallback.
+  See [the backend unpair contract and privacy requirements](HARDWARE_UNPAIR_BACKEND.md).
 - The shared client, profile photo, and contacts requests use the same normalized
   API base URL. Changing the API host does not require editing those services.
 
 ## Validation and release
+
+The 28 October email-code integration passes 225 frontend tests and TypeScript.
+Tests exercise the existing Forgot/Current/Code screen callbacks: mail failure
+does not navigate, a real delivery opens the code step, and only a real server
+grant opens New MPIN. API-contract tests cover send/resend/verify/reset, leading
+zeroes, provider failure and throttles. The optional backend patch builds and
+passes 14 MPIN tests, including recovery while the old PIN is locked.
+See [frontend evidence](qa/mpin-email-code-frontend-tests.txt) and
+[backend evidence](qa/mpin-email-code-backend-tests.txt). These use mocks, not real
+email delivery; inbox/device QA remains pending a configured sender.
 
 Unit checks cover authenticated endpoint bodies, envelopes, cold-start locking,
 background locking, account switching, expiry, request cancellation, and profile
@@ -141,7 +176,7 @@ deployed. This does not verify authenticated setup/unlock or email delivery.
 
 Phone QA must verify setup, confirmation mismatch, existing PIN, reopen/background,
 wrong attempts and lockout, offline retry, and logout. Configure a real backend
-email-link recovery path before a general production rollout to avoid leaving users
+email-code sender before a general production rollout to avoid leaving users
 without self-service recovery.
 
 The inspected backend keeps unlock expiry per account, and ordinary API guards

@@ -1,51 +1,110 @@
-# Authentication and MPIN backend checklist
+# RideGuard backend requirements — current
 
-This lists missing integrations found in this frontend checkout. Existing Google
-Firebase sign-in, `/auth/me`, `/auth/is-old-user` and personal-info onboarding are
-excluded. Confirm their server implementations in the backend repository before
-changing them. The frontend MPIN adapter now calls the backend's `/v1/mpin` routes,
-but its gate remains disabled until recovery email delivery and device testing work.
-The MPIN rows below remain a checklist for backend behavior and deployment.
-The active password reset flow uses `/auth/forgot-password` and a Firebase email
-link. Legacy six-digit reset-code screens remain unavailable because the backend
-does not provide reset-code endpoints.
+Updated 28 October 2026. MPIN recovery uses **six-digit email codes**, not links.
+Registration email verification and Forgot Password keep their existing Firebase
+email-link flows. This checklist excludes the already-reported login outage.
 
-The backend's `MpinModule` currently registers `MissingMpinEmailSender`, so MPIN
-change codes and recovery links cannot be delivered until a real sender is wired.
-Its status response also returns `emergencyAccessAllowed: false`; locked accounts
-cannot use the app's emergency route until the backend explicitly grants that access.
+## 1. Configure the existing MPIN email sender
 
-| Feature | Backend requirement |
-| --- | --- |
-| Create account | Accept username, email and password; validate fields, reject duplicates, create an account compatible with the existing Firebase identity, and return field-specific errors. Never accept password confirmation as a substitute for server validation. |
-| Username/password login | Authenticate credentials and establish Firebase authentication compatible with existing ID-token API requests. Return incorrect-credentials, disabled-account and rate-limit errors. |
-| Password reset | Keep the existing `/auth/forgot-password` Firebase email-link flow, with rate limits, neutral responses for unknown accounts, and clear delivery failures. There is no password-reset OTP contract. |
-| MPIN status | Return configured/unlock status, remaining attempts, lockout expiry, unlock expiry, server time and narrowly scoped emergency permissions for the signed-in account. |
-| Set up MPIN | Save a four-digit MPIN securely for an authenticated eligible account; reject duplicate setup and confirm durable success. |
-| Unlock with MPIN | Verify the MPIN, enforce attempt limits/lockout, and establish any server-side unlock authorization needed by protected APIs. Support authoritative status checks on launch, background return and unlock expiry. A brief interruption keeps access when authorization remains valid; the server chooses the inactivity threshold. |
-| Change MPIN (current PIN known) | Keep this separate from forgotten-MPIN recovery. The existing change-code flow remains the current implementation until a separate decision changes it. |
-| Forgot MPIN by email link | Send a single-use link to the authenticated account's registered email without requiring the old PIN. Redeem it for a reset-only grant. See [the recovery link contract](mpin-recovery-email-link.md), which replaces recovery OTP. |
-| Reset MPIN | Validate the recovery authorization, save the new MPIN, consume the grant and confirm success. |
+- Replace `MissingMpinEmailSender` in `MpinModule` with a working implementation
+  of `MpinEmailSender.sendCode(to, code, purpose)`.
+- Send to the authenticated account's registered, verified email.
+- Support both `change` and `recovery` purposes. Never email/log the MPIN.
+- Return delivery success only after the provider accepts the message; preserve
+  a clear sanitized failure if delivery cannot be requested.
+- The frontend now calls the existing code routes and handles unavailable delivery.
+  No new link endpoints are needed for MPIN.
 
-## Integration contracts
+## 2. Harden the existing recovery and change-code flows
 
-- Provide endpoint paths, request/response schemas and stable error codes for each
-  operation. The server chooses expiry, cooldown and lockout policy; timestamps in
-  the current MPIN adapter are Unix milliseconds.
-- Bind challenges and grants to account, purpose and expiry; consume them atomically
-  and prevent replay. Rate-limit sends, verification, password login and MPIN attempts.
-- Validate Firebase ID tokens for authenticated requests. Store passwords/PINs with
-  appropriate server-side protection; never return or log credentials, codes or grants.
-- Document password and MPIN policies, session/unlock scope, and what happens to
-  existing sessions after password or MPIN reset. Enforce sensitive API access on
-  the server independently of client navigation.
-- Legacy password-reset code screens are not part of the active Firebase link
-  flow. Do not add code endpoints solely to support those old screens.
+- Keep short-lived, account-bound, purpose-bound challenges and hashed codes.
+- Rate-limit initial sends, resends and guesses per account as well as abuse/IP limits.
+- Return stable error codes, `retryAt`, `expiresAt`, `resendAt` and `serverTime` in
+  Unix milliseconds. Distinguish throttling from exhausted guesses on one code.
+- Consume verified challenges and grants atomically. Prevent replay, wrong-account
+  use, stale code use and concurrent reset/change races.
+- Invalidate replaced codes and previous unlock authorizations after PIN replacement.
+- Reject reuse of the existing PIN. Keep failed-attempt counters transactional.
+- A valid email recovery authorization must allow reset despite the old PIN lockout.
+- Avoid invalidating a usable old code before a replacement email has been accepted,
+  or document the failure state clearly so the app can request a new challenge.
 
-See `src/modules/mpin/services/mpin.api.ts` and
-`src/modules/auth/services/password-recovery.ts` for current adapter contracts.
+## 3. Enforce app unlock on sensitive endpoints
 
-The status adapter sends optional `reason` (launch/resume/expiry) and observed
-`inactiveForMs`. Confirm the server's unlock session binding before relying on MPIN
-for server-side access control. Emergency access needs explicit `emergencyAccessAllowed`
-and, for alert details, `emergencyAlertIds`; do not authorize unrelated protected APIs.
+- Issue expiring account-and-device/session-bound unlock grants after MPIN verification.
+- Enforce these on protected data and realtime/media-token endpoints independently
+  of frontend navigation. Explicitly scope setup, recovery and emergency exceptions.
+- Revoke grants after logout, PIN change/reset and device revocation.
+- Scope unlock expiry per installation/session; today's account-wide timestamp is
+  insufficient for multiple-device isolation.
+
+## 4. Persist onboarding progress by UID
+
+- Save the current step and completion state on the server.
+- Return the correct state after reinstall, account switch or sign-in on another phone.
+- Require configured MPIN before accepting onboarding completion.
+- Make profile completion idempotent/reconcilable after a lost response.
+- Do not equate profile existence with completion of every onboarding step.
+
+## 5. Define the inactivity policy
+
+- Return the background inactivity interval and authorization expiry policy.
+- Enforce session expiry on the backend and document how foreground/background
+  context affects it. The current frontend locks immediately on background.
+
+## 6. Add secure phone-authentication contracts
+
+- Enrollment under recent MPIN authorization, device public-key registration,
+  fresh challenge issuance, signature verification and device/key revocation.
+- Verify proofs from Android Keystore keys; do not trust a biometric success Boolean.
+- Issue the same server unlock authorization used by MPIN and preserve MPIN fallback.
+
+## 7. Improve authentication recovery responses
+
+- After correct credential verification, return a structured verification-required
+  response for an unverified account so the app can offer resend.
+- Keep wrong-credential responses generic; do not expose account status beforehand.
+- Check revoked/disabled Firebase credentials for protected endpoints.
+
+## Hardware release for another account
+
+The hardware Disconnect button now requests **unpairing**, not a temporary offline
+state. Add the explicit `/devices/release` contract and ownership-isolated alert/media
+handling described in [hardware unpairing requirements](HARDWARE_UNPAIR_BACKEND.md).
+The existing `/devices/disconnect` does not clear ownership and is insufficient.
+This is a backend dependency; the app cannot complete cross-account transfer yet.
+
+## Existing MPIN routes connected in the app
+
+The base URL already contains `/v1`. All requests below use a Firebase Bearer token.
+
+| Operation | Route | JSON body |
+|---|---|---|
+| Current PIN proof | POST `/mpin/change/authorize` | `{ pin }` |
+| Send change code | POST `/mpin/change/code` | `{ authorization }` |
+| Resend change code | POST `/mpin/change/code/resend` | `{ challengeId }` |
+| Verify change code | POST `/mpin/change/code/verify` | `{ challengeId, code }` |
+| Save new PIN | POST `/mpin/change` | `{ authorization, pin }` |
+| Send recovery code | POST `/mpin/recovery/code` | No body |
+| Resend recovery code | POST `/mpin/recovery/code/resend` | `{ challengeId }` |
+| Verify recovery code | POST `/mpin/recovery/code/verify` | `{ challengeId, code }` |
+| Save reset PIN | POST `/mpin/recovery/reset` | `{ authorization, pin }` |
+
+Send responses must supply a real challenge ID, masked destination, expiry and
+resend deadline. Verification returns a short-lived authorization token; only that
+server authorization allows New/Confirm. The app does not collect an arbitrary
+recovery email, invent a challenge or mark a PIN reset successful locally.
+
+An optional tested backend patch adds `/mpin/change/direct` for Current PIN → New
+PIN without email codes. The app uses it only when backend status explicitly returns
+`directChangeEnabled: true`. Until then, Change MPIN uses the existing code flow.
+The patch also hardens setup, attempts, grants, PIN reuse and revocation checks.
+See [the backend patch](patches/rideguard-node-auth-mpin.patch).
+
+## QA before enabling delivery in production
+
+Test accepted and failed mail delivery, wrong/expired/replaced codes, cooldown,
+exhausted attempts, wrong account/purpose, replay, concurrent requests, a locked
+old PIN followed by successful recovery, network loss during resend/save, and
+reinstallation/multiple devices. Real email delivery is still unverified until
+an actual sender is configured and tested.

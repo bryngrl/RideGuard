@@ -1,5 +1,9 @@
 # Forgot MPIN recovery by email link
 
+> Superseded on 28 October 2026: the user approved six-digit MPIN email codes.
+> This document is historical, not the current backend request. Use
+> [the current checklist](auth-backend-requirements.md) and [MPIN flow](MPIN_USER_FLOW.md).
+
 ## Decision and scope
 
 When a user **forgets their MPIN**, RideGuard sends a single-use verification

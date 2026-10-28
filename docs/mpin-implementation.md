@@ -1,5 +1,9 @@
 # MPIN frontend — feat/mpin
 
+> Updated decision, 28 October 2026: MPIN email-code routes are now connected in
+> the existing screens. The backend still needs a real mail sender. The older
+> email-link plan below is superseded by [the current flow](MPIN_USER_FLOW.md).
+
 > **Current integration (2026-10-25):** Setup and unlock are now connected and enabled.
 > Cold launch and background return require MPIN for the signed-in account.
 > Email-link change/recovery remain unavailable because the current backend only
