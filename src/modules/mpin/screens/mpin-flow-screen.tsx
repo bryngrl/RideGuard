@@ -9,22 +9,20 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { PinPad } from "@/shared/ui/pin-pad";
 import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
-import { AuthFormLayout } from "@/shared/ui/auth-form-layout";
-import { EmailLinkContent } from "@/shared/ui/email-link-content";
 
 import { MpinLayout, mpinStyles as styles } from "../components/mpin-layout";
 import { MpinUnlockExperience } from "../components/mpin-unlock-experience";
 import { useMpinRequest } from "../hooks/use-mpin-request";
 import { MpinError, mpinApi, setupAndUnlockMpin, type MpinMode, type MpinStatus } from "../services/mpin.api";
 import { useMpinStore } from "../store/mpin.store";
-import { isCompleteMpin, validAuthorization } from "../utils/mpin-policy";
+import { isCompleteMpin, isMpinEntryBlocked, validAuthorization } from "../utils/mpin-policy";
 
 const stepCopy: Record<string, { title: string; description: string }> = {
   intro: { title: "Secure your RideGuard account", description: "Create a 4-digit MPIN for quick and secure access to your account." },
   create: { title: "Create your MPIN", description: "Choose a 4-digit PIN to secure your account." },
   confirm: { title: "Confirm your MPIN", description: "Re-enter your 4-digit MPIN to confirm." },
   unlock: { title: "Enter your MPIN", description: "Enter your 4-digit PIN to continue." },
-  current: { title: "Enter current MPIN", description: "Verify your current MPIN. We'll then send a confirmation code to your registered email." },
+  current: { title: "Enter current MPIN", description: "Verify your current MPIN before choosing a new one." },
   forgot: { title: "Forgot your MPIN?", description: "Verify your identity using your registered email address to reset your MPIN." },
   "verify-identity": { title: "Verify your email", description: "Enter the 6-digit code sent to your registered email." },
   status: { title: "Checking your MPIN", description: "We'll check whether your account needs MPIN setup or unlocking." },
@@ -63,6 +61,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   const [codeBlocked, setCodeBlocked] = useState(false);
   const [resendBlocked, setResendBlocked] = useState(false);
   const [codeRetryAt, setCodeRetryAt] = useState<number | null>(null);
+  const [requestRetryAt, setRequestRetryAt] = useState(0);
   const navigating = useRef(false);
   const focused = useRef(false);
   const checkedOwner = useRef<string | null>(null);
@@ -88,6 +87,16 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
         setCodeRetryAt(reason.retryAt && Number.isFinite(reason.retryAt) ? reason.retryAt : null);
       }
       if (reason.code === "code-used") useMpinStore.getState().invalidateAuthorization();
+      if (reason.code === "request-limit" || reason.code === "resend-cooldown") {
+        // The current backend sometimes omits retryAt. Apply a local minimum
+        // without treating a request throttle as exhausted verification attempts.
+        setRequestRetryAt(reason.retryAt ?? Date.now() + 60_000);
+      }
+      if (step === "verify-identity" && ["network", "timeout", "email-delivery-unavailable"].includes(reason.code)) {
+        // A resend may replace the old challenge before email delivery fails.
+        useMpinStore.getState().clearFlow();
+        task.setError("Code request unconfirmed. Request a new code.");
+      }
       if (step === "confirm" && ["network", "timeout"].includes(reason.code)) {
         useMpinStore.getState().invalidateAuthorization();
         useMpinStore.getState().invalidateStatus();
@@ -122,7 +131,9 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     const subscription = AppState.addEventListener("change", (appState) => {
       if (appState !== "active") {
         setPin("");
-        task.setError("MPIN entry cleared. Start again.");
+        // Backgrounding clears sensitive input as normal lifecycle behavior.
+        // It is not a failed PIN attempt and should not show a red error.
+        task.setError(null);
       }
       setNow(Date.now());
     });
@@ -136,14 +147,18 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   const blocked = cooldownSeconds > 0 || locked || !!state.status?.locked || state.status?.remainingAttempts === 0;
   const grant = state.authorization;
   const authorized = validAuthorization(grant, now) && grant.mode === mode;
+  // Recovery verifies email independently of the old PIN's guessing lockout.
+  const entryBlocked = isMpinEntryBlocked(blocked, mode, grant, now);
   useEffect(() => {
     if (focused.current && grant && !validAuthorization(grant, now) && !task.loading) {
       useMpinStore.getState().invalidateAuthorization();
     }
   }, [grant, now, task.loading]);
   const realOwner = !!user && state.owner === user.uid;
+  const directChange = realOwner && state.status?.directChangeEnabled === true;
   const setupAllowed = realOwner && state.status?.configured === false;
-  const canCreate = preview || (mpinApi.enabled && (mode === "setup" ? setupAllowed : mpinApi.emailLinksEnabled && realOwner && authorized));
+  const canCreate = preview || (mpinApi.enabled && (mode === "setup" ? setupAllowed :
+    (mode === "change" ? directChange || mpinApi.emailCodesEnabled : mpinApi.emailCodesEnabled) && realOwner && authorized));
   const draft = state.draft?.mode === mode ? state.draft : null;
   const mandatory = !preview && mpinApi.enabled && realOwner &&
     (state.status === null || !state.status.configured || !state.unlocked);
@@ -159,6 +174,10 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   useFocusEffect(useCallback(() => {
     if (step === "login" || step === "unlock") return;
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (step === "forgot" && !task.isPending()) {
+        go("login", "setup", true);
+        return true;
+      }
       if (task.isPending() || cannotBack || step === "success") return true;
       useMpinStore.getState().clearDraft();
       return false;
@@ -183,7 +202,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     setPin("");
     if (onboarding) { finishOnboarding(); return; }
     navigating.current = true;
-    router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
+    router.dismissTo((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
   };
 
   const receiveStatus = (status: MpinStatus) => {
@@ -195,40 +214,40 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     else {
       if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
-      router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
+      router.dismissTo((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
   };
   const checkStatus = () => {
     if (useMpinStore.getState().checkingStatus) return;
     return task.run(mpinApi.status, receiveStatus);
   };
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if ((step === "status" || step === "manage") && mpinApi.enabled && user &&
       realOwner && !state.checkingStatus && (step === "manage" || !state.status) && checkedOwner.current !== user.uid) {
       checkedOwner.current = user.uid;
       void checkStatus();
     }
-  }, [step, user?.uid, realOwner, state.checkingStatus]);
+  }, [step, user?.uid, realOwner, state.checkingStatus]));
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (step !== "status" || !state.status || state.checkingStatus || navigating.current || task.loading) return;
     if (!state.status.configured) go("intro", "setup", true);
     else if (!state.unlocked) go("login", "setup", true);
     else {
       if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
-      router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
+      router.dismissTo((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
-  }, [step, state.status, state.unlocked, state.checkingStatus, task.loading]);
+  }, [step, state.status, state.unlocked, state.checkingStatus, task.loading]));
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     if (!preview && mpinApi.enabled && realOwner && (step === "login" || step === "unlock") &&
       state.unlocked && !state.checkingStatus && !navigating.current) {
       if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
-      router.replace((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
+      router.dismissTo((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
     }
-  }, [step, preview, realOwner, state.unlocked, state.checkingStatus]);
+  }, [step, preview, realOwner, state.unlocked, state.checkingStatus]));
 
   const showSuccess = (setupStatus?: MpinStatus) => {
     if (mode === "setup" && (!user || !setupStatus ||
@@ -249,7 +268,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   };
 
   const onPinComplete = (value: string) => {
-    if (task.loading || !isCompleteMpin(value) || blocked) return;
+    if (task.loading || !isCompleteMpin(value) || entryBlocked || Date.now() < requestRetryAt) return;
     if (step === "create") {
       if (!canCreate || !useMpinStore.getState().setDraft(value, mode)) return;
       setPin("");
@@ -276,7 +295,8 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
         }
         const authorization = useMpinStore.getState().authorization;
         if (!validAuthorization(authorization) || authorization.mode !== mode) throw new MpinError("expired-authorization");
-        return mode === "change" ? mpinApi.change(token, authorization.token, value, signal) : mpinApi.reset(token, authorization.token, value, signal);
+        return mode === "change" ? (directChange ? mpinApi.changeDirect : mpinApi.change)(token, authorization.token, value, signal)
+          : mpinApi.reset(token, authorization.token, value, signal);
       }, (response) => {
         if (response?.success !== true) throw new MpinError("failed");
         showSuccess("status" in response ? response.status as MpinStatus : undefined);
@@ -290,7 +310,14 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     }
     if (!realOwner || !state.status?.configured || !mpinApi.enabled) return;
     if (step === "current") {
-      if (!mpinApi.emailLinksEnabled) { task.setError("MPIN changes are currently unavailable."); return; }
+      if (!directChange && !mpinApi.emailCodesEnabled) { task.setError("MPIN changes are currently unavailable."); return; }
+      if (directChange) {
+        void task.run((token, signal) => mpinApi.authorizeChange(token, value, signal), (proof) => {
+          if (!useMpinStore.getState().setAuthorization(proof, "change")) throw new MpinError("expired-authorization");
+          setPin(""); go("create", "change");
+        });
+        return;
+      }
       void task.run(async (token, signal) => {
         // Current-PIN proof can request email verification, never change the PIN.
         const proof = await mpinApi.authorizeChange(token, value, signal);
@@ -313,11 +340,13 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   };
 
   const requestRecovery = () => {
-    if (!mpinApi.emailLinksEnabled) { task.setError("MPIN recovery is currently unavailable."); return; }
+    if (Date.now() < requestRetryAt) return;
+    if (!mpinApi.emailCodesEnabled) { task.setError("MPIN recovery is currently unavailable."); return; }
     if (preview) { task.setError("Recovery unavailable. No code sent."); return; }
     void task.run(mpinApi.requestRecovery, (delivery) => {
       if (!useMpinStore.getState().setDelivery(delivery)) throw new MpinError("failed");
-      go("verify-identity", "reset");
+      setPin(""); setCodeBlocked(false); setResendBlocked(false); setCodeRetryAt(null); setResent(false);
+      go("verify-identity", "reset", step === "verify-identity");
     });
   };
 
@@ -325,11 +354,12 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   const resendSeconds = delivery ? Math.max(0, Math.ceil((delivery.resendAt - now) / 1000)) : 0;
   const deliveryExpired = !!delivery && now >= delivery.expiresAt;
   const codeRetrySeconds = codeRetryAt ? Math.max(0, Math.ceil((codeRetryAt - now) / 1000)) : 0;
+  const requestRetrySeconds = Math.max(0, Math.ceil((requestRetryAt - now) / 1000));
   const resendRestricted = resendBlocked && (!codeRetryAt || codeRetrySeconds > 0);
   const verifyIdentity = (code: string) => {
-    if (!mpinApi.emailLinksEnabled) { task.setError("Email-link verification is unavailable."); return; }
+    if (!mpinApi.emailCodesEnabled) { task.setError("Email verification is unavailable."); return; }
     if (preview) { setPin(""); task.setError("Verification unavailable. No code sent."); return; }
-    if (codeBlocked || task.isPending()) return;
+    if (codeBlocked || task.isPending() || requestRetrySeconds) return;
     if (!delivery || code.length !== 6 || deliveryExpired) { setPin(""); task.setError("Code expired. Request a new one."); return; }
     const purpose = mode === "change" ? "change" : "reset";
     void task.run((token, signal) => mode === "change"
@@ -340,8 +370,8 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     });
   };
   const resend = () => {
-    if (!mpinApi.emailLinksEnabled) { task.setError("Email-link verification is unavailable."); return; }
-    if (resendSeconds || task.isPending() || resendRestricted || (codeBlocked && (!codeRetryAt || codeRetrySeconds > 0))) return;
+    if (!mpinApi.emailCodesEnabled) { task.setError("Email verification is unavailable."); return; }
+    if (resendSeconds || task.isPending() || resendRestricted || requestRetrySeconds) return;
     if (!delivery) {
       if (mode === "change") go("current", "change", true);
       else requestRecovery();
@@ -368,7 +398,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
 
   if (sessionExpired || accountDisabled) return <MpinLayout onboarding={onboarding} title={accountDisabled ? "Account unavailable" : "Log in again"}
     description={accountDisabled ? "Account disabled. Contact support." : "Your session has expired. Log in with your account before using MPIN."}>
-    <View style={styles.actions}><Button title="Log out and log in" onPress={logOut} />{emergencyAction}</View>
+    <View style={styles.actions}><Button title="Log in again" onPress={logOut} />{emergencyAction}</View>
   </MpinLayout>;
 
   if (step === "login" || step === "unlock") {
@@ -377,11 +407,10 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
       ? (cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it.")
       : task.error ?? (!entryAllowed ? "Check your MPIN status before continuing." : null);
     return <MpinUnlockExperience value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
-      initialEntry isPending={task.isPending} busy={task.loading} disabled={!!blocked || !entryAllowed}
+      initialEntry isPending={task.isPending} busy={task.loading} disabled={!!blocked || !entryAllowed || requestRetrySeconds > 0}
       error={message} errorVersion={errorVersion} preview={preview} onExit={mandatory ? undefined : back}
       onForgot={() => { useMpinStore.getState().clearFlow(); go("forgot", "reset"); }}
-      onCheckStatus={!preview && (blocked || !entryAllowed) ? () => go("status", mode, true) : undefined}
-      footer={mandatory ? <>{emergencyAction}<Button title="Log out" variant="ghost" onPress={logOut} /></> : undefined} />;
+      footer={mandatory ? emergencyAction : undefined} />;
   }
 
   if (step === "manage" || step === "status") {
@@ -391,8 +420,8 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
       <View style={styles.actions}>
         {!unavailable && <Button title={state.status?.configured ? "Change MPIN" : "Set Up MPIN"}
           disabled={!state.status || task.loading || state.checkingStatus} onPress={() => go(state.status?.configured ? "current" : "intro", state.status?.configured ? "change" : "setup")} />}
-        {!unavailable && <Button title="Check MPIN status" variant="outline" onPress={checkStatus} disabled={task.loading || state.checkingStatus} />}
-        {mandatory && <>{emergencyAction}<Button title="Log out" variant="ghost" onPress={logOut} /></>}
+        {!unavailable && task.error && <Button title="Try again" variant="outline" onPress={checkStatus} disabled={task.loading || state.checkingStatus} />}
+        {mandatory && emergencyAction}
       </View>
     </MpinLayout>;
   }
@@ -403,7 +432,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     return <MpinLayout onboarding={onboarding} title={confirmed || preview ? title : "No MPIN change confirmed"} success={confirmed || preview} preview={preview}
       description={confirmed || preview ? (mode === "setup" ? "Your MPIN is ready. You can now securely access RideGuard." : mode === "change" ? "Your MPIN has been updated. Use your new MPIN the next time verification is required." : "Your new MPIN is ready to use.") : "Check your account's MPIN status before continuing."}>
       <View style={styles.actions}>
-        <Button title={preview ? "Back to MPIN previews" : confirmed ? (mode === "change" ? "Done" : mode === "setup" ? "Continue to RideGuard" : "Continue") : "Check MPIN status"}
+        <Button title={preview ? "Back to MPIN previews" : confirmed ? (mode === "change" ? "Done" : mode === "setup" ? "Continue to RideGuard" : "Continue") : "Try again"}
           onPress={() => preview ? go("manage", mode, true) : confirmed ? goHome() : go("status", mode, true)} />
       </View>
     </MpinLayout>;
@@ -413,26 +442,25 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     error={!preview && !setupAllowed ? "Check MPIN status before setup." : task.error}>
     <View style={styles.actions}>
       <Button title="Set Up MPIN" disabled={!preview && !setupAllowed} onPress={() => go("create", "setup")} />
-      {!preview && !setupAllowed && <Button title="Check MPIN status" variant="outline" onPress={() => go("status", mode, true)} />}
-      {mandatory && <>{emergencyAction}<Button title="Log out" variant="ghost" onPress={logOut} /></>}
+      {!preview && !setupAllowed && <Button title="Try again" variant="outline" onPress={() => go("status", mode, true)} />}
+      {mandatory && emergencyAction}
     </View>
   </MpinLayout>;
 
-  if (step === "forgot") return <AuthFormLayout title="Check your email"
-    description={<>Verification link for{"\n"}<Text style={{ color: theme.accent }}>{user?.email}</Text></>}
-    onBack={() => go("login", "setup", true)} backDisabled={task.loading}>
-    <EmailLinkContent instruction="Verify your email before creating a new MPIN."
-      status="MPIN recovery links are currently unavailable." waiting={false}
-      action="Send verification link" disabled onResend={() => undefined} />
-  </AuthFormLayout>;
+  if (step === "forgot") return <MpinLayout onboarding={onboarding} {...stepCopy.forgot}
+    error={task.error} busy={task.loading}>
+    <Text style={[styles.note, { color: theme.textMuted }]}>We'll send a six-digit code to</Text>
+    <Text style={[styles.note, { color: theme.accent }]}>{user?.email}</Text>
+    <Button title={requestRetrySeconds ? `Try again in ${requestRetrySeconds}s` : "Send reset code"} onPress={requestRecovery} isLoading={task.loading}
+      disabled={!user?.email || !mpinApi.emailCodesEnabled || requestRetrySeconds > 0} style={styles.secondary} />
+  </MpinLayout>;
 
-  if (!mpinApi.emailLinksEnabled && ["current", "verify-identity"].includes(step)) {
+  if (!mpinApi.emailCodesEnabled && (step === "verify-identity" || step === "current" && !directChange)) {
     return <MpinLayout onboarding={onboarding} title={mode === "change" ? "Change MPIN" : "Forgot your MPIN?"}
-      description="Email-link verification is currently unavailable." error={task.error}>
+      description="Email verification is currently unavailable." error={task.error}>
       <View style={styles.actions}>
         <Button title={mandatory ? "Back to Enter MPIN" : "Back to MPIN settings"}
           onPress={() => go(mandatory ? "login" : "manage", "setup", true)} />
-        <Button title="Log out" variant="ghost" onPress={logOut} />
       </View>
     </MpinLayout>;
   }
@@ -447,10 +475,10 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     <VerificationCodeInput value={pin} onChange={(value) => { setPin(value); task.setError(null); }}
       disabled={task.loading || codeBlocked || (!preview && (!delivery || deliveryExpired))} error={!!task.error || deliveryExpired} />
     <Button title="Verify code" onPress={() => { Keyboard.dismiss(); verifyIdentity(pin); }} isLoading={task.loading}
-      disabled={codeBlocked || pin.length !== 6 || (!preview && (!delivery || deliveryExpired))} style={styles.secondary} />
-    <Button title={codeRetrySeconds ? `Try again in ${codeRetrySeconds}s` : resendSeconds ? `Resend in ${resendSeconds}s` : !delivery && mode === "change" && !preview ? "Verify current MPIN again" : "Resend Code"} variant="ghost"
+      disabled={codeBlocked || requestRetrySeconds > 0 || pin.length !== 6 || (!preview && (!delivery || deliveryExpired))} style={styles.secondary} />
+    <Button title={requestRetrySeconds ? `Try again in ${requestRetrySeconds}s` : codeRetrySeconds ? `Try again in ${codeRetrySeconds}s` : resendSeconds ? `Resend in ${resendSeconds}s` : !delivery && mode === "change" && !preview ? "Verify current MPIN again" : "Resend Code"} variant="ghost"
       onPress={preview ? () => task.setError("No email is sent in this design preview.") : resend}
-      disabled={task.loading || resendSeconds > 0 || resendRestricted || (codeBlocked && (!codeRetryAt || codeRetrySeconds > 0))} style={styles.secondary} />
+      disabled={task.loading || resendSeconds > 0 || resendRestricted || requestRetrySeconds > 0} style={styles.secondary} />
     {mandatory && emergencyAction}
   </MpinLayout>;
 
@@ -463,20 +491,19 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
     const title = step === "create" && mode !== "setup" ? "Create new MPIN" : step === "confirm" && mode !== "setup" ? "Confirm new MPIN" : copy.title;
     return <MpinLayout onboarding={onboarding} title={title} description={copy.description} onBack={cannotBack ? undefined : back} preview={preview}
       error={task.error ?? unavailableMessage} busy={task.loading}>
-      {blocked && <Text accessibilityRole="alert" style={[styles.note, { color: theme.error }]}>
+      {entryBlocked && <Text accessibilityRole="alert" style={[styles.note, { color: theme.error }]}>
         {cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it."}
       </Text>}
       <PinPad value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
-        disabled={task.loading || blocked || !entryAllowed || needsDraft} error={!!task.error || blocked} errorVersion={errorVersion} />
-      {(step === "confirm" || !entryAllowed) && <Button title={canCreate ? "Start again" : mode === "setup" ? "Check MPIN status" : "Verify identity again"}
+        disabled={task.loading || entryBlocked || !entryAllowed || needsDraft || requestRetrySeconds > 0} error={!!task.error || entryBlocked} errorVersion={errorVersion} />
+      {(step === "confirm" || !entryAllowed) && <Button title={canCreate ? "Start again" : mode === "setup" ? "Try again" : "Verify identity again"}
         variant="ghost" disabled={task.loading} style={styles.secondary} onPress={() => {
           useMpinStore.getState().clearDraft();
           go(canCreate ? "create" : mode === "setup" ? "status" : mode === "change" ? "current" : "forgot", mode, true);
         }} />}
-      {step === "confirm" && !preview && <Button title="Check MPIN status" variant="ghost" style={styles.secondary} disabled={task.loading} onPress={() => go("status", mode, true)} />}
       {(step === "unlock" || step === "current") && recoveryAction}
-      {blocked && <Button title="Check MPIN status" variant="outline" style={styles.secondary} disabled={task.loading} onPress={() => go("status", mode, true)} />}
-      {mandatory && <View style={styles.actions}>{emergencyAction}<Button title="Log out" variant="ghost" onPress={logOut} /></View>}
+      {entryBlocked && <Button title="Try again" variant="outline" style={styles.secondary} disabled={task.loading} onPress={() => go("status", mode, true)} />}
+      {mandatory && emergencyAction && <View style={styles.actions}>{emergencyAction}</View>}
     </MpinLayout>;
   }
 

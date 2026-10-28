@@ -22,8 +22,9 @@ import { FormFeedback } from "@/shared/ui/form-feedback";
 
 import { checkIsOldUser, ensureEmailPasswordProfile, loginAccount } from "../services/auth.api";
 import { postAuthDestination } from "../services/registration-progress";
-import { authErrorMessage, isUnverifiedAccount } from "../utils/auth-errors";
+import { authErrorMessage, isUnverifiedAccount, unverifiedAccountEmail } from "../utils/auth-errors";
 import { useAuthStore } from "../store/auth.store";
+import { isTemporarySessionFailure } from "../utils/session-errors";
 
 import { styles } from "./login-screen.styles";
 
@@ -86,8 +87,8 @@ export default function LoginScreen() {
       useAuthStore.getState().setIsOldUser(hasProfile);
       router.replace(destination);
     } catch (error) {
-      if (signedInWithPassword) await signOut(auth).catch(() => undefined);
-      if (isUnverifiedAccount(error)) setVerificationEmail(username.includes("@") ? username.trim().toLowerCase() : "");
+      if (signedInWithPassword && !isTemporarySessionFailure(error)) await signOut(auth).catch(() => undefined);
+      if (isUnverifiedAccount(error)) setVerificationEmail(unverifiedAccountEmail(error, username));
       setCredentialError(authErrorMessage(error, "login"));
     } finally {
       credentialPending.current = false;

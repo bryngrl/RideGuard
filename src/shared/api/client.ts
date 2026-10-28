@@ -87,7 +87,9 @@ export class APIClient {
           : "Server error. Try again.";
       }
 
-      throw new APIError(message, response.status, data);
+      // Keep only the route, never credentials, query values, or response data,
+      // available to callers that need to diagnose a failed request.
+      throw new APIError(message, response.status, data, endpoint.split("?")[0]);
     }
 
     return data as T;

@@ -13,6 +13,8 @@ export type MpinStatus = {
   emergencyAccessAllowed?: boolean;
   emergencyAlertIds?: string[];
   serverTime?: number;
+  /** Advertised only by a backend that supports atomic current-PIN changes. */
+  directChangeEnabled?: boolean;
 };
 export type MpinAuthorization = { token: string; expiresAt: number; serverTime?: number };
 export type MpinStatusContext = { reason: "launch" | "resume" | "expiry"; inactiveForMs?: number };
@@ -20,7 +22,7 @@ export type MpinDelivery = { challengeId: string; expiresAt: number; resendAt: n
 export type MpinErrorCode = "unavailable" | "incorrect-pin" | "invalid-code" | "expired-code" |
   "locked" | "expired-session" | "expired-authorization" | "already-configured" | "policy" | "network" | "timeout" | "failed" |
   "account-disabled" | "email-unavailable" | "email-unverified" | "email-delivery-unavailable" |
-  "code-used" | "code-replaced" | "attempt-limit" | "resend-cooldown" | "resend-limit";
+  "code-used" | "code-replaced" | "attempt-limit" | "resend-cooldown" | "resend-limit" | "request-limit";
 
 export class MpinError extends Error {
   constructor(public readonly code: MpinErrorCode, public readonly retryAt?: number, public remoteStatus?: MpinStatus) {
@@ -32,8 +34,8 @@ export class MpinError extends Error {
 export interface MpinBackend {
   /** The server is authoritative for setup, unlock, and all PIN changes. */
   enabled: boolean;
-  /** Recovery and change remain unavailable until backend email links exist. */
-  emailLinksEnabled: boolean;
+  /** Existing authenticated six-digit email-code endpoints are connected. */
+  emailCodesEnabled: boolean;
   status: (authToken: string, signal: AbortSignal, context?: MpinStatusContext) => Promise<MpinStatus>;
   create: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
   unlock: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
@@ -42,6 +44,7 @@ export interface MpinBackend {
   resendChangeCode: (authToken: string, challengeId: string, signal: AbortSignal) => Promise<MpinDelivery>;
   verifyChangeCode: (authToken: string, challengeId: string, code: string, signal: AbortSignal) => Promise<MpinAuthorization>;
   change: (authToken: string, authorization: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
+  changeDirect: (authToken: string, authorization: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
   requestRecovery: (authToken: string, signal: AbortSignal) => Promise<MpinDelivery>;
   resendRecovery: (authToken: string, challengeId: string, signal: AbortSignal) => Promise<MpinDelivery>;
   verifyRecovery: (authToken: string, challengeId: string, code: string, signal: AbortSignal) => Promise<MpinAuthorization>;
@@ -80,7 +83,9 @@ function asMpinError(error: unknown, operation: Operation): MpinError {
       const retryAt = retryAtFrom(error);
       if (message.includes("mpin is locked")) return new MpinError("locked", retryAt);
       if (message.includes("cannot be resent yet")) return new MpinError("resend-cooldown", retryAt);
-      return new MpinError(operation.includes("resend") || message.includes("resent") ? "resend-limit" : "attempt-limit", retryAt);
+      if (message.includes("code attempts")) return new MpinError("attempt-limit", retryAt);
+      if (message.includes("resent") || message.includes("resend limit")) return new MpinError("resend-limit", retryAt);
+      return new MpinError("request-limit", retryAt);
     }
     if (error.status === 400 && message.includes("not configured")) return new MpinError("unavailable");
     if (error.status === 400 && message.includes("invalid challenge")) return new MpinError("expired-code");
@@ -111,13 +116,13 @@ const base = "/mpin";
 export const mpinApi: MpinBackend = {
   // Setup and unlock do not depend on email delivery.
   enabled: true,
-  emailLinksEnabled: false,
+  emailCodesEnabled: true,
   status: (token, signal, context) => {
     const params = new URLSearchParams();
     if (context) {
       params.set("reason", context.reason);
-      // Nest's current DTO uses @IsNumber without query-string transformation.
-      // The server ignores this optional value; never send a string that fails validation.
+      // The current service ignores inactivity context; do not imply that this
+      // client-selected value establishes a server-side inactivity policy.
     }
     const query = params.toString();
     return request("status", `${base}/status${query ? `?${query}` : ""}`, token, signal);
@@ -141,6 +146,7 @@ export const mpinApi: MpinBackend = {
   resendChangeCode: (token, challengeId, signal) => request("resendChangeCode", `${base}/change/code/resend`, token, signal, { challengeId }),
   verifyChangeCode: (token, challengeId, code, signal) => request("verifyChangeCode", `${base}/change/code/verify`, token, signal, { challengeId, code }),
   change: (token, authorization, pin, signal) => request("change", `${base}/change`, token, signal, { authorization, pin }),
+  changeDirect: (token, authorization, pin, signal) => request("change", `${base}/change/direct`, token, signal, { authorization, pin }),
   requestRecovery: (token, signal) => request("requestRecovery", `${base}/recovery/code`, token, signal),
   resendRecovery: (token, challengeId, signal) => request("resendRecovery", `${base}/recovery/code/resend`, token, signal, { challengeId }),
   verifyRecovery: (token, challengeId, code, signal) => request("verifyRecovery", `${base}/recovery/code/verify`, token, signal, { challengeId, code }),
@@ -185,6 +191,7 @@ export function mpinErrorMessage(error: unknown): string {
       case "attempt-limit": return "Too many code attempts. Try again later.";
       case "resend-cooldown": return "Wait before requesting another code.";
       case "resend-limit": return "Code limit reached. Try again later.";
+      case "request-limit": return "Too many requests. Try again shortly.";
     }
   }
   if (error instanceof TypeError) return "Connection lost. Check your internet.";

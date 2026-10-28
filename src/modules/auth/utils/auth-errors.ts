@@ -13,6 +13,14 @@ export function isUnverifiedAccount(error: unknown): boolean {
     /email.{0,20}not verified|verify your email/i.test(error.message);
 }
 
+export function unverifiedAccountEmail(error: unknown, identifier: string): string {
+  if (!isUnverifiedAccount(error)) return "";
+  const data = (error as APIError).data;
+  const email = data && typeof data === "object" && "email" in data ? data.email : undefined;
+  return typeof email === "string" && /^[^\s@]+@[^\s@]+$/.test(email.trim())
+    ? email.trim().toLowerCase() : identifier.includes("@") ? identifier.trim().toLowerCase() : "";
+}
+
 export function authErrorMessage(error: unknown, action: "login" | "register" | "status"): string {
   const code = codeOf(error);
   if (code === "auth/network-request-failed" || error instanceof TypeError) {
@@ -40,7 +48,10 @@ export function authErrorMessage(error: unknown, action: "login" | "register" | 
     }
     if (error.status === 400) return "Check your account details and try again.";
   }
-  if (error instanceof APIError && error.status >= 500 || error instanceof APIError && error.status === 404) {
+  if (error instanceof APIError && error.status >= 500) {
+    return "Service unavailable. Try again shortly.";
+  }
+  if (error instanceof APIError && error.status === 404) {
     return "Request failed. Try again.";
   }
   return action === "status"

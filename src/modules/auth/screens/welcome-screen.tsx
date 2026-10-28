@@ -1,7 +1,7 @@
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { BrandNameReveal } from "@/components/brand-name-reveal";
 import { BrandLockup } from "@/components/brand-lockup";
-import { BrandColors, Spacing } from "@/shared/theme";
+import { actionFooterPadding, BrandColors, Spacing } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -18,7 +18,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 const SIGNAL_RING_SIZES = [0.811, 0.94, 1.08] as const;
@@ -66,6 +66,7 @@ type WelcomeScreenProps = {
 };
 
 export default function WelcomeScreen({ startup = false, showLanding = true }: WelcomeScreenProps) {
+  const { bottom } = useSafeAreaInsets();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
   const reduceMotion = useReducedMotion();
@@ -226,7 +227,7 @@ export default function WelcomeScreen({ startup = false, showLanding = true }: W
           <BrandLockup />
         )}
       </Animated.View>
-      <Animated.View style={[styles.actions, revealMotion]} pointerEvents={showLanding ? "auto" : "none"}>
+      <Animated.View style={[styles.actions, { bottom: actionFooterPadding(bottom) }, revealMotion]} pointerEvents={showLanding ? "auto" : "none"}>
         <View style={styles.actionContent}>
           <Button
             title="Log in"

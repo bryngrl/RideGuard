@@ -14,9 +14,15 @@ export function validAuthorization(value: MpinAuthorization | null, now = Date.n
     Number.isFinite(value.expiresAt) && localDeadline(value.expiresAt, value.serverTime, now) > now;
 }
 
+export function isMpinEntryBlocked(blocked: boolean, mode: string,
+  authorization: (MpinAuthorization & { mode: "change" | "reset" }) | null, now = Date.now()): boolean {
+  return blocked && !(mode === "reset" && authorization?.mode === "reset" && validAuthorization(authorization, now));
+}
+
 export function validMpinStatus(value: MpinStatus): boolean {
   return !!value && typeof value.configured === "boolean" && typeof value.requiresUnlock === "boolean" &&
     (value.locked === undefined || typeof value.locked === "boolean") &&
+    (value.directChangeEnabled === undefined || typeof value.directChangeEnabled === "boolean") &&
     (value.emergencyAccessAllowed === undefined || typeof value.emergencyAccessAllowed === "boolean") &&
     (value.emergencyAlertIds === undefined || (Array.isArray(value.emergencyAlertIds) && value.emergencyAlertIds.every((id) => typeof id === "string" && id.length > 0))) &&
     (value.serverTime === undefined || Number.isFinite(value.serverTime)) &&
@@ -61,9 +67,42 @@ export function canAccessMpinEmergency(segments: readonly string[], status: Mpin
 // Only existing app destinations may be resumed after unlocking; never accept
 // arbitrary external URLs or recovery routes as a post-verification destination.
 export function safeReturnPath(value: string): string {
+  if (/^\/devices\/(?:camera(?:\/camera-preview)?|button(?:\/test-page)?)\?source=settings(?:&camera=[12])?$/.test(value)) return value;
+  // Contact data already lives in this route's params. Keep it in memory when
+  // the security screen is pushed, so returning never creates an empty contact.
+  if (value.startsWith("/contact/edit-contact?")) {
+    try {
+      const pairs = value.slice(value.indexOf("?") + 1).split("&");
+      const allowed = ["contactId", "contactName", "phoneNumber", "relationship", "profileImage"];
+      const keys = new Set<string>();
+      for (const pair of pairs) {
+        const [key, ...parts] = pair.split("=");
+        const decoded = decodeURIComponent(parts.join("="));
+        if (!allowed.includes(key) || keys.has(key) || decoded.length > 4096 ||
+          /[\u0000-\u001f]/.test(decoded) || (key === "contactId" && !decoded.trim())) return "/contact";
+        keys.add(key);
+      }
+      return keys.has("contactId") ? value : "/contact";
+    } catch { return "/contact"; }
+  }
   if (["/", "/settings", "/settings/account", "/settings/account/edit", "/settings/location", "/settings/retention",
     "/settings/display", "/settings/notifications", "/settings/search", "/settings/about", "/settings/digital-safety", "/settings/terms-of-service",
+    "/settings/archives", "/settings/sos-preferences", "/sos", "/sos/active", "/sos/countdown",
     "/camera", "/alerts", "/contact", "/contact/add-contact", "/contact/edit-contact", "/devices"].includes(value)) return value;
   if (/^\/alerts\/[A-Za-z0-9_-]+$/.test(value)) return value;
   return "/";
+}
+
+export function mpinReturnPath(path: string, params: Record<string, unknown>): string {
+  if (/^\/devices\/(?:camera(?:\/camera-preview)?|button(?:\/test-page)?)$/.test(path)) {
+    if (params.source !== "settings") return "/devices";
+    const camera = path.startsWith("/devices/camera") && (params.camera === "1" || params.camera === "2") ? `&camera=${params.camera}` : "";
+    return safeReturnPath(`${path}?source=settings${camera}`);
+  }
+  if (path !== "/contact/edit-contact") return safeReturnPath(path);
+  if (typeof params.contactId !== "string" || !params.contactId.trim()) return "/contact";
+  const query = ["contactId", "contactName", "phoneNumber", "relationship", "profileImage"]
+    .filter((key) => typeof params[key] === "string")
+    .map((key) => `${key}=${encodeURIComponent(params[key] as string)}`).join("&");
+  return safeReturnPath(`${path}?${query}`);
 }

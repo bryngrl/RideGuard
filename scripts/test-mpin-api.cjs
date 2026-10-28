@@ -35,9 +35,9 @@ new Function("require", "module", "exports", compiled)((name) => {
 }, moduleUnderTest, moduleUnderTest.exports);
 const { MpinError, mpinApi, setupAndUnlockMpin } = moduleUnderTest.exports;
 
-test("setup and unlock are enabled independently of unavailable email-link recovery", () => {
+test("setup, unlock and existing email-code routes are enabled", () => {
   assert.equal(mpinApi.enabled, true);
-  assert.equal(mpinApi.emailLinksEnabled, false);
+  assert.equal(mpinApi.emailCodesEnabled, true);
 });
 
 test("status forwards auth, abort signal, and lifecycle context", async () => {

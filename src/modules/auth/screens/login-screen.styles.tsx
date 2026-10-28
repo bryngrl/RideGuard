@@ -34,7 +34,7 @@ export const styles = StyleSheet.create({
     ...Typography.bodySmall,
     marginTop: Spacing.two,
   },
-  feedback: { marginTop: Spacing.four },
+  feedback: { alignSelf: "stretch", marginTop: Spacing.four },
   verifyLink: { paddingTop: Spacing.three, paddingBottom: Spacing.one },
   fields: {
     gap: Spacing.three,
@@ -54,9 +54,8 @@ export const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
   },
   recoveryRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "flex-end",
+    flexDirection: "column",
+    alignItems: "flex-end",
     gap: Spacing.two,
   },
   forgotText: {
