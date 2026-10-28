@@ -1,6 +1,6 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useRef, useState } from "react";
-import { Alert } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 

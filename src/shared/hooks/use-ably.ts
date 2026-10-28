@@ -2,6 +2,7 @@ import type { Message } from "ably";
 import { Realtime } from "ably";
 import { useEffect, useMemo, useState } from "react";
 import { AppState } from "react-native";
+import { useGlobalSearchParams, useSegments } from "expo-router";
 
 import { ALERT_CREATED_EVENT } from "@/modules/alerts/constants";
 import { getSavedAlerts } from "@/modules/alerts/services/alerts.api";
@@ -11,6 +12,13 @@ import { getAblyToken } from "@/modules/auth/services/auth.api";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { getMyCameras } from "@/modules/camera-sensor/services/cameras.api";
 import { useDeviceStore } from "@/modules/devices";
+import { APIError } from "@/shared/api/errors";
+
+function reportBackgroundFailure(message: string, error: unknown) {
+  // Background discovery must not open LogBox over registration or MPIN entry.
+  // Keep the HTTP status for diagnosis without logging tokens or raw server HTML.
+  console.warn(message, error instanceof APIError ? `HTTP ${error.status}` : "Request failed");
+}
 
 function buildAlertsChannelName(userId: string, deviceId: string): string {
   return `rideguard:alerts:user:${encodeURIComponent(
@@ -20,6 +28,12 @@ function buildAlertsChannelName(userId: string, deviceId: string): string {
 
 export function useAbly() {
   const user = useAuthStore((state) => state.user);
+  const checkingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const profileComplete = useAuthStore((state) => state.isOldUser);
+  const segments = useSegments();
+  const { source } = useGlobalSearchParams<{ source?: string }>();
+  const onboarding = segments.some((segment) => segment === "(onboarding)");
+  const enabled = !!user && !checkingAuth && profileComplete === true && (!onboarding || source === "settings");
   const camera1DeviceId = useDeviceStore((state) => state.camera1DeviceId);
 
   const camera2DeviceId = useDeviceStore((state) => state.camera2DeviceId);
@@ -37,15 +51,19 @@ export function useAbly() {
   // LOAD EXISTING ALERTS FROM BACKEND
 
   useEffect(() => {
-    if (!user) {
+    if (!user || !enabled) {
       return;
     }
 
     let cancelled = false;
+    let refreshing = false;
 
     const refresh = async () => {
+      if (cancelled || refreshing) return;
+      refreshing = true;
       try {
         const firebaseToken = await user.getIdToken();
+        if (cancelled) return;
         // Camera discovery must not depend on having received an alert already.
         // Keep these independent so a failed camera request cannot hide history.
         await Promise.all([
@@ -59,18 +77,20 @@ export function useAbly() {
               }
             })
             .catch((error) => {
-              console.error("[Ably] Failed to load camera channels:", error);
+              if (!cancelled) reportBackgroundFailure("[Ably] Camera channels unavailable; retrying on resume.", error);
             }),
           getSavedAlerts(firebaseToken, { limit: 50 })
             .then((page) => {
               if (!cancelled) mergeAlerts(page.alerts);
             })
             .catch((error) => {
-              console.error("[Alerts] Failed to load saved alerts:", error);
+              if (!cancelled) reportBackgroundFailure("[Alerts] Saved alerts unavailable; retrying on resume.", error);
             }),
         ]);
       } catch (error) {
-        console.error("[Alerts] Failed to refresh:", error);
+        if (!cancelled) reportBackgroundFailure("[Alerts] Background refresh unavailable.", error);
+      } finally {
+        refreshing = false;
       }
     };
 
@@ -83,7 +103,7 @@ export function useAbly() {
       cancelled = true;
       appState.remove();
     };
-  }, [user, mergeAlerts]);
+  }, [user, enabled, mergeAlerts]);
 
   // DETERMINE WHICH DEVICE CHANNELS WE KNOW ABOUT
   const deviceIds = useMemo(() => {
@@ -123,7 +143,7 @@ export function useAbly() {
 
   // SUBSCRIBE TO REALTIME ABLY ALERTS
   useEffect(() => {
-    if (!user || !deviceIdsKey) {
+    if (!user || !enabled || !deviceIdsKey) {
       console.log("[Ably] Not subscribing", {
         hasUser: !!user,
         deviceIdsKey,
@@ -163,7 +183,7 @@ export function useAbly() {
         const page = await getSavedAlerts(token, { limit: 50 });
         if (!cancelled) mergeAlerts(page.alerts);
       } catch (error) {
-        console.error("[Alerts] Failed to reconcile realtime alerts:", error);
+        if (!cancelled) reportBackgroundFailure("[Alerts] Realtime history refresh unavailable.", error);
       } finally {
         syncing = false;
       }
@@ -217,5 +237,5 @@ export function useAbly() {
       client.connection.off();
       client.close();
     };
-  }, [user, deviceIdsKey, upsertAlert, mergeAlerts]);
+  }, [user, enabled, deviceIdsKey, upsertAlert, mergeAlerts]);
 }

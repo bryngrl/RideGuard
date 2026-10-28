@@ -12,15 +12,15 @@ import Animated, {
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing } from "@/shared/theme";
+import { skeletonRowCount } from "@/shared/lib/skeleton-count";
 
 /** Matches the list's date heading, icons and text lines while data loads. */
-export function AlertsSkeleton({ viewportHeight }: { viewportHeight: number }) {
+export function AlertsSkeleton({ viewportHeight, count }: { viewportHeight: number; count?: number }) {
   const theme = useTheme();
   const reducedMotion = useReducedMotion();
   const opacity = useSharedValue(1);
-  const rowCount = viewportHeight > 0
-    ? Math.max(3, Math.floor((viewportHeight - 90) / 68))
-    : 4;
+  const visibleLimit = viewportHeight > 0 ? Math.max(1, Math.floor((viewportHeight - 90) / 68)) : 8;
+  const rowCount = skeletonRowCount(count, visibleLimit);
 
   useEffect(() => {
     opacity.value = reducedMotion
@@ -43,7 +43,7 @@ export function AlertsSkeleton({ viewportHeight }: { viewportHeight: number }) {
       accessibilityRole="progressbar"
       accessibilityLabel="Loading alerts"
     >
-      <View style={[styles.heading, fill]} />
+      {rowCount > 0 && <View style={[styles.heading, fill]} />}
       {Array.from({ length: rowCount }, (_, index) => (
         <View key={index} style={styles.row} accessibilityElementsHidden>
           <View style={[styles.icon, fill]} />

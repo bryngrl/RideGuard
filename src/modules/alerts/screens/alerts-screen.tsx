@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BrandColors, Typography } from "@/shared/theme";
+import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { PageLayout } from "@/shared/ui/page-layout";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -20,7 +21,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { END_REACHED_THRESHOLD } from "../constants";
 import { useAlertsList, type AlertListStatus } from "../hooks/use-alerts";
@@ -29,6 +30,8 @@ import { AlertsSkeleton } from "../components/alerts-skeleton";
 import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
 import type { AlertFields, AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alerts-screen.styles";
+import { useAuthStore } from "@/modules/auth/store/auth.store";
+import { useLoadingCountsStore, type LoadingList } from "@/shared/store/loading-counts.store";
 
 type TabFilter = "active" | "unread" | "archived";
 
@@ -99,10 +102,15 @@ function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
 }
 
 // Screen
-export function AlertsScreen() {
+export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean } = {}) {
   const theme = useTheme();
   const router = useRouter();
-  const [filter, setFilter] = useState<TabFilter>("active");
+  const [filter, setFilter] = useState<TabFilter>(archivedOnly ? "archived" : "active");
+  const { bottom } = useSafeAreaInsets();
+  const uid = useAuthStore((state) => state.user?.uid);
+  const countKey: LoadingList = `alerts:${filter}`;
+  const loadingCount = useLoadingCountsStore((state) => uid ? state.counts[uid]?.[countKey] : undefined);
+  const rememberCount = useLoadingCountsStore((state) => state.remember);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuTop, setMenuTop] = useState(0);
   const [menuRight, setMenuRight] = useState(24);
@@ -155,7 +163,7 @@ export function AlertsScreen() {
 
   // The selected view loads saved alerts with its own cursor and the existing
   // periodic/focus/foreground refresh (see useAlertsList).
-  const { visibleAlerts, isRefreshing, isLoadingMore, isInitialLoading, hasMore, refresh, loadMore } =
+  const { visibleAlerts, isRefreshing, isLoadingMore, isInitialLoading, error: loadError, hasMore, refresh, loadMore } =
     useAlertsList(TAB_STATUS[filter]);
 
   // Unread filters the active view to unseen rows. Archive membership is
@@ -172,6 +180,11 @@ export function AlertsScreen() {
     return groupAlertsByDate(filtered);
   }, [filtered]);
   const showSkeleton = sections.length === 0 && isInitialLoading;
+  useEffect(() => {
+    if (uid && !isInitialLoading && !isRefreshing && !isLoadingMore && !loadError) {
+      rememberCount(uid, countKey, sections.reduce((total, section) => total + section.data.length, 0));
+    }
+  }, [uid, countKey, sections, isInitialLoading, isRefreshing, isLoadingMore, loadError, rememberCount]);
 
   const handleAlertPress = (item: AlertItemType) => {
     router.push({
@@ -179,6 +192,68 @@ export function AlertsScreen() {
       params: { alertId: item.alertId },
     });
   };
+
+  const list = (
+<SectionList
+        onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
+        sections={sections}
+        keyExtractor={(item) => item.alertId}
+        stickySectionHeadersEnabled={false}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={[styles.listContent, archivedOnly && { paddingTop: Spacing.three, paddingBottom: bottom + Spacing.four }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing && !showSkeleton}
+            onRefresh={refresh}
+            tintColor={theme.textMuted}
+          />
+        }
+        onEndReached={() => {
+          if (hasMore && !isLoadingMore) loadMore();
+        }}
+        onEndReachedThreshold={END_REACHED_THRESHOLD}
+        renderSectionHeader={({ section }) => (
+          <Text
+            style={[
+              Typography.medium,
+              styles.sectionHeader,
+              { color: theme.textMuted },
+            ]}
+          >
+            {section.title}
+          </Text>
+        )}
+        renderItem={({ item }) => (
+          <AlertItem alert={item} onPress={() => handleAlertPress(item)} />
+        )}
+        SectionSeparatorComponent={() => (
+          <View style={styles.sectionSeparator} />
+        )}
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator
+              style={styles.footerSpinner}
+              size="small"
+              color={theme.textMuted}
+            />
+          ) : null
+        }
+        ListEmptyComponent={showSkeleton ? (
+          <AlertsSkeleton viewportHeight={listHeight} count={loadingCount} />
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={[Typography.medium, { color: theme.textMuted }]}>
+              {filter === "unread" ? "No unread alerts."
+                : filter === "archived" ? "No archived alerts."
+                : "No active alerts yet."}
+            </Text>
+          </View>
+        )}
+      />
+  );
+
+  if (archivedOnly) return <PageLayout title="Archives" scrollable={false} contentFlush
+    onBack={() => router.canGoBack() ? router.back() : router.replace("/settings")}>{list}</PageLayout>;
 
   return (
     <SafeAreaView
@@ -258,62 +333,7 @@ export function AlertsScreen() {
       </Animated.View>
 
       {/* Alert Sections List */}
-      <SectionList
-        onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
-        sections={sections}
-        keyExtractor={(item) => item.alertId}
-        stickySectionHeadersEnabled={false}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing && !showSkeleton}
-            onRefresh={refresh}
-            tintColor={theme.textMuted}
-          />
-        }
-        onEndReached={() => {
-          if (hasMore && !isLoadingMore) loadMore();
-        }}
-        onEndReachedThreshold={END_REACHED_THRESHOLD}
-        renderSectionHeader={({ section }) => (
-          <Text
-            style={[
-              Typography.medium,
-              styles.sectionHeader,
-              { color: theme.textMuted },
-            ]}
-          >
-            {section.title}
-          </Text>
-        )}
-        renderItem={({ item }) => (
-          <AlertItem alert={item} onPress={() => handleAlertPress(item)} />
-        )}
-        SectionSeparatorComponent={() => (
-          <View style={styles.sectionSeparator} />
-        )}
-        ListFooterComponent={
-          isLoadingMore ? (
-            <ActivityIndicator
-              style={styles.footerSpinner}
-              size="small"
-              color={theme.textMuted}
-            />
-          ) : null
-        }
-        ListEmptyComponent={showSkeleton ? (
-          <AlertsSkeleton viewportHeight={listHeight} />
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={[Typography.medium, { color: theme.textMuted }]}>
-              {filter === "unread" ? "No unread alerts."
-                : filter === "archived" ? "No archived alerts."
-                : "No active alerts yet."}
-            </Text>
-          </View>
-        )}
-      />
+      {list}
     </SafeAreaView>
   );
 }

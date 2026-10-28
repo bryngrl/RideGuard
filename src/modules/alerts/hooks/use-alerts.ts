@@ -46,6 +46,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
   const [ids, setIds] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [loadedStatuses, setLoadedStatuses] = useState<Set<AlertListStatus>>(new Set());
 
   const cursorRef = useRef<string | null>(null);
@@ -77,6 +78,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
       isFetchingRef.current = true;
       fetchingStatusRef.current = status;
       if (mode === "reset") {
+        setError(null);
         cursorStatusRef.current = status;
         cursorRef.current = null;
         hasMoreRef.current = true;
@@ -119,6 +121,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
         cursorRef.current = nextCursor;
         hasMoreRef.current = nextCursor !== null;
       } catch (error) {
+        if (requestIdRef.current === requestId) setError("Couldn't load alerts.");
         console.error(`[Alerts] Failed to load ${status} alerts:`, error);
       } finally {
         if (requestIdRef.current === requestId) {
@@ -215,6 +218,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
     visibleAlerts,
     isRefreshing,
     isLoadingMore,
+    error,
     isInitialLoading: enabled && Boolean(user) && !loadedStatuses.has(status),
     hasMore: hasMoreRef.current,
     refresh,
