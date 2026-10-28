@@ -245,7 +245,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
                   subtitle={camera.deviceId}
                   status={error ? "Unavailable" : camera.online ? "Online" : "Offline"}
                   live={!error && camera.online}
-                  icon={<CameraIcon width={14} height={14} />}
+                  icon={<CameraIcon color={colors.icon} width={14} height={14} />}
                   selected={selected === camera.deviceId}
                   onPress={() => setPicked(camera.deviceId)}
                 />

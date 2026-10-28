@@ -16,6 +16,7 @@ import { useMpinLifecycle } from "@/modules/mpin/hooks/use-mpin-lifecycle";
 import { MpinPrivacyCover } from "@/modules/mpin/components/mpin-privacy-cover";
 import { SessionRecovery } from "@/modules/auth/components/session-recovery";
 import { BrandedAlertHost } from "@/shared/ui/branded-alert-host";
+import { Colors } from "@/shared/theme/colors";
 import { LocationServicesPrompt } from "@/shared/ui/location-services-prompt";
 
 SplashScreen.preventAutoHideAsync();
@@ -60,7 +61,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={{ ...(colorScheme === "dark" ? DarkTheme : DefaultTheme), colors: { ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors), background: Colors[colorScheme].background, card: Colors[colorScheme].card, text: Colors[colorScheme].text, border: Colors[colorScheme].border, primary: Colors[colorScheme].accent, notification: Colors[colorScheme].error } }}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(public)/welcome" options={{ animation: "fade" }} />

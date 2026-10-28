@@ -25,10 +25,12 @@ type Tab = {
   ActiveIcon: React.ComponentType<{
     width?: number;
     height?: number;
+    color?: string;
   }>;
   InactiveIcon: React.ComponentType<{
     width?: number;
     height?: number;
+    color?: string;
   }>;
 };
 
@@ -116,7 +118,7 @@ export function BottomNavigation() {
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
-              <Icon width={16} height={16} />
+              <Icon width={16} height={16} color={color} />
 
               <Text
                 style={[

@@ -130,7 +130,7 @@ export default function ButtonProvisionScreen() {
         {!fromSettings && <Stepper currentStep={7} steps={10} />}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <MainLogo width={64} height={64} />
+            <MainLogo color={theme.logo} width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -155,7 +155,7 @@ export default function ButtonProvisionScreen() {
             <CustomTextInput
               label="Button ID"
               required
-              labelStyle={{ color: BrandColors.primary }}
+              labelStyle={{ color: theme.text }}
               placeholder="e.g., ABC-123-XYZ"
               autoCapitalize="characters"
               autoCorrect={false}

@@ -1,3 +1,4 @@
+import { useTheme } from "@/shared/hooks/use-theme";
 import MainLogo from "@/assets/icons/logos/main.svg";
 import { StyleSheet, View } from "react-native";
 
@@ -5,10 +6,11 @@ import { BrandNameReveal } from "./brand-name-reveal";
 
 /** Assembled brand, using the exact dimensions at the end of the splash reveal. */
 export function BrandLockup() {
+  const theme = useTheme();
   return (
     <View accessible accessibilityLabel="RideGuard">
       <View style={styles.brand} importantForAccessibility="no-hide-descendants">
-        <MainLogo width={64} height={64} />
+        <MainLogo color={theme.logo} width={64} height={64} />
         <BrandNameReveal reveal={false} style={styles.wordmark} />
       </View>
     </View>

@@ -84,8 +84,8 @@ export function SosTriggerScreen() {
             {state.contacts.slice(0, 3).map((contact, index) => <View key={contact.id}
               style={[styles.avatarFrame, index > 0 && styles.overlappingAvatar]}>
               {contact.profileImage ? <Image source={{ uri: contact.profileImage }} style={styles.avatar} /> :
-                <View style={[styles.avatar, styles.initialAvatar, { backgroundColor: ["#E7EDFA", "#E5F2EC", "#F3EBE0"][index] }]}>
-                  <Text style={[styles.initialText, { color: ["#0046CE", "#006C65", "#735332"][index] }]}>{contact.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</Text>
+                <View style={[styles.avatar, styles.initialAvatar, { backgroundColor: colors.backgroundSelected }]}>
+                  <Text style={[styles.initialText, { color: colors.accent }]}>{contact.name.trim().split(/\s+/).map((part) => part[0]).slice(0, 2).join("").toUpperCase()}</Text>
                 </View>}
             </View>)}
           </View>

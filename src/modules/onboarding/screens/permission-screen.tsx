@@ -111,7 +111,7 @@ export default function PermissionsScreen() {
         {/* MAIN CONTENT */}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
-            <MainLogo width={64} height={64} />
+            <MainLogo color={theme.logo} width={64} height={64} />
           </View>
 
           <View style={styles.headerContainer}>
@@ -150,7 +150,7 @@ export default function PermissionsScreen() {
                   },
                 ]}
               >
-                <LocationIcon width={16} height={16} />
+                <LocationIcon color={theme.icon} width={16} height={16} />
               </View>
 
               <View style={styles.textContainer}>
@@ -178,7 +178,7 @@ export default function PermissionsScreen() {
                 </Text>
               </View>
 
-              {locationGranted && <GreenCheckIcon width={16} height={16} />}
+              {locationGranted && <GreenCheckIcon color={theme.success} width={16} height={16} />}
             </View>
 
             {/* NOTIFICATIONS */}
@@ -191,7 +191,7 @@ export default function PermissionsScreen() {
                   },
                 ]}
               >
-                <NotificationIcon width={16} height={16} />
+                <NotificationIcon color={theme.icon} width={16} height={16} />
               </View>
 
               <View style={styles.textContainer}>
@@ -220,7 +220,7 @@ export default function PermissionsScreen() {
               </View>
 
               {notificationsGranted && (
-                <GreenCheckIcon width={16} height={16} />
+                <GreenCheckIcon color={theme.success} width={16} height={16} />
               )}
             </View>
           </View>

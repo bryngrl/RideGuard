@@ -21,7 +21,7 @@ import {
 } from "@assets/icons/sensors/button/button.svg";
 
 import { Spacing, Typography } from "@/shared/theme";
-import { BrandColors, Colors } from "@/shared/theme/colors";
+
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -167,10 +167,10 @@ export function HomeScreen() {
 
   const cameraCoverageColor =
     activeCameraCount === 0
-      ? BrandColors.error
+      ? colors.error
       : activeCameraCount === 1
-        ? Colors.light.warningHeader
-        : "#2CB031";
+        ? colors.warningHeader
+        : colors.success;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -181,7 +181,7 @@ export function HomeScreen() {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.brand}>
-            <MainLogo width={32} height={42} />
+            <MainLogo color={colors.logo} width={32} height={42} />
             <Text style={[styles.brandName, { color: colors.primary }]}>
               ideguard
             </Text>
@@ -226,9 +226,9 @@ export function HomeScreen() {
           >
             <Defs>
               <SvgLinearGradient id="homeHeaderGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                <Stop offset="0%" stopColor="#FFFFFF" />
-                <Stop offset="45%" stopColor="#F5F8FF" />
-                <Stop offset="100%" stopColor="#DCE8FF" />
+                <Stop offset="0%" stopColor={colors.homeGradientStart} />
+                <Stop offset="45%" stopColor={colors.homeGradientMiddle} />
+                <Stop offset="100%" stopColor={colors.homeGradientEnd} />
               </SvgLinearGradient>
             </Defs>
             <Path
@@ -243,7 +243,7 @@ export function HomeScreen() {
           >
             {monitoringCardState === "no-camera" && (
               <LinearGradient
-                colors={["#FFFDF7", "#FFF9EA", "#FFF0C8"]}
+                colors={[colors.warningGradientStart, colors.warningGradientMiddle, colors.warningGradientEnd]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.monitoringCardGradient}
@@ -265,7 +265,7 @@ export function HomeScreen() {
                 ]}
                 titleStyle={
                   monitoringCardState === "threat"
-                    ? [styles.monitoringStateTitle, styles.threatTitle]
+                    ? [styles.monitoringStateTitle, styles.threatTitle, { color: colors.dangerHeader }]
                     : styles.monitoringStateTitle
                 }
                 subtitleStyle={styles.monitoringStateSubtitle}
@@ -310,9 +310,9 @@ export function HomeScreen() {
                 }
                 icon={
                   isCamera1Connected ? (
-                    <ActiveCameraIcon width={14} height={14} />
+                    <ActiveCameraIcon color={colors.icon} width={14} height={14} />
                   ) : (
-                    <InactiveCameraIcon width={14} height={14} />
+                    <InactiveCameraIcon color={colors.textInactive} width={14} height={14} />
                   )
                 }
                 onPress={() => router.push("/devices?focus=camera1" as any)}
@@ -332,9 +332,9 @@ export function HomeScreen() {
                 }
                 icon={
                   isCamera2Connected ? (
-                    <ActiveCameraIcon width={14} height={14} />
+                    <ActiveCameraIcon color={colors.icon} width={14} height={14} />
                   ) : (
-                    <InactiveCameraIcon width={14} height={14} />
+                    <InactiveCameraIcon color={colors.textInactive} width={14} height={14} />
                   )
                 }
                 onPress={() => router.push("/devices?focus=camera2" as any)}
@@ -354,9 +354,9 @@ export function HomeScreen() {
                 }
                 icon={
                   isButtonConnected ? (
-                    <ButtonIcon width={18} height={18} />
+                    <ButtonIcon color={colors.icon} width={18} height={18} />
                   ) : (
-                    <InactiveSensorIcon width={18} height={18} />
+                    <InactiveSensorIcon color={colors.textInactive} width={18} height={18} />
                   )
                 }
                 onPress={() => router.push("/devices?focus=button" as any)}
@@ -401,8 +401,8 @@ export function HomeScreen() {
 
             {!isCamera1Connected && !isRideActive && (
               <View style={styles.cameraWarning}>
-                <ErrorIcon width={16} height={16} />
-                <Text style={styles.cameraWarningText}>
+                <ErrorIcon color={colors.error} width={16} height={16} />
+                <Text style={[styles.cameraWarningText, { color: colors.dangerHeader }]}>
                   {hasCameraConnected
                     ? "Connect Camera 1 to enable monitoring"
                     : "Connect at least 1 camera to enable monitoring"}

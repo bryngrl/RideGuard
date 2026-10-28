@@ -59,7 +59,7 @@ export function ProfileCard({
           </View>
 
           <View style={styles.logoRow}>
-            <MainLogo width={22} height={30} />
+            <MainLogo color={colors.logo} width={22} height={30} />
           </View>
         </LinearGradient>
       </Animated.View>
@@ -97,7 +97,7 @@ function CardContent({ profile }: { profile: SettingsProfile }) {
       </View>
 
       <View style={styles.logoRow}>
-        <MainLogo width={22} height={30} />
+        <MainLogo color={colors.logo} width={22} height={30} />
       </View>
     </LinearGradient>
   );

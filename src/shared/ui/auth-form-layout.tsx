@@ -49,7 +49,7 @@ export function AuthFormLayout({ title, description, onBack, backDisabled, showB
           >
             <BackArrowIcon color={theme.text} />
           </Pressable> : <View style={styles.backButton} />}
-          {!recovery && <View style={styles.brand}><MainLogo width={64} height={64} /></View>}
+          {!recovery && <View style={styles.brand}><MainLogo color={theme.logo} width={64} height={64} /></View>}
           <View style={recovery ? styles.recoveryMain : undefined}>
             <Text accessibilityRole="header" style={[recovery ? styles.recoveryHeading : styles.heading, { color: theme.text }]}>{title}</Text>
             <Text style={[styles.description, recovery && styles.recoveryDescription, { color: theme.textMuted }]}>{description}</Text>

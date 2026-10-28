@@ -129,7 +129,7 @@ export default function CreateAccountScreen() {
       <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
         <BackArrowIcon color={theme.text} />
       </Pressable>
-      <View style={styles.brand}><MainLogo width={64} height={64} /></View>
+      <View style={styles.brand}><MainLogo color={theme.logo} width={64} height={64} /></View>
 
       <Text style={[styles.heading, { color: theme.text }]}>Create account</Text>
       <Text style={[styles.description, { color: theme.textMuted }]}>Enter your details to create an account.</Text>

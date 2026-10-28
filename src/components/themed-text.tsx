@@ -58,8 +58,8 @@ export function ThemedText({
         type === "button" && styles.button,
         type === "label" && styles.label,
         type === "input" && styles.input,
-        type === "link" && styles.link,
-        type === "linkPrimary" && styles.linkPrimary,
+        type === "link" && [styles.link, { color: theme.accent }],
+        type === "linkPrimary" && [styles.linkPrimary, { color: theme.accent }],
         type === "code" && styles.code,
         style,
       ]}

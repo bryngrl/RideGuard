@@ -75,7 +75,7 @@ export function QuickActions({ homeLayout = false }: { homeLayout?: boolean }) {
             accessibilityRole="button"
             accessibilityLabel="Open emergency contacts"
           >
-            <ContactIcon width={13} height={16} />
+            <ContactIcon color={colors.icon} width={13} height={16} />
             <Text style={[Typography.button, { color: colors.primary }]}>Contacts</Text>
           </Pressable>
         )}

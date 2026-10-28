@@ -1,9 +1,9 @@
-import { FontFamily } from "@/shared/theme";
+import { Colors, FontFamily } from "@/shared/theme";
 import { StyleSheet } from "react-native";
 
 export const countdownColors = {
   light: { background: "#DF1014", accent: "#FFFFFF", ring: "#ED5C5F", track: "#B10D10", border: "#B10D10", muted: "#FFFFFF" },
-  dark: { background: "#0D1525", accent: "#FF6B70", ring: "#1E2D4E", track: "#152037", border: "#2A3A5E", muted: "#94A3B8" },
+  dark: { background: Colors.dark.background, accent: Colors.dark.error, ring: Colors.dark.dangerStroke, track: Colors.dark.dangerBackground, border: Colors.dark.dangerStroke, muted: Colors.dark.textSecondary },
 };
 
 export const styles = StyleSheet.create({

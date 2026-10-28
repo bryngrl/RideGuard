@@ -35,7 +35,7 @@ export function ConfirmationModal({ visible, title, description, primaryButtonTe
   return <Modal transparent animationType={reducedMotion ? "none" : "fade"}
     visible={visible} onRequestClose={onRequestClose ?? onSecondaryPress}>
     <View style={styles.overlay}>
-      <View style={[styles.card, { maxWidth, backgroundColor: theme.card, borderColor: theme.border }]}
+      <View style={[styles.card, { maxWidth, backgroundColor: theme.modalSurface, borderColor: theme.border }]}
         accessibilityViewIsModal>
         <ScrollView bounces={false} style={styles.scroll} contentContainerStyle={styles.content}>
           <Text accessibilityRole="header" style={[Typography.h3, { color: theme.text }]}>{title}</Text>

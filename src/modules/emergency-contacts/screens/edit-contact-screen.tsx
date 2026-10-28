@@ -6,11 +6,13 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { BackHandler, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
+import { Image } from "expo-image";
+import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
-import { actionFooterPadding, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { actionFooterPadding, Spacing, Typography } from "@/shared/theme";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Button } from "@/shared/ui/button";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
@@ -30,6 +32,7 @@ type ConfirmationType = "discard" | "delete" | null;
 export function EditContactScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const isDark = useColorScheme() === "dark";
   const { bottom } = useSafeAreaInsets();
 
   const {
@@ -329,9 +332,9 @@ export function EditContactScreen() {
           <View style={[styles.profileImage, styles.previewImage]}>
             {profileImage ? (
               <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
-                placeholder={<ProfilePlaceholder width={120} height={120} />} />
+                placeholder={<ProfilePlaceholder color={theme.contactIllustration} width={120} height={120} />} />
             ) : (
-              <ProfilePlaceholder width={120} height={120} />
+              <ProfilePlaceholder color={theme.contactIllustration} width={120} height={120} />
             )}
           </View>
 
@@ -339,7 +342,7 @@ export function EditContactScreen() {
             style={[
               Typography.semibold,
               styles.contactName,
-              { color: theme.text },
+              { color: theme.logo },
             ]}
           >
             {contactName || "Unnamed contact"}
@@ -349,7 +352,7 @@ export function EditContactScreen() {
             style={[
               Typography.medium,
               styles.phoneNumber,
-              { color: theme.text },
+              { color: theme.logo },
             ]}
           >
             {formatPhoneNumber(phoneNumber)}
@@ -377,14 +380,14 @@ export function EditContactScreen() {
             <Ionicons
               name="trash-outline"
               size={15}
-              color={BrandColors.error}
+              color={theme.critical}
             />
 
             <Text
               style={[
                 Typography.button,
                 styles.deleteText,
-                { color: BrandColors.error },
+                { color: theme.critical },
               ]}
             >
               Delete
@@ -409,9 +412,9 @@ export function EditContactScreen() {
           >
             {profileImage ? (
               <CachedPhoto uri={profileImage} style={styles.profileImagePreview}
-                placeholder={<ProfilePlaceholder width={112} height={112} />} />
+                placeholder={<ProfilePlaceholder color={theme.contactIllustration} width={112} height={112} />} />
             ) : (
-              <ProfilePlaceholder width={112} height={112} />
+              <ProfilePlaceholder color={theme.contactIllustration} width={112} height={112} />
             )}
           </Pressable>
 
@@ -544,19 +547,27 @@ export function EditContactScreen() {
       <View style={[styles.pageContent, isEditing ? styles.editPageContent : styles.previewPageContent,
         isEditing && { paddingBottom: actionFooterPadding(bottom) - Spacing.two }]}>
         <LinearGradient
-          colors={["#FFFFFF", "#E5EDFC"]}
+          colors={isDark ? [theme.background, theme.background] : [theme.contactPageStart, theme.contactPageEnd]}
           start={{ x: 0.5, y: 0 }}
           end={{ x: 0.5, y: 1 }}
           style={styles.pageBackground}
           pointerEvents="none"
         />
 
-        <ContactAbstract
+        {isDark ? <View style={styles.pageBackground} pointerEvents="none">
+          <Image
+          source={require("@/assets/images/backgrounds/contact-information-dark.png")}
+          style={styles.darkContactBackground}
+          contentFit="contain"
+          pointerEvents="none"
+          accessible={false}
+          />
+        </View> : <ContactAbstract
           width="100%"
           height="65%"
           style={styles.contactBackground}
           pointerEvents="none"
-        />
+        />}
 
         <View style={styles.pageContentForeground}>
           {isEditing ? renderEditForm() : renderPreview()}
@@ -586,7 +597,7 @@ export function EditContactScreen() {
         }
         onSecondaryPress={handleCancelConfirmation}
         primaryButtonColor={
-          activeConfirmation === "delete" ? BrandColors.error : undefined
+          activeConfirmation === "delete" ? theme.error : undefined
         }
       />
 

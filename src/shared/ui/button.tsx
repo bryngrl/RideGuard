@@ -3,7 +3,7 @@ import React from "react";
 import { ActivityIndicator, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 
 export type ButtonVariant =
   | "primary"
@@ -68,7 +68,7 @@ export function Button({
       case "outline":
         return {
           container: {
-            backgroundColor: "#FFFFFF",
+            backgroundColor: theme.background,
             borderWidth: 1,
             borderColor: theme.primary,
           },
@@ -92,23 +92,23 @@ export function Button({
           container: {
             backgroundColor: "transparent",
             borderWidth: 1.5,
-            borderColor: BrandColors.error,
+            borderColor: theme.error,
           },
           text: {
-            color: BrandColors.error,
+            color: theme.error,
           },
-          spinnerColor: BrandColors.error,
+          spinnerColor: theme.error,
         };
       case "primary":
       default:
         return {
           container: {
-            backgroundColor: BrandColors.primary,
+            backgroundColor: theme.primaryButton,
           },
           text: {
-            color: BrandColors.secondary,
+            color: theme.onPrimaryButton,
           },
-          spinnerColor: BrandColors.secondary,
+          spinnerColor: theme.onPrimaryButton,
         };
     }
   };
@@ -169,7 +169,7 @@ export function Button({
 
   return (
     <Pressable
-      feedbackColor={variant === "primary" ? theme.secondary : undefined}
+      feedbackColor={variant === "primary" ? theme.onPrimaryButton : undefined}
       onPress={onPress}
       disabled={isDisabled}
       style={[
@@ -177,7 +177,7 @@ export function Button({
         sizeStyles.container,
         variantStyles.container,
         fullWidth && styles.fullWidth,
-        isDisabled && styles.disabledContainer,
+        isDisabled && [styles.disabledContainer, { backgroundColor: theme.disabledBackground }],
         style,
       ]}
       accessibilityRole="button"
@@ -211,7 +211,7 @@ export function Button({
               styles.baseText,
               sizeStyles.text,
               variantStyles.text,
-              isDisabled && styles.disabledText,
+              isDisabled && [styles.disabledText, { color: theme.disabledText }],
               textStyle,
             ]}
             numberOfLines={1}

@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Animated, StyleProp, StyleSheet, Text, ViewStyle } from "react-native";
 
 import { useTheme } from "@/shared/hooks";
-import { BrandColors, Typography } from "@/shared/theme";
+import { Typography } from "@/shared/theme";
 
 interface NotificationSheetProps {
   visible: boolean;
@@ -93,7 +93,7 @@ export function NotificationSheet({
         styles.container,
         style,
         {
-          backgroundColor: isError ? BrandColors.error : "#ECF3FF",
+          backgroundColor: isError ? theme.notificationError : theme.notificationBackground,
 
           transform: [
             {
@@ -110,7 +110,7 @@ export function NotificationSheet({
           Typography.caption,
           styles.text,
           {
-            color: isError ? "#FFFFFF" : theme.text,
+            color: isError ? theme.onNotificationError : theme.text,
           },
         ]}
       >

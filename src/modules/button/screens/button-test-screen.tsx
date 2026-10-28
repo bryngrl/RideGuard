@@ -131,7 +131,7 @@ export function ButtonTestScreen({
             {state === "timeout" ? (
               <WarningIcon width={74} height={74} />
             ) : (
-              <MainLogo width={64} height={64} />
+              <MainLogo color={theme.logo} width={64} height={64} />
             )}
           </View>
 

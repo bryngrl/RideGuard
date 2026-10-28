@@ -3,7 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Linking, StyleSheet, Text, View } from "react-native";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 
 import type { PhoneCaptureStatus } from "../../../../modules/phone-capture";
@@ -57,14 +57,14 @@ export function PhoneCapturePanel({ capture }: { capture: PhoneCapture }) {
       ) : null}
 
       {status?.active && !status.notificationsAllowed ? (
-        <Text style={[Typography.bodySmall, { color: BrandColors.warning }]}>
+        <Text style={[Typography.bodySmall, { color: colors.warning }]}>
           Notifications are off, so the capture notification is hidden. Stop
           capture from this screen.
         </Text>
       ) : null}
 
       {capture.error ? (
-        <Text style={[Typography.bodySmall, { color: BrandColors.error }]}>
+        <Text style={[Typography.bodySmall, { color: colors.error }]}>
           {capture.error}
         </Text>
       ) : null}

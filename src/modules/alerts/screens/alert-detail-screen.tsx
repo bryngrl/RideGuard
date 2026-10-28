@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import InformationIcon from "@/assets/icons/misc/information.svg";
 
 import { useTheme } from "@/shared/hooks/use-theme";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { PageLayout } from "@/shared/ui/page-layout";
 
@@ -233,7 +233,7 @@ function EvidencePreview({
           accessibilityLabel="View image full screen"
           style={previewStyles.viewImage}
         >
-          <Text style={[Typography.medium, { color: BrandColors.accent }]}>
+          <Text style={[Typography.medium, { color: theme.accent }]}>
             View image
           </Text>
         </Pressable>
@@ -390,8 +390,8 @@ export function AlertDetailScreen() {
                 {
                   color:
                     detectionType === "none"
-                      ? BrandColors.success
-                      : BrandColors.error,
+                      ? theme.success
+                      : theme.error,
                 },
               ]}
             >
@@ -407,7 +407,7 @@ export function AlertDetailScreen() {
             </Text>
 
             {isFalseAlarm ? (
-              <Text style={[Typography.bodySmall, { color: "#0046CE" }]}>
+              <Text style={[Typography.bodySmall, { color: theme.accent }]}>
                 Marked as false alarm
               </Text>
             ) : null}

@@ -61,8 +61,8 @@ export function ThemePreviewCard({
         <View style={styles.bars}>
           <View style={[styles.bar, { backgroundColor: dark ? Colors.dark.secondary : Colors.light.previewMuted }]} />
           <View style={[styles.bar, { backgroundColor: dark ? Colors.dark.secondary : Colors.light.previewMuted }]} />
-          <View style={[styles.bar, { backgroundColor: Colors.light.previewGreen }]} />
-          <View style={[styles.bar, { backgroundColor: Colors.light.previewBlue }]} />
+          <View style={[styles.bar, { backgroundColor: dark ? Colors.dark.previewGreen : Colors.light.previewGreen }]} />
+          <View style={[styles.bar, { backgroundColor: dark ? Colors.dark.previewBlue : Colors.light.previewBlue }]} />
         </View>
       </View>
       <Text style={[Typography.body, styles.label, { color: colors.text }]}>

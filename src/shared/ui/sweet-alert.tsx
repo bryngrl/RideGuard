@@ -118,7 +118,7 @@ export function SweetAlert({
           style={[
             styles.alertContainer,
             {
-              backgroundColor: theme.backgroundElement,
+              backgroundColor: theme.modalSurface,
             },
           ]}
           onPress={(event) => event.stopPropagation()}

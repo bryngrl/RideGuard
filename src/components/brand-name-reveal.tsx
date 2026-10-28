@@ -4,6 +4,8 @@ import Animated, { Easing, FadeIn } from "react-native-reanimated";
 
 import { BrandColors, FontFamily } from "@/shared/theme";
 
+import { useTheme } from "@/shared/hooks/use-theme";
+
 const BRAND_NAME = "ideguard";
 
 type BrandNameRevealProps = {
@@ -17,6 +19,7 @@ export function BrandNameReveal({
   reveal = true,
   style,
 }: BrandNameRevealProps) {
+  const theme = useTheme();
   const [isVisible, setIsVisible] = useState(!reveal);
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export function BrandNameReveal({
                   .easing(Easing.out(Easing.cubic))
               : undefined
           }
-          style={styles.letter}
+          style={[styles.letter, { color: theme.logo }]}
         >
           {letter}
         </Animated.Text>

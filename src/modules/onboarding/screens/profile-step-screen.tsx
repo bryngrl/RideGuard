@@ -64,7 +64,7 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.logoContainer}>
-          <MainLogo width={64} height={64} />
+          <MainLogo color={theme.logo} width={64} height={64} />
         </View>
 
         <View style={styles.headerContainer}>
@@ -90,7 +90,7 @@ export default function RegisterScreen() {
             onSubmitEditing={() => firstNameRef.current?.focus()}
             label="Last Name"
             required
-            labelStyle={{ color: BrandColors.primary }}
+            labelStyle={{ color: theme.text }}
             value={lastName}
             error={lastNameError}
             onBlur={() => { if (!lastName.trim()) setLastNameError("Enter your last name."); }}
@@ -109,7 +109,7 @@ export default function RegisterScreen() {
             onSubmitEditing={() => phoneRef.current?.focus()}
             label="First Name"
             required
-            labelStyle={{ color: BrandColors.primary }}
+            labelStyle={{ color: theme.text }}
             value={firstName}
             error={firstNameError}
             onBlur={() => { if (!firstName.trim()) setFirstNameError("Enter your first name."); }}
@@ -125,7 +125,7 @@ export default function RegisterScreen() {
             label="Phone Number"
             required
             prefix="+63"
-            labelStyle={{ color: BrandColors.primary }}
+            labelStyle={{ color: theme.text }}
             keyboardType="phone-pad"
             placeholder="9XX XXX XXXX"
             value={phone}

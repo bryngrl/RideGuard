@@ -4,7 +4,9 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import { Colors, Spacing } from "@/shared/theme";
+import { Spacing } from "@/shared/theme";
+
+import { useTheme } from "@/shared/hooks/use-theme";
 
 interface StepperProps {
   /**
@@ -33,10 +35,11 @@ interface StepItemProps {
 }
 
 const StepItem = ({ isCompleted, isLastStep, size }: StepItemProps) => {
+  const theme = useTheme();
   const animatedStyle = useAnimatedStyle(() => {
     return {
       backgroundColor: withTiming(
-        isCompleted ? "rgba(26, 43, 76, 0.8)" : Colors.light.border,
+        isCompleted ? theme.stepperActive : theme.stepperInactive,
         {
           duration: 300,
         },

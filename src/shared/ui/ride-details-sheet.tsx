@@ -2,7 +2,7 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import React, { useEffect } from "react";
 
 import { useTheme } from "@/shared/hooks";
-import { BorderRadius, BrandColors, Spacing, Typography } from "@/shared/theme";
+import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 
 import RideCompleteIcon from "@/assets/icons/status/success.svg";
@@ -116,7 +116,7 @@ export function RideDetailsSheet({
           style={styles.sheetWrapper}
         >
           <LinearGradient
-            colors={[theme.backgroundElement, "#E8F0FF", "#D6E1F4"]}
+            colors={[theme.backgroundElement, theme.contactGradientStart, theme.contactGradientEnd]}
             locations={[0, 0.45, 1]}
             start={{ x: 0.5, y: 0 }}
             end={{ x: 0.5, y: 1 }}
@@ -158,7 +158,7 @@ export function RideDetailsSheet({
                   Typography.h3,
                   styles.title,
                   {
-                    color: BrandColors.primary,
+                    color: theme.text,
                   },
                 ]}
               >

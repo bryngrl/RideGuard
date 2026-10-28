@@ -156,13 +156,13 @@ export default function LoginScreen() {
           <Pressable onPress={goBack} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Back to welcome">
             <BackArrowIcon color={theme.text} />
           </Pressable>
-          <View style={styles.brand}><MainLogo width={64} height={64} /></View>
+          <View style={styles.brand}><MainLogo color={theme.logo} width={64} height={64} /></View>
           <View style={styles.introSection}>
-            <ThemedText style={styles.title}>Log in</ThemedText>
+            <ThemedText style={[styles.title, { color: theme.text }]}>Log in</ThemedText>
             <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Enter your credentials or continue with Google.</ThemedText>
             {credentialError ? <View style={styles.feedback}><FormFeedback message={credentialError} /></View> : null}
             {verificationEmail !== null ? <Pressable onPress={continueVerification} disabled={isCredentialLoading} accessibilityRole="button" style={styles.verifyLink}>
-              <ThemedText style={styles.forgotText}>Resend Verification Link</ThemedText>
+              <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Resend Verification Link</ThemedText>
             </Pressable> : null}
           </View>
           <View style={styles.formSection}>
@@ -212,7 +212,7 @@ export default function LoginScreen() {
                   style={styles.forgotButton}
                   accessibilityRole="button"
                 >
-                  <ThemedText style={styles.forgotText}>Forgot password?</ThemedText>
+                  <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Forgot password?</ThemedText>
                 </Pressable>
               </View>
             </View>
@@ -251,14 +251,14 @@ export default function LoginScreen() {
                 By continuing, you agree to our{" "}
                 <ThemedText
                   onPress={() => router.push("/terms/terms")}
-                  style={styles.legalLink}
+                  style={[styles.legalLink, { color: theme.accent }]}
                 >
                   Terms of service
                 </ThemedText>
                 {"\n and "}
                 <ThemedText
                   onPress={() => router.push("/privacy/privacy")}
-                  style={styles.legalLink}
+                  style={[styles.legalLink, { color: theme.accent }]}
                 >
                   Privacy Policy
                 </ThemedText>
