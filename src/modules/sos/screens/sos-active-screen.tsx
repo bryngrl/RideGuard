@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { BrandColors, Typography } from "@/shared/theme";
+import { actionFooterPadding, BrandColors, Typography } from "@/shared/theme";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { SlideButton } from "@/shared/ui/slide-button";
 import { Button } from "@/shared/ui/button";
@@ -81,6 +81,7 @@ function ContactCard({ recipient, now, compact = false }: { recipient: SosRecord
 }
 
 export function SosActiveScreen() {
+  const { bottom } = useSafeAreaInsets();
   const colors = useTheme();
   const styles = createStyles(colors);
   const router = useRouter();
@@ -130,7 +131,7 @@ export function SosActiveScreen() {
       </View>}
       {state.notice && <Text style={styles.endedNoteText}>{state.notice}</Text>}
     </ScrollView>
-    <View style={styles.endedFooter}>
+    <View style={[styles.endedFooter, { paddingBottom: actionFooterPadding(bottom, true) }]}>
       <Button title="Done" onPress={() => void done()} style={styles.doneButton} />
     </View>
   </SafeAreaView>;
@@ -182,7 +183,7 @@ export function SosActiveScreen() {
       </View>}
       {!record && state.phase === "idle" && <Button title="Back to SOS" variant="secondary" onPress={() => router.replace("/sos")} />}
     </ScrollView>
-    {record?.status === "active" && <View style={styles.footer}>
+    {record?.status === "active" && <View style={[styles.footer, { paddingBottom: actionFooterPadding(bottom, true) }]}>
       <SlideButton key={state.stopping ? "stopping" : "ready"}
         label={state.stopping ? "Stopping SOS" : "Slide to stop SOS"}
         disabled={state.stopping} onComplete={() => void state.stop()} direction="right" thumbSymbol={"\u00D7"}

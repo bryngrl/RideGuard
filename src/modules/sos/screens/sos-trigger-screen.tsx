@@ -1,5 +1,6 @@
+import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useEffect } from "react";
-import { ActivityIndicator, Alert, Image, ScrollView, Text, View } from "react-native";
+import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
