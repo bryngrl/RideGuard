@@ -29,7 +29,7 @@ interface AutoArchiveData {
 }
 
 function normalizeHours(value: unknown): AutoArchiveHours {
-  return value === 24 || value === 48 || value === 72 || value === 168 ? value : null;
+  return value === 24 || value === 48 || value === 72 ? value : null;
 }
 
 export async function getSettings() {

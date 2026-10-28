@@ -39,19 +39,11 @@ interface SettingsState {
   clearSearchHistory: () => void;
 }
 
-async function currentToken(): Promise<string | null> {
-  const user = useAuthStore.getState().user;
-  if (!user) return null;
-  try {
-    return await user.getIdToken();
-  } catch {
-    return null;
-  }
-}
+let autoArchiveRevision = 0;
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...mockSettings,
       autoArchiveStatus: "idle",
       isHydrated: false,
@@ -59,41 +51,58 @@ export const useSettingsStore = create<SettingsState>()(
       // Hydrate the preference from the server (source of truth). Called on
       // login and when the Auto archive screen opens.
       loadAutoArchive: async () => {
-        const token = await currentToken();
-        if (!token) return;
+        if (get().autoArchiveStatus === "saving") return;
+        const user = useAuthStore.getState().user;
+        if (!user) return;
+        const revision = ++autoArchiveRevision;
+        const current = () => revision === autoArchiveRevision && useAuthStore.getState().user?.uid === user.uid;
         set({ autoArchiveStatus: "loading" });
         try {
+          const token = await user.getIdToken();
+          if (!current()) return;
           const hours = await getAutoArchive(token);
-          set({ autoArchiveHours: hours, autoArchiveStatus: "idle" });
+          if (current()) set({ autoArchiveHours: hours, autoArchiveStatus: "idle" });
         } catch (error) {
-          console.error("Failed to load auto-archive preference:", error);
-          set({ autoArchiveStatus: "error" });
+          if (current()) {
+            console.warn("Auto-archive preference unavailable. Retry in Settings.");
+            set({ autoArchiveStatus: "error" });
+          }
         }
       },
 
       // Persist to the server first; only reflect the new value after it saves.
       // Returns whether the save succeeded so the screen can surface a retry.
       saveAutoArchive: async (value) => {
-        const token = await currentToken();
-        if (!token) {
+        if (get().autoArchiveStatus === "saving") return false;
+        const user = useAuthStore.getState().user;
+        if (!user) {
           set({ autoArchiveStatus: "error" });
           return false;
         }
+        const revision = ++autoArchiveRevision;
+        const current = () => revision === autoArchiveRevision && useAuthStore.getState().user?.uid === user.uid;
         set({ autoArchiveStatus: "saving" });
         try {
+          const token = await user.getIdToken();
+          if (!current()) return false;
           const saved = await updateAutoArchive(value, token);
+          if (!current()) return false;
           set({ autoArchiveHours: saved, autoArchiveStatus: "idle" });
           return true;
         } catch (error) {
-          console.error("Failed to save auto-archive preference:", error);
-          set({ autoArchiveStatus: "error" });
+          if (current()) {
+            console.warn("Auto-archive preference was not saved. Retry in Settings.");
+            set({ autoArchiveStatus: "error" });
+          }
           return false;
         }
       },
 
       // Clear account-specific preference state on logout / account change.
-      resetAutoArchive: () =>
-        set({ autoArchiveHours: 24, autoArchiveStatus: "idle" }),
+      resetAutoArchive: () => {
+        autoArchiveRevision++;
+        set({ autoArchiveHours: 24, autoArchiveStatus: "idle" });
+      },
 
       // BACKEND SYNC: call updateNotifications after persisting this value.
       setAlertsEnabled: (alertsEnabled) => set({ alertsEnabled }),
@@ -147,3 +156,8 @@ export const useSettingsStore = create<SettingsState>()(
     },
   ),
 );
+
+// Firebase can change accounts outside the explicit logout button as well.
+useAuthStore.subscribe((state, previous) => {
+  if (state.user?.uid !== previous.user?.uid) useSettingsStore.getState().resetAutoArchive();
+});

@@ -1,5 +1,5 @@
 // Null remains supported for accounts that previously saved "Never".
-export type AutoArchiveHours = 24 | 48 | 72 | 168 | null;
+export type AutoArchiveHours = 24 | 48 | 72 | null;
 export type ThemePreference = "light" | "dark" | "system";
 
 export interface SettingsProfile {

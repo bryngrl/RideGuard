@@ -14,5 +14,4 @@ export const AUTO_ARCHIVE_OPTIONS = [
   { value: 24 as const, title: "24 hours", subtitle: "Default" },
   { value: 48 as const, title: "48 hours", subtitle: "Recommended" },
   { value: 72 as const, title: "72 hours", subtitle: "" },
-  { value: 168 as const, title: "1 week", subtitle: "" },
 ];

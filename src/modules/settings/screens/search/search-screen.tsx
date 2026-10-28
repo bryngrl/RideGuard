@@ -7,7 +7,8 @@ export function SearchScreen() {
   const router = useRouter();
   return (
     <KeyboardAvoidingWrapper contentContainerStyle={{ paddingTop: Spacing.three, paddingHorizontal: Spacing.four }}>
-      <SettingsSearch active onOpen={() => undefined} onClose={() => router.back()} />
+      <SettingsSearch active onOpen={() => undefined}
+        onClose={() => router.canGoBack() ? router.back() : router.replace("/settings")} />
     </KeyboardAvoidingWrapper>
   );
 }

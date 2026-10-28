@@ -1,13 +1,9 @@
-import { useTheme } from "@/shared/hooks/use-theme";
-import { Spacing } from "@/shared/theme";
 import { SettingsPageLayout } from "@/modules/settings/components/settings-page-layout";
-import { StyleSheet, View } from "react-native";
-import { InfoNote } from "../../components/info-note";
+import { StyleSheet } from "react-native";
 import { ToggleRow } from "../../components/toggle-row";
 import { SETTINGS_COPY } from "../../constants";
 import { useSettingsStore } from "../../store/settings.store";
 export function LocationScreen() {
-  const colors = useTheme();
   const state = useSettingsStore();
   return (
     <SettingsPageLayout title="Location sharing" contentStyle={styles.content}>
@@ -23,16 +19,9 @@ export function LocationScreen() {
         value={state.locationWithContacts}
         onChange={state.setLocationWithContacts}
       />
-      <View style={styles.note}>
-        <InfoNote
-          title={SETTINGS_COPY.flaggedIncidents}
-          description={SETTINGS_COPY.flaggedIncidentsDescription}
-        />
-      </View>
     </SettingsPageLayout>
   );
 }
 const styles = StyleSheet.create({
   content: { flexGrow: 1 },
-  note: { marginTop: "auto", paddingTop: Spacing.six },
 });
