@@ -7,6 +7,7 @@ import ErrorIcon from "@/assets/icons/status/error.svg";
 import { useProfile } from "@/modules/settings/hooks/use-profile";
 import { useDeviceStore } from "@/modules/devices";
 import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
+import { homeDeviceCards } from "../utils/home-device-cards";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
 import { ToggleSwitch } from "@/modules/settings/components/toggle-switch";
@@ -63,18 +64,18 @@ export function HomeScreen() {
       carouselWidth,
   );
 
-  const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
-  const { cameras, isLoading: camerasLoading, error: camerasError } = useCameras();
-  const cameraOnline = (id: string | null) => !camerasLoading && !camerasError && cameras.some((camera) => camera.deviceId === id && camera.online);
-  const cameraStatus = (id: string | null) => !id ? "Offline" : camerasLoading ? "Checking…" : camerasError ? "Unavailable" : cameraOnline(id) ? "Online" : "Offline";
+  const savedDevices = useDeviceStore();
+  const status = useCameras();
+  const { isLoading: camerasLoading, error: camerasError } = status;
+  const cards = homeDeviceCards(status, savedDevices);
+  const camera1DeviceId = cards.camera1.deviceId;
+  const camera2DeviceId = cards.camera2.deviceId;
+  const buttonDeviceId = cards.button.deviceId;
+  const cameraOnline = (id: string) => [cards.camera1, cards.camera2].some((card) => !!id && card.deviceId === id && card.online);
 
   const isCamera1Connected = Boolean(camera1DeviceId);
   const isCamera2Connected = Boolean(camera2DeviceId);
   const isButtonConnected = Boolean(buttonDeviceId);
-  //!! FOR TESTING ONLY
-  // const isCamera1Connected = true;
-  // const isCamera2Connected = false;
-  // const isButtonConnected = true;
 
   const displayName = profile.firstName.trim() || "there";
 
@@ -300,12 +301,12 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Camera 1"
                 subtitle={camera1DeviceId || "Not paired"}
-                status={cameraStatus(camera1DeviceId)}
+                status={cards.camera1.label}
                 connectionState={
                   cameraOnline(camera1DeviceId) ? "connected" : "disconnected"
                 }
                 icon={
-                  isCamera1Connected ? (
+                  cards.camera1.online ? (
                     <ActiveCameraIcon color={colors.icon} width={14} height={14} />
                   ) : (
                     <InactiveCameraIcon color={colors.textInactive} width={14} height={14} />
@@ -322,12 +323,12 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Camera 2"
                 subtitle={camera2DeviceId || "Not paired"}
-                status={cameraStatus(camera2DeviceId)}
+                status={cards.camera2.label}
                 connectionState={
                   cameraOnline(camera2DeviceId) ? "connected" : "disconnected"
                 }
                 icon={
-                  isCamera2Connected ? (
+                  cards.camera2.online ? (
                     <ActiveCameraIcon color={colors.icon} width={14} height={14} />
                   ) : (
                     <InactiveCameraIcon color={colors.textInactive} width={14} height={14} />
@@ -344,12 +345,12 @@ export function HomeScreen() {
                 style={styles.deviceCard}
                 title="Button"
                 subtitle={buttonDeviceId || "Not paired"}
-                status={isButtonConnected ? "Paired" : "Not paired"}
+                status={cards.button.label}
                 connectionState={
-                  isButtonConnected ? "connected" : "disconnected"
+                  cards.button.online ? "connected" : "disconnected"
                 }
                 icon={
-                  isButtonConnected ? (
+                  cards.button.online ? (
                     <ButtonIcon color={colors.icon} width={18} height={18} />
                   ) : (
                     <InactiveSensorIcon color={colors.textInactive} width={18} height={18} />
