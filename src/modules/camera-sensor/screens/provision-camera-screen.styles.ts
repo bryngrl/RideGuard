@@ -14,7 +14,7 @@ export const styles = StyleSheet.create({
   },
   footerSection: {
     marginTop: "auto",
-    paddingBottom: Spacing.two,
+    paddingBottom: 0,
   },
   formContainer: {
     marginTop: Spacing.one,

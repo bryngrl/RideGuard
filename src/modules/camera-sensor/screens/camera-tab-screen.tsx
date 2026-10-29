@@ -1,7 +1,7 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { type ComponentProps, type ReactNode, useState } from "react";
+import { type ReactNode, useState } from "react";
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/modules/phone-camera";
 import { PHONE_CAPTURE_ENABLED } from "@/shared/constants/phone-capture";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { useDeviceStore } from "@/modules/devices/store/devices.store";
 import { BorderRadius, DeviceCardLayout, Spacing, Typography } from "@/shared/theme";
 import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
@@ -20,6 +21,7 @@ import { QuickActions } from "@/shared/ui/quick-actions";
 
 import CameraIcon from "@/assets/icons/navigation/active-camera.svg";
 
+import { CameraPreviewFrame, CameraPreviewPlaceholder as Placeholder, HardwareCameraPreview } from "../components/camera-preview-frame";
 import { LiveCameraView } from "../components/live-camera-view";
 import { useCameras } from "../hooks/use-cameras";
 import type { PhoneCaptureLens } from "../../../../modules/phone-capture";
@@ -32,7 +34,6 @@ const ADD_KEY = "add";
 /** Height of the phone controls row: a `Button size="md"`. */
 const CONTROLS_HEIGHT = 40;
 
-type IconName = ComponentProps<typeof Ionicons>["name"];
 type External = { camera: LiveCamera; label: string };
 
 // The phone hook registers this install as a camera, so only mount it when
@@ -51,6 +52,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
   const colors = useTheme();
   const router = useRouter();
   const { cameras, isLoading, error } = useCameras();
+  const camera2DeviceId = useDeviceStore((state) => state.camera2DeviceId);
   // Phone cameras come from the phone hook, not the hardware list.
   const externals: External[] = cameras
     .filter((camera) => camera.source !== "phone")
@@ -80,7 +82,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
 
   const addCamera = () =>
     router.push(
-      `/(onboarding)/devices/camera?camera=${externals.length + 1}` as never,
+      `/(onboarding)/devices/camera?camera=${externals.length + 1}&source=settings` as never,
     );
 
   let preview: ReactNode;
@@ -117,18 +119,8 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
       />
     );
   } else if (selectedExternal) {
-    preview = selectedExternal.camera.online ? (
-      <LiveCameraView
-        camera={selectedExternal.camera}
-        label={selectedExternal.label}
-      />
-    ) : (
-      <Placeholder
-        icon="videocam-off-outline"
-        title={`${selectedExternal.label} is offline`}
-        body="The preview will appear here as soon as the camera comes online."
-      />
-    );
+    preview = <HardwareCameraPreview camera={selectedExternal.camera} label={selectedExternal.label} error={error}
+      onConnect={() => router.push(`/(onboarding)/devices/camera?camera=${selectedExternal.camera.deviceId === camera2DeviceId ? 2 : 1}&source=settings` as never)} />;
   } else if (selected === ADD_KEY) {
     preview = (
       <Placeholder
@@ -170,16 +162,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
           ) : null}
         </View>
 
-        <View
-          style={[
-            styles.preview,
-            {
-              backgroundColor: colors.backgroundElement,
-              borderColor: isAddPreview ? colors.textInactive : colors.border,
-              borderStyle: isAddPreview ? "dashed" : "solid",
-            },
-          ]}
-        >
+        <CameraPreviewFrame dashed={isAddPreview}>
           {preview}
           {selected === PHONE_KEY && phone?.supported && !phoneLive ? (
             <View pointerEvents="none" style={[styles.overlayPill, styles.left]}>
@@ -197,7 +180,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
               </Text>
             </View>
           ) : null}
-        </View>
+        </CameraPreviewFrame>
 
         {keys.length > 0 ? (
           <View style={styles.sources}>
@@ -286,43 +269,6 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
       </KeyboardAvoidingWrapper>
 
       <QuickActions homeLayout />
-    </View>
-  );
-}
-
-function Placeholder({
-  icon,
-  iconColor,
-  onIconPress,
-  title,
-  body,
-}: {
-  icon: IconName;
-  iconColor?: string;
-  onIconPress?: () => void;
-  title: string;
-  body?: string;
-}) {
-  const colors = useTheme();
-  return (
-    <View style={styles.placeholder}>
-      <Pressable
-        accessibilityRole={onIconPress ? "button" : undefined}
-        accessibilityLabel={onIconPress ? title : undefined}
-        disabled={!onIconPress}
-        onPress={onIconPress}
-        style={[styles.iconTile, styles.iconTileLarge, { backgroundColor: colors.backgroundSelected }]}
-      >
-        <Ionicons name={icon} size={28} color={iconColor ?? colors.text} />
-      </Pressable>
-      <Text style={[Typography.h3, styles.center, { color: colors.text }]}>
-        {title}
-      </Text>
-      {body ? (
-        <Text style={[Typography.body, styles.center, { color: colors.textMuted }]}>
-          {body}
-        </Text>
-      ) : null}
     </View>
   );
 }

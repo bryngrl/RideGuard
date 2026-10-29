@@ -14,11 +14,12 @@ import { APIError } from "@/shared/api/errors";
 import { releaseDevice } from "../services/devices.api";
 import { useDeviceStore } from "../store/devices.store";
 import { useDeviceClaimLifecycle } from "../hooks/use-device-claim-lifecycle";
+import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
+import { devicePresence } from "../utils/device-presence";
 
 type DeviceStatus = {
   name: string;
   deviceId: string;
-  batteryLevel: number | null;
   type: "camera" | "button";
   cameraNumber?: 1 | 2;
 };
@@ -28,6 +29,7 @@ export function DeviceStatusScreen() {
   const router = useRouter();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
   const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const cameraStatus = useCameras();
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deviceToDisconnect, setDeviceToDisconnect] = useState<DeviceStatus | null>(null);
   const lifecycle = useDeviceClaimLifecycle(() => {
@@ -46,21 +48,18 @@ export function DeviceStatusScreen() {
     {
       name: "Camera 1",
       deviceId: camera1DeviceId,
-      batteryLevel: null,
       type: "camera",
       cameraNumber: 1,
     },
     {
       name: "Camera 2",
       deviceId: camera2DeviceId,
-      batteryLevel: null,
       type: "camera",
       cameraNumber: 2,
     },
     {
       name: "Quick Button",
       deviceId: buttonDeviceId,
-      batteryLevel: null,
       type: "button",
     },
   ];
@@ -81,7 +80,7 @@ export function DeviceStatusScreen() {
 
     const cameraNumber = device.cameraNumber ?? 1;
     router.push(
-      (isConnected
+      (devicePresence(device, cameraStatus).online
         ? `/(onboarding)/devices/camera/camera-preview?camera=${cameraNumber}&source=settings`
         : `/(onboarding)/devices/camera?camera=${cameraNumber}&source=settings`) as never,
     );
@@ -147,12 +146,13 @@ export function DeviceStatusScreen() {
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
+          const presence = devicePresence(device, cameraStatus);
           const actionTitle =
             device.type === "button"
               ? isConnected
                 ? "Test Quick Button"
                 : "Connect Quick Button"
-              : isConnected
+              : presence.online
                 ? "Preview camera angle"
                 : "Connect camera";
 
@@ -171,7 +171,7 @@ export function DeviceStatusScreen() {
                     style={[
                       styles.statusDot,
                       {
-                        backgroundColor: isConnected
+                        backgroundColor: presence.online
                           ? theme.success
                           : theme.textInactive,
                       },
@@ -179,34 +179,23 @@ export function DeviceStatusScreen() {
                   />
                   <Text
                     style={[
-                      isConnected ? Typography.medium : Typography.body,
-                      { color: isConnected ? theme.success : theme.textMuted },
+                      presence.online ? Typography.medium : Typography.body,
+                      { color: presence.online ? theme.success : theme.textMuted },
                     ]}
                   >
-                    {isConnected ? "Connected" : "Not connected"}
+                    {presence.label}
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.infoRow}>
-                <Text style={[Typography.body, { color: theme.text }]}>
-                  Battery
-                </Text>
-                <Text style={[Typography.body, { color: theme.textMuted }]}>
-                  {device.batteryLevel === null
-                    ? "Unavailable"
-                    : `${device.batteryLevel}%`}
-                </Text>
-              </View>
-
-              <Button
+              {(device.type === "button" || presence.online || presence.canConnect) && <Button
                 title={actionTitle}
                 variant={isConnected ? "primary" : "outline"}
                 fullWidth
                 style={styles.action}
                 disabled={Boolean(disconnectingId)}
                 onPress={() => handleDeviceAction(device)}
-              />
+              />}
               {isConnected && (
                 <Button
                   title="Disconnect"

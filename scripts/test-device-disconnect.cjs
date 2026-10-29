@@ -57,9 +57,9 @@ test("empty IDs, unsupported targets and unconfirmed results cannot cause local 
   }
 });
 
-function screen(request) {
+function screen(request, cameraStatus = { cameras: [], isLoading: false, error: null }) {
   let cursor = 0;
-  const slots = [], calls = [], cleared = [];
+  const slots = [], calls = [], cleared = [], routes = [];
   const auth = { currentUser: { uid: "owner", getIdToken: async () => "session-token" } };
   const store = { ownerUid: "owner", camera1DeviceId: "CAM-111-AAA", camera2DeviceId: "CAM-222-BBB", buttonDeviceId: "BUT-333-CCC",
     clearDisconnectedDevice: (uid, id) => { cleared.push([uid, id]); return true; } };
@@ -71,7 +71,7 @@ function screen(request) {
       return [slots[i], (next) => { slots[i] = next; }]; },
       useRef: (value) => { const i = cursor++; return slots[i] ??= { current: value }; }, useCallback: (work) => work },
     "react/jsx-runtime": require("react/jsx-runtime"),
-    "expo-router": { useFocusEffect: () => {}, useRouter: () => ({}), useLocalSearchParams: () => ({}) },
+    "expo-router": { useFocusEffect: () => {}, useRouter: () => ({ push: (href) => routes.push(href) }), useLocalSearchParams: () => ({}) },
     "react-native": { View: "View", Text: "Text", StyleSheet: { create: (value) => value } },
     "@/lib/firebase": { auth }, "@/shared/hooks": { useTheme: () => ({}) },
     "@/shared/theme": { Spacing: {}, Typography: {} }, "@/shared/ui/button": { Button: "Button" },
@@ -81,8 +81,10 @@ function screen(request) {
     "../services/devices.api": { releaseDevice: (...args) => { calls.push(args); return request(); } },
     "../store/devices.store": { useDeviceStore: Object.assign(() => store, { getState: () => store }) },
     "../hooks/use-device-claim-lifecycle": { useDeviceClaimLifecycle: () => life },
+    "@/modules/camera-sensor/hooks/use-cameras": { useCameras: () => cameraStatus },
+    "../utils/device-presence": load("src/modules/devices/utils/device-presence.ts", {}),
   }).DeviceStatusScreen;
-  return { auth, calls, cleared, life, render: () => { cursor = 0; return component(); } };
+  return { auth, calls, cleared, routes, life, render: () => { cursor = 0; return component(); } };
 }
 function find(tree, predicate) {
   if (!tree || typeof tree !== "object") return null;
@@ -93,6 +95,27 @@ function find(tree, predicate) {
   return null;
 }
 const settle = () => new Promise((resolve) => setImmediate(resolve));
+
+test("Settings presence uses backend online flags and hides preview and unsupported battery rows", () => {
+  const status = { cameras: [{ deviceId: "CAM-111-AAA", source: "esp32", online: true }], isLoading: false, error: null };
+  const app = screen(async () => {}, status);
+  let tree = app.render();
+  assert.ok(find(tree, (node) => node.props?.children === "Online"));
+  assert.ok(find(tree, (node) => node.props?.children === "Offline"));
+  assert.ok(find(tree, (node) => node.props?.children === "Status unavailable"));
+  assert.equal(find(tree, (node) => node.props?.children === "Battery"), null);
+  find(tree, (node) => node.props?.title === "Preview camera angle").props.onPress();
+  assert.equal(app.routes[0], "/(onboarding)/devices/camera/camera-preview?camera=1&source=settings");
+  status.cameras[0].online = false;
+  tree = app.render();
+  assert.equal(find(tree, (node) => node.props?.title === "Preview camera angle"), null);
+  find(tree, (node) => node.props?.title === "Connect camera").props.onPress();
+  assert.equal(app.routes[1], "/(onboarding)/devices/camera?camera=1&source=settings");
+  status.cameras[0].online = true; status.error = "Network unavailable";
+  assert.equal(find(app.render(), (node) => node.props?.title === "Preview camera angle"), null);
+  status.error = null; status.isLoading = true;
+  assert.equal(find(app.render(), (node) => node.props?.title === "Preview camera angle"), null);
+});
 function confirm(app) {
   find(app.render(), (node) => node.props?.title === "Disconnect").props.onPress();
   return find(app.render(), (node) => node.type === "Confirmation").props.onPrimaryPress;
