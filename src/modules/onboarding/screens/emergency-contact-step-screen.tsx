@@ -5,7 +5,7 @@ import { styles } from "./emergency-contact-step-screen.styles";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
@@ -186,7 +186,7 @@ export default function RegisterStepThreeScreen() {
       <KeyboardAvoidingWrapper>
         <View style={styles.container}>
           <View style={styles.stepperContainer}>
-            <Stepper currentStep={3} steps={10} size={6} />
+            <Stepper currentStep={3} steps={10} size={4} />
           </View>
 
           <View style={styles.logoContainer}>
@@ -323,24 +323,18 @@ export default function RegisterStepThreeScreen() {
                 title="Back"
                 variant="ghost"
                 fullWidth={false}
+                feedbackEnabled={false}
                 leftIcon={
                   <BackArrowIcon color={theme.text} />
                 }
                 textStyle={{ color: theme.text }}
-                onPress={() => router.back()}
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/(onboarding)/register/vehicle")}
                 disabled={isLoading}
-                style={{ width: "48%" }}
+                style={{ flex: 1, paddingHorizontal: 0, justifyContent: "flex-start" }}
               />
-
-              <Button
-                title={hasAnyInput ? "Next" : "Skip"}
-                variant={hasAnyInput ? "primary" : "primary"}
-                size="md"
-                fullWidth={false}
-                isLoading={isLoading}
-                style={{ width: "48%" }}
-                onPress={hasAnyInput ? handleSubmit : handleSkipPress}
-              />
+              <Button title={hasAnyInput ? "Next" : "Skip"} variant="primary" size="md"
+                fullWidth={false} isLoading={isLoading} style={{ flex: 1 }}
+                onPress={hasAnyInput ? handleSubmit : handleSkipPress} />
             </KeyboardHiddenView>
           </View>
         </View>

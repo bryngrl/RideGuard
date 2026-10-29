@@ -1,80 +1,32 @@
-import RedBase from "@/assets/icons/sensors/button/onboarding/red-button/red-base.svg";
-import RedBodyDefault from "@/assets/icons/sensors/button/onboarding/red-button/red-body-default.svg";
-import RedBodyPressed from "@/assets/icons/sensors/button/onboarding/red-button/red-body-pressed.svg";
-import WhiteBase from "@/assets/icons/sensors/button/onboarding/white-button/white-base.svg";
-import WhiteBodyDefault from "@/assets/icons/sensors/button/onboarding/white-button/white-body-default.svg";
-import WhiteBodyPressed from "@/assets/icons/sensors/button/onboarding/white-button/white-body-pressed.svg";
-import type { ButtonColor } from "../types/button-test";
+import { Image } from "expo-image";
 import { StyleSheet, View } from "react-native";
+import type { ButtonColor } from "../types/button-test";
 
-type ButtonTestVisualProps = {
-  color: ButtonColor;
-  isPressed: boolean;
+const artwork = {
+  red: {
+    normal: require("@/assets/images/hardware/red-button.png"),
+    pressed: require("@/assets/images/hardware/red-button-pressed.png"),
+  },
+  white: {
+    normal: require("@/assets/images/hardware/white-button.png"),
+    pressed: require("@/assets/images/hardware/white-button-pressed.png"),
+  },
 };
 
-export function ButtonTestVisual({
-  color,
-  isPressed,
-}: ButtonTestVisualProps) {
-  const isWhite = color === "white";
-
+export function ButtonTestVisual({ color, isPressed }: { color: ButtonColor; isPressed: boolean }) {
+  // Keep both states mounted so hardware pulses never wait for an image swap.
+  // The existing hardware hook still owns press timing and recognition.
   return (
     <View style={styles.buttonVisual}>
-      <View style={styles.buttonBase}>
-        {isWhite ? (
-          <WhiteBase width={120} height={90} />
-        ) : (
-          <RedBase width={120} height={90} />
-        )}
-      </View>
-
-      <View style={styles.buttonBody}>
-        {isWhite ? (
-          isPressed ? (
-            <View style={styles.pressedBody}>
-              <WhiteBodyPressed width={110} height={90} />
-            </View>
-          ) : (
-            <WhiteBodyDefault width={120} height={90} />
-          )
-        ) : isPressed ? (
-          <View style={styles.pressedBody}>
-            <RedBodyPressed width={110} height={90} />
-          </View>
-        ) : (
-          <RedBodyDefault width={120} height={90} />
-        )}
-      </View>
-
+      <Image source={artwork[color].normal} style={[styles.artwork, { opacity: isPressed ? 0 : 1 }]}
+        contentFit="contain" contentPosition="bottom" />
+      <Image source={artwork[color].pressed} style={[styles.artwork, { opacity: isPressed ? 1 : 0 }]}
+        contentFit="contain" contentPosition="bottom" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  buttonVisual: {
-    position: "relative",
-    width: 120,
-    height: 90,
-  },
-  buttonBase: {
-    position: "absolute",
-    top: 25,
-    left: -2,
-    width: 120,
-    height: 90,
-  },
-  buttonBody: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    width: 120,
-    height: 90,
-  },
-  pressedBody: {
-    position: "absolute",
-    top: 7,
-    left: 5,
-    width: 120,
-    height: 90,
-  },
+  buttonVisual: { width: 120, height: 110 },
+  artwork: { position: "absolute", bottom: 0, width: 120, height: 110 },
 });

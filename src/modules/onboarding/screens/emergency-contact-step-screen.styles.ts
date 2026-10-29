@@ -13,7 +13,8 @@ export const styles = StyleSheet.create({
   },
   buttonContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: Spacing.two,
     marginTop: "auto",
     paddingTop: Spacing.five,
   },

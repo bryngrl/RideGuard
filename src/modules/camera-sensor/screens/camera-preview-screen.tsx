@@ -4,34 +4,38 @@ import { Spacing, Typography } from "@/shared/theme";
 import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useRef } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { useDeviceStore } from "@/modules/devices/store/devices.store";
+import { useCameras } from "../hooks/use-cameras";
+import { CameraPreviewFrame, HardwareCameraPreview } from "../components/camera-preview-frame";
 
 export function CameraPreviewScreen() {
   const router = useRouter();
   const { camera, source } = useLocalSearchParams<{ camera?: string; source?: string }>();
   const fromSettings = source === "settings";
   const theme = useTheme();
-  const [isLoading, setIsLoading] = useState(false);
+  const navigating = useRef(false);
   const isSecondCamera = camera === "2";
+  const deviceId = useDeviceStore((state) => isSecondCamera ? state.camera2DeviceId : state.camera1DeviceId);
+  const { cameras, isLoading, error } = useCameras();
+  const selectedCamera = cameras.find((item) => item.source !== "phone" && item.deviceId === deviceId);
+  const cameraLabel = isSecondCamera ? "Camera 2" : "Camera 1";
+  useFocusEffect(useCallback(() => { navigating.current = false; }, []));
 
-  const handleDone = async () => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (fromSettings) router.dismissTo("/devices");
-      else router.replace(isSecondCamera ? "/devices/button" : "/devices/camera?camera=2");
-    } finally {
-      setIsLoading(false);
-    }
+  const handleDone = () => {
+    if (navigating.current) return;
+    navigating.current = true;
+    if (fromSettings) router.dismissTo("/devices");
+    else router.replace(isSecondCamera ? "/(onboarding)/register/provision" : "/devices/camera?camera=2");
   };
 
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         {!fromSettings && <View style={styles.stepperContainer}>
-          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={10} size={6} />
+          <Stepper currentStep={isSecondCamera ? 6 : 5} steps={10} size={4} />
         </View>}
         <View style={styles.topSection}>
           <View style={styles.logoContainer}>
@@ -51,18 +55,17 @@ export function CameraPreviewScreen() {
                 },
               ]}
             >
-              Passenger seat is fully within frame — no adjustment needed.
+              Check the camera angle and keep the passenger seat within frame.
             </Text>
           </View>
         </View>
 
-        <View style={styles.previewContainer}>
-          <Image
-            source={require("@/assets/images/placeholder/placeholder-camera-preview.png")}
-            style={styles.previewImage}
-            resizeMode="cover"
-          />
-        </View>
+        <CameraPreviewFrame>
+          <HardwareCameraPreview camera={selectedCamera} label={cameraLabel} loading={isLoading} error={error}
+            onConnect={() => router.replace({ pathname: "/(onboarding)/devices/camera", params: {
+              camera: isSecondCamera ? "2" : "1", ...(fromSettings ? { source: "settings" } : {}),
+            } })} />
+        </CameraPreviewFrame>
 
         <View style={styles.footerContainer}>
           <Button
@@ -71,7 +74,6 @@ export function CameraPreviewScreen() {
             size="md"
             fullWidth={true}
             onPress={handleDone}
-            isLoading={isLoading}
           />
         </View>
       </View>
@@ -98,17 +100,6 @@ const styles = StyleSheet.create({
   logoContainer: {
     alignItems: "flex-start",
     marginBottom: Spacing.three,
-  },
-  previewContainer: {
-    alignSelf: "center",
-    height: 240,
-    justifyContent: "center",
-    marginVertical: Spacing.three,
-    width: "100%",
-  },
-  previewImage: {
-    height: "100%",
-    width: "100%",
   },
   topSection: {},
 });

@@ -4,4 +4,5 @@ export type ButtonColor = "white" | "red";
 
 export type ButtonHardwareEvent =
   | { type: "pulse"; button: ButtonColor }
+  | { type: "hold-start" | "hold-end"; button: "red" }
   | { type: "long-press"; button: "red" };

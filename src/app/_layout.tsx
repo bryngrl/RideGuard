@@ -18,6 +18,7 @@ import { SessionRecovery } from "@/modules/auth/components/session-recovery";
 import { BrandedAlertHost } from "@/shared/ui/branded-alert-host";
 import { Colors } from "@/shared/theme/colors";
 import { LocationServicesPrompt } from "@/shared/ui/location-services-prompt";
+import { recordMpinActivity } from "@/modules/mpin/services/mpin-activity";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -60,7 +61,9 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }}
+      onStartShouldSetResponderCapture={() => { recordMpinActivity(); return false; }}
+      onMoveShouldSetResponderCapture={() => { recordMpinActivity(); return false; }}>
       <ThemeProvider value={{ ...(colorScheme === "dark" ? DarkTheme : DefaultTheme), colors: { ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors), background: Colors[colorScheme].background, card: Colors[colorScheme].card, text: Colors[colorScheme].text, border: Colors[colorScheme].border, primary: Colors[colorScheme].accent, notification: Colors[colorScheme].error } }}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
@@ -99,7 +102,7 @@ export default function RootLayout() {
             name="(public)/password-reset-success"
             options={{ animation: reduceMotion ? "none" : "slide_from_right", animationTypeForReplace: "push", gestureEnabled: false }}
           />
-          <Stack.Screen name="(onboarding)/register" options={{ animation: "fade" }} />
+          <Stack.Screen name="(onboarding)" options={{ animation: Platform.OS === "android" ? "none" : "fade" }} />
         </Stack>
         <SessionRecovery message={sessionError} busy={isCheckingAuth} onRetry={retrySession} />
         <MpinPrivacyCover />

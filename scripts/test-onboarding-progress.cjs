@@ -5,10 +5,15 @@ const { test } = require("node:test");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-function loadProgress(storage = new Map()) {
+function loadProgress(storage = new Map(), remote = null, complete = async () => {}) {
   const source = readFileSync(path.join(__dirname, "../src/modules/auth/services/registration-progress.ts"), "utf8");
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
   const context = { exports: {}, require(name) {
+    if (name === "./onboarding-progress.api") return {
+      getOnboardingProgress: async () => remote,
+      updateOnboardingProgress: async () => {},
+      completeOnboarding: complete,
+    };
     assert.equal(name, "@react-native-async-storage/async-storage");
     return {
       getItem: async (key) => storage.get(key) ?? null,
@@ -19,7 +24,7 @@ function loadProgress(storage = new Map()) {
   vm.runInNewContext(compiled, context);
   return { api: context.exports, storage };
 }
-const account = (email = "driver@gmail.com") => ({ email });
+const account = (email = "driver@gmail.com") => ({ email, uid: email, getIdToken: async () => "token" });
 
 test("new registration starts at Profile despite a backend-created profile", async () => {
   const { api } = loadProgress();
@@ -56,4 +61,43 @@ test("only successful completion removes the pending checkpoint", async () => {
   assert.equal(storage.size, 0);
   assert.equal(await api.postAuthDestination(account(), true), "/(app)/(tabs)");
   assert.equal(await api.postAuthDestination(account(), false), api.onboardingPaths.profile);
+});
+
+test("server checkpoints resume across installations and configured MPIN is not recreated", async () => {
+  const remote = { uid: "driver@gmail.com", step: "camera", completed: false, mpinConfigured: true, completedSteps: [], data: { frontendFlowVersion: 2 } };
+  assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), true), "/(onboarding)/devices/camera");
+  remote.step = "mpin";
+  assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), true), "/(onboarding)/register/complete-setup");
+  remote.completed = true;
+  assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), true), "/(app)/(tabs)");
+  remote.mpinConfigured = false;
+  assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), true), "/(onboarding)/register/mpin");
+});
+
+test("legacy profile and configured MPIN migrate to the normal app instead of restarting onboarding", async () => {
+  for (const step of ["profile", "permission", "camera", "mpin"]) {
+    const remote = { step, completed: false, mpinConfigured: true, completedSteps: [] };
+    const { api, storage } = loadProgress(new Map([["rideguard:onboarding-pending:driver@gmail.com", "permission"]]), remote);
+    assert.equal(await api.postAuthDestination(account(), true), "/(app)/(tabs)");
+    assert.equal(storage.size, 0);
+    assert.equal(await api.postAuthDestination(account(), false), "/(onboarding)/register/profile");
+  }
+});
+
+test("failed legacy migration retains the checkpoint and missing MPIN never migrates", async () => {
+  const remote = { step: "permission", completed: false, mpinConfigured: true };
+  const storage = new Map([["rideguard:onboarding-pending:driver@gmail.com", "permission"]]);
+  let completions = 0;
+  const app = loadProgress(storage, remote, async () => { completions++; throw new Error("offline"); });
+  await assert.rejects(app.api.postAuthDestination(account(), true));
+  assert.equal(storage.size, 1);
+  assert.equal(completions, 1);
+  remote.mpinConfigured = false;
+  assert.equal(await app.api.postAuthDestination(account(), true), "/(onboarding)/register/permission");
+  assert.equal(completions, 1);
+});
+
+test("a server completion flag cannot bypass a missing personal profile", async () => {
+  const remote = { step: "complete-setup", completed: true, mpinConfigured: true };
+  assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), false), "/(onboarding)/register/profile");
 });

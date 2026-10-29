@@ -12,6 +12,7 @@ import { stopPhoneCapture } from "@/modules/phone-camera";
 import { useRouter } from "expo-router";
 import { signOut } from "firebase/auth";
 import { useState } from "react";
+import { revokeLogoutSession } from "@/modules/auth/services/logout-session";
 export function useLogout() {
   const router = useRouter();
   const clearAuth = useAuthStore((state) => state.clearAuth);
@@ -37,6 +38,9 @@ export function useLogout() {
       // Needs the Firebase token, so before signOut. Best effort: a network
       // failure must not keep the user signed in.
       if (token) {
+        await revokeLogoutSession(token).catch(() => {
+          console.info("Server logout could not be confirmed; signing out locally.");
+        });
         try {
           await unregisterPushNotification(token, await getInstallationId());
         } catch (error) {

@@ -12,6 +12,7 @@ const policy = policyModule.exports;
 
 function harness(pathname = "/settings", params = {}) {
   let progressFailure = false;
+  let progressChecks = 0;
   let cursor = 0, effectCursor = 0;
   const slots = [], effects = [], pending = [], routes = [], actions = [];
   const appState = { currentState: "active" };
@@ -41,6 +42,7 @@ function harness(pathname = "/settings", params = {}) {
       }); } },
     "@/modules/auth/store/auth.store": { useAuthStore: () => auth },
     "@/modules/auth/services/registration-progress": { postAuthDestination: async () => {
+      progressChecks++;
       if (progressFailure) throw new Error("Storage unavailable");
       return "/(app)/(tabs)";
     } },
@@ -60,13 +62,29 @@ function harness(pathname = "/settings", params = {}) {
   }).outputText;
   const context = { exports: {}, require: (name) => { assert.ok(name in modules, name); return modules[name]; } };
   vm.runInNewContext(compiled, context);
-  return { appState, auth, mpin, routes, actions, failProgress: (value) => { progressFailure = value; }, render: () => {
+  return { appState, auth, mpin, routes, actions, navigate: (path) => { pathname = path; },
+    progressChecks: () => progressChecks, failProgress: (value) => { progressFailure = value; }, render: () => {
     cursor = 0; effectCursor = 0;
     const tree = context.exports.MpinAppGate({ children: "protected-stack" });
     pending.splice(0).forEach((effect) => effect());
     return tree;
   } };
 }
+
+test("normal tab and page navigation does not repeat onboarding checks or cover the unlocked stack", async () => {
+  const app = harness("/");
+  app.render(); await settle(); app.render();
+  assert.equal(app.progressChecks(), 1);
+  for (const path of ["/alerts", "/camera", "/settings", "/settings/account", "/contact", "/"]) {
+    app.navigate(path);
+    const tree = app.render();
+    assert.equal(tree.props.children[0].props.pointerEvents, "auto");
+    assert.equal(tree.props.children[1].props.pointerEvents, "none");
+    await settle(); app.render();
+    assert.equal(app.progressChecks(), 1);
+  }
+  assert.equal(app.routes.length, 0);
+});
 
 test("background locking hides protected UI without replacing the native screen in the background", async () => {
   const app = harness(); app.render(); await settle();

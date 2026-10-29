@@ -73,7 +73,7 @@ export default function RegisterStepTwoScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper currentStep={2} steps={10} size={6} />
+          <Stepper currentStep={2} steps={10} size={4} />
         </View>
 
         <View style={styles.logoContainer}>
@@ -164,23 +164,16 @@ export default function RegisterStepTwoScreen() {
               title="Back"
               variant="ghost"
               fullWidth={false}
-              centerTextWithLeftIcon
+              feedbackEnabled={false}
               leftIcon={
                 <BackArrowIcon color={theme.text} />
               }
               textStyle={{ color: theme.text }}
-              onPress={() => router.back()}
-              style={{ width: "48%" }}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/(onboarding)/register/profile")}
+              style={{ flex: 1, paddingHorizontal: 0, justifyContent: "flex-start" }}
             />
-
-            <Button
-              title="Next"
-              variant="primary"
-              size="md"
-              fullWidth={false}
-              style={{ width: "48%" }}
-              onPress={handleNextStep}
-            />
+            <Button title="Next" variant="primary" size="md" fullWidth={false}
+              style={{ flex: 1 }} onPress={handleNextStep} />
           </KeyboardHiddenView>
         </View>
       </View>

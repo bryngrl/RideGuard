@@ -1,7 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
-import Animated, { cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -19,13 +18,6 @@ export function MpinLayout({ title, description, children, busy, error, preview 
 }) {
   const theme = useTheme();
   const { bottom } = useSafeAreaInsets();
-  const reducedMotion = useReducedMotion();
-  const opacity = useSharedValue(reducedMotion ? 1 : 0);
-  useEffect(() => {
-    opacity.value = withTiming(1, { duration: reducedMotion ? 0 : 220 });
-    return () => cancelAnimation(opacity);
-  }, [opacity, reducedMotion]);
-  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}>
@@ -33,7 +25,7 @@ export function MpinLayout({ title, description, children, busy, error, preview 
           showsVerticalScrollIndicator={false} keyboardGap={Spacing.four} removeClippedSubviews={false}>
           {onboarding && <Stepper currentStep={9} steps={10} />}
           <View style={styles.toolbar} />
-          <Animated.View collapsable={false} style={[styles.body, fade]}>
+          <View collapsable={false} style={styles.body}>
             <View style={styles.intro}>
               {success ? <SuccessIndicator label={preview ? "Success screen preview" : title} /> :
                 <View style={[styles.icon, { backgroundColor: theme.infoBackground }]}><Ionicons name="shield-checkmark-outline" size={28} color={theme.text} /></View>}
@@ -46,10 +38,10 @@ export function MpinLayout({ title, description, children, busy, error, preview 
               <ActivityIndicator color={theme.text} /><Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Please wait…</Text>
             </View>}
             {children}
-          </Animated.View>
+          </View>
         </KeyboardAwareFormScrollView>
       </KeyboardAvoidingView>
-      <MpinNotification error={error} success={success ? title : undefined} />
+      <MpinNotification error={error} />
     </SafeAreaView>
   );
 }

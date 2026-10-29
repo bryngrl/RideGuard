@@ -1,7 +1,7 @@
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { formatNationalMobile, nationalMobile, validNationalMobile } from "@/shared/lib/input-formats";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
@@ -60,7 +60,7 @@ export default function RegisterScreen() {
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
         <View style={styles.stepperContainer}>
-          <Stepper currentStep={1} steps={10} size={6} />
+          <Stepper currentStep={1} steps={10} size={4} />
         </View>
 
         <View style={styles.logoContainer}>
@@ -147,8 +147,8 @@ export default function RegisterScreen() {
               title="Next"
               variant="primary"
               size="md"
-              fullWidth={false}
-              style={{ width: "48%" }}
+              fullWidth
+              style={{ width: "100%" }}
               onPress={handleNextStep}
             />
           </KeyboardHiddenView>

@@ -3,22 +3,24 @@ import LocationIcon from "@/assets/icons/actions/location.svg";
 import NotificationIcon from "@/assets/icons/misc/notification.svg";
 import GreenCheckIcon from "@/assets/icons/status/green-check.svg";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { Spacing, Typography } from "@/shared/theme";
+import { actionFooterPadding, Spacing, Typography } from "@/shared/theme";
 import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { BackArrowIcon } from "@/shared/ui/back-arrow-icon";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import * as Location from "expo-location";
+import { getLocationAccess, openLocationSettings } from "@/shared/lib/location-access";
 import * as Notifications from "expo-notifications";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { AppState, Linking, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { styles } from "./permission-screen.styles";
 
 export default function PermissionsScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const { bottom } = useSafeAreaInsets();
 
   const [locationGranted, setLocationGranted] = useState(false);
   const [notificationsGranted, setNotificationsGranted] = useState(false);
@@ -26,10 +28,10 @@ export default function PermissionsScreen() {
   const [permissionError, setPermissionError] = useState<string | null>(null);
 
   const checkPermissions = async () => {
-    const location = await Location.getForegroundPermissionsAsync();
+    const location = await getLocationAccess();
     const notifications = await Notifications.getPermissionsAsync();
 
-    setLocationGranted(location.granted);
+    setLocationGranted(location.ready);
     setNotificationsGranted(notifications.granted);
   };
 
@@ -54,12 +56,18 @@ export default function PermissionsScreen() {
     setPermissionError(null);
 
     try {
-      // Request location first
-      if (!locationGranted) {
+      // Recheck the OS rather than relying on the last rendered checkmark.
+      const location = await getLocationAccess();
+      setLocationGranted(location.ready);
+      if (!location.servicesEnabled) {
+        await openLocationSettings();
+        return;
+      }
+      if (!location.permission.granted) {
         const result = await Location.requestForegroundPermissionsAsync();
 
         if (result.granted) {
-          setLocationGranted(true);
+          setLocationGranted((await getLocationAccess()).ready);
         } else if (result.canAskAgain === false) {
           await Linking.openSettings();
         }
@@ -104,9 +112,9 @@ export default function PermissionsScreen() {
         },
       ]}
     >
-      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: actionFooterPadding(bottom, true) }]} showsVerticalScrollIndicator={false}>
         <View style={styles.stepperContainer}>
-          <Stepper currentStep={4} steps={10} size={6} />
+          <Stepper currentStep={4} steps={10} size={4} />
         </View>
         {/* MAIN CONTENT */}
         <View style={styles.topSection}>
@@ -229,17 +237,21 @@ export default function PermissionsScreen() {
         {/* FIXED BOTTOM BUTTON */}
         <View style={styles.buttonContainer}>
           {permissionError ? <View style={{ width: "100%", marginBottom: Spacing.three }}><FormFeedback message={permissionError} /></View> : null}
-          <Button title="Back" variant="ghost" fullWidth={false} style={{ width: "48%" }}
-            leftIcon={<BackArrowIcon color={theme.text} />} disabled={isLoading} onPress={() => router.back()} />
+          <View style={styles.actionsRow}>
+          <Button title="Back" variant="ghost" fullWidth={false} feedbackEnabled={false}
+            style={{ flex: 1, paddingHorizontal: 0, justifyContent: "flex-start" }}
+            leftIcon={<BackArrowIcon color={theme.text} />} disabled={isLoading}
+            onPress={() => router.canGoBack() ? router.back() : router.replace("/(onboarding)/register/emergency-contact")} />
           <Button
             title={buttonTitle}
             variant="primary"
             size="md"
             fullWidth={false}
-            style={{ width: "48%" }}
+            style={{ flex: 1 }}
             onPress={handleGoToSettings}
             isLoading={isLoading}
           />
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

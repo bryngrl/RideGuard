@@ -31,6 +31,7 @@ const moduleUnderTest = { exports: {} };
 new Function("require", "module", "exports", compiled)((name) => {
   if (name === "@/shared/api") return { apiClient };
   if (name === "@/shared/api/errors") return { APIError };
+  if (name === "@/modules/notifications/services/installation-id") return { getInstallationId: async () => "installation-fixture" };
   throw new Error(`Unexpected import: ${name}`);
 }, moduleUnderTest, moduleUnderTest.exports);
 const { MpinError, mpinApi, setupAndUnlockMpin } = moduleUnderTest.exports;
@@ -45,10 +46,22 @@ test("status forwards auth, abort signal, and lifecycle context", async () => {
   reply = { success: true, data: { configured: false, requiresUnlock: false } };
   const signal = new AbortController().signal;
   assert.deepEqual(await mpinApi.status("firebase-token", signal, { reason: "resume", inactiveForMs: 1200 }), reply.data);
-  assert.equal(calls[0].endpoint, "/mpin/status?reason=resume");
+  assert.equal(calls[0].endpoint, "/mpin/status?reason=resume&inactiveForMs=1200");
+  assert.equal(calls[0].options.headers["x-device-id"], "installation-fixture");
   assert.equal(calls[0].options.token, "firebase-token");
   assert.equal(calls[0].options.signal, signal);
   assert.equal(calls[0].options.method, "GET");
+});
+
+test("lock targets the same installation and concurrent-update errors do not imply an existing setup", async () => {
+  calls.length = 0;
+  reply = { success: true, data: { success: true } };
+  await mpinApi.lock("token", new AbortController().signal);
+  assert.equal(calls[0].endpoint, "/mpin/lock");
+  assert.equal(calls[0].options.headers["x-device-id"], "installation-fixture");
+  reply = new APIError("An MPIN update is already in progress.", 409, { code: "CONCURRENT_CHANGE_IN_PROGRESS" });
+  await assert.rejects(mpinApi.change("token", "grant", "0123", new AbortController().signal),
+    (error) => error.code === "update-in-progress");
 });
 
 test("setup uses the server response and never treats a malformed envelope as success", async () => {

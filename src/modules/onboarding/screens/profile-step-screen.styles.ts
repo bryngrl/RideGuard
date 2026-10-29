@@ -14,6 +14,6 @@ export const styles = StyleSheet.create({
   buttonContainer: {
     marginTop: "auto",
     paddingTop: Spacing.five,
-    alignItems: "flex-end",
+    alignItems: "stretch",
   },
 });

@@ -2,17 +2,18 @@ import MainLogo from "@/assets/icons//logos/main.svg";
 import LightBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { claimDevice, useDeviceStore } from "@/modules/devices";
+import { useDeviceClaimLifecycle } from "@/modules/devices/hooks/use-device-claim-lifecycle";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { cameraId, formatCameraId, validCameraId } from "@/shared/lib/input-formats";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { Stepper } from "@/shared/ui";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Keyboard, Text, View } from "react-native";
 import { styles } from "./provision-camera-screen.styles";
 
@@ -28,6 +29,10 @@ export function ProvisionCameraScreen() {
   const [deviceId, setDeviceId] = useState("");
   const [deviceIdError, setDeviceIdError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const claim = useDeviceClaimLifecycle(() => {
+    setIsLoading(false);
+    setAlertState({ visible: false, status: "loading", message: "" });
+  });
 
   const [alertState, setAlertState] = useState<{
     visible: boolean;
@@ -39,8 +44,13 @@ export function ProvisionCameraScreen() {
     message: "",
   });
 
+  useFocusEffect(useCallback(() => {
+    setIsLoading(false);
+    setAlertState({ visible: false, status: "loading", message: "" });
+  }, []));
+
   const handleConnect = async () => {
-    if (isLoading) return;
+    if (isLoading || alertState.visible) return;
 
     setDeviceIdError("");
     const cleanedId = formatCameraId(deviceId);
@@ -56,6 +66,8 @@ export function ProvisionCameraScreen() {
     }
 
     const user = auth.currentUser;
+    const attempt = claim.begin(user?.uid ?? null);
+    if (!attempt) return;
     if (!user) {
       setAlertState({
         visible: true,
@@ -63,8 +75,9 @@ export function ProvisionCameraScreen() {
         message: "Log in to connect a device.",
       });
 
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         setAlertState((prev) => ({ ...prev, visible: false }));
+        claim.finish(attempt);
       }, 2500);
       return;
     }
@@ -78,7 +91,9 @@ export function ProvisionCameraScreen() {
       });
 
       const firebaseToken = await user.getIdToken(true);
+      if (!claim.isCurrent(attempt)) return;
       await claimDevice(cleanedId, firebaseToken);
+      if (!claim.isCurrent(attempt)) return;
       if (isSecondCamera) {
         setCamera2DeviceId(cleanedId);
       } else {
@@ -91,11 +106,12 @@ export function ProvisionCameraScreen() {
         message: "Camera successfully connected",
       });
 
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         if (fromSettings) router.dismissTo("/devices");
         else router.replace(`/devices/camera/camera-preview?camera=${cameraNumber}` as never);
       }, 1500);
     } catch (error: unknown) {
+      if (!claim.isCurrent(attempt)) return;
       const message =
         error instanceof Error
           ? error.message
@@ -107,28 +123,27 @@ export function ProvisionCameraScreen() {
         message,
       });
 
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         setAlertState((prev) => ({ ...prev, visible: false }));
+        claim.finish(attempt);
       }, 2500);
     } finally {
-      setIsLoading(false);
+      if (claim.isCurrent(attempt)) setIsLoading(false);
     }
   };
 
   const handleSkip = () => {
-    if (deviceId.trim()) {
-      setDeviceIdError("Clear the Device ID before skipping.");
-      return;
-    }
-
+    if (isLoading || alertState.visible) return;
+    Keyboard.dismiss();
     if (fromSettings) router.dismissTo("/devices");
-    else router.replace("/devices/button" as never);
+    // Skipping Camera 1 skips both camera slots and continues with the Quick Button.
+    else router.replace("/(onboarding)/register/provision");
   };
 
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
-        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={10} size={6} /></View>}
+        {!fromSettings && <View style={styles.stepperContainer}><Stepper currentStep={cameraNumber === 1 ? 5 : 6} steps={10} size={4} /></View>}
         <View style={[styles.topSection, fromSettings && styles.settingsTopSection]}>
           <View style={styles.logoContainer}>
             <MainLogo color={theme.logo} width={64} height={64} />
@@ -157,7 +172,7 @@ export function ProvisionCameraScreen() {
               label="Device ID"
               required
               labelStyle={{ color: theme.text }}
-              placeholder="e.g., ABC-123-XYZ"
+              placeholder="e.g., CAM-123-ABC"
               autoCapitalize="characters"
               autoCorrect={false}
               value={deviceId}
@@ -209,14 +224,14 @@ export function ProvisionCameraScreen() {
               onPress={handleConnect}
               isLoading={isLoading}
             />
-            {isSecondCamera && !fromSettings && (
+            {!fromSettings && (
               <Button
                 title="Skip for now"
                 variant="ghost"
                 size="md"
                 fullWidth
                 onPress={handleSkip}
-                disabled={isLoading}
+                disabled={isLoading || alertState.visible}
                 style={{ marginTop: Spacing.two }}
               />
             )}

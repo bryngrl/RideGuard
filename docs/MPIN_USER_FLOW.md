@@ -1,5 +1,9 @@
 # RideGuard MPIN flow and endpoint audit
 
+> Current integration update: [29 October staging integration](BACKEND_STAGING_INTEGRATION_2026-10-29.md).
+> Device identity, lock/logout and server onboarding are now connected. The older
+> audit below remains historical; the current app keeps six-digit MPIN email codes.
+
 Updated against `XpnsiveSharks/rideguard-node` remote HEAD,
 `398e2f268779dbc8e70c59b522c0e730ade983f4` on 2026-10-28.
 
@@ -82,8 +86,15 @@ flowchart TD
 
 - Cold launch requires local MPIN entry, even if the backend still has an unlock
   window from an earlier app instance or another device.
-- Returning after a real background visit locks the local app. Temporary inactive
-  interruptions alone do not force another entry.
+- Returning within three minutes of backgrounding retains an existing unlock if
+  the server still accepts it. At 180 seconds or more, the app locks and shows the
+  branded Session locked notice before requiring MPIN. Three minutes without
+  touch, scrolling or typing while the app is open also locks it. The interval
+  uses monotonic elapsed time; duplicate background events do not restart it.
+- Turning the Android phone screen off requires MPIN immediately on return,
+  regardless of the grace period. The local AppSecurity native module observes
+  screen-off events and device lock state; this requires the updated development
+  binary. Temporary inactive interruptions alone do not force another entry.
 - Navigating between app screens does not repeatedly request MPIN.
 - Server unlock expiry also closes access. The current backend window is 15 minutes.
 - Backend policy allows five failed PIN attempts and then a 15-minute lockout.

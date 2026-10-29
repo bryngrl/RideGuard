@@ -1,4 +1,5 @@
 import { FeedbackPressable as Pressable, PRESSED_STATE_OPACITY } from "@/shared/ui/feedback-pressable";
+import { recordMpinActivity } from "@/modules/mpin/services/mpin-activity";
 import { useRef, useState } from "react";
 import { StyleSheet, Text, TextInput, View } from "react-native";
 import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
@@ -30,7 +31,7 @@ export function VerificationCodeInput({ value, onChange, disabled = false, error
         borderColor: error ? theme.error : focused && index === Math.min(value.length, 5) ? theme.borderFocus : theme.border,
       }]}><Animated.View pointerEvents="none" style={[styles.boxFeedback, { backgroundColor: theme.primary }, pressedStyle]} /><Text style={[Typography.h3, { color: theme.text }]}>{value[index] ?? ""}</Text></View>)}
     </Pressable>
-    <TextInput ref={input} value={value} onChangeText={(next) => onChange(next.replace(/\D/g, "").slice(0, 6))}
+    <TextInput ref={input} value={value} onChangeText={(next) => { recordMpinActivity(); onChange(next.replace(/\D/g, "").slice(0, 6)); }}
       onFocus={(event) => { setFocused(true); scrollFocusedInput(event.nativeEvent.target, field); }} onBlur={() => setFocused(false)}
       style={styles.input} keyboardType="number-pad" autoComplete="one-time-code"
       textContentType="oneTimeCode" editable={!disabled}
