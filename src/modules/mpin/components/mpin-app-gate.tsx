@@ -56,7 +56,10 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
       }
     });
     return () => { cancelled = true; };
-  }, [foreground, auth.user?.uid, auth.isCheckingAuth, auth.isOldUser, emergency, pathname, router, progressRetry]));
+    // A route change is not a new authentication session. Rechecking here for
+    // every tab hides an already-unlocked stack behind a full-screen spinner.
+    // Focus/resume, identity changes and explicit retries still revalidate.
+  }, [foreground, auth.user?.uid, auth.isCheckingAuth, auth.isOldUser, emergency, router, progressRetry]));
 
   useFocusEffect(useCallback(() => {
     if (!foreground || AppState.currentState !== "active" || redirecting.current || auth.isCheckingAuth || permitted || (mpin.checkingStatus && auth.isAuthenticated)) return;

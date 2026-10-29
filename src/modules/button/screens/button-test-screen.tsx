@@ -27,10 +27,11 @@ export function ButtonTestScreen({
     state,
     recognizedButtons,
     pressedButtons,
+    connectionState,
     handleRetry,
   } = useButtonTest(testType, () => {
     if (fromSettings) router.dismissTo("/devices");
-    else router.replace("/devices/button/test-page");
+    else router.replace("/(onboarding)/devices/button/test-page");
   });
 
   const handleSkip = () => {
@@ -124,7 +125,7 @@ export function ButtonTestScreen({
           {!fromSettings && <Stepper
             currentStep={testType === "short" ? 7 : 8}
             steps={10}
-            size={6}
+            size={4}
           />}
 
           <View style={styles.logoContainer}>
@@ -165,7 +166,18 @@ export function ButtonTestScreen({
         )}
 
         <View style={styles.footer}>
-          {state === "timeout" ? (
+          {state === "waiting" && connectionState !== "ready" ? (
+            <>
+              <ButtonTestStatus
+                text={connectionState === "error" ? "Couldn't connect to Quick Button" : "Connecting to Quick Button…"}
+                color={connectionState === "error" ? theme.error : theme.textMuted}
+                subtitle={connectionState === "error" ? "Check your internet connection and try again." : undefined}
+                subtitleColor={theme.textMuted}
+              />
+              {connectionState === "error" && <Button title="Try again" onPress={handleRetry} style={styles.continueButton} />}
+              <Button title="Skip for now" variant="ghost" onPress={handleSkip} style={styles.secondaryButton} />
+            </>
+          ) : state === "timeout" ? (
             <>
               <Button title="Try again" onPress={handleRetry} />
               <Button

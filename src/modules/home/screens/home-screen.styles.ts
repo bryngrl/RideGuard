@@ -83,16 +83,10 @@ export const styles = StyleSheet.create({
     minHeight: 150,
     borderRadius: BorderRadius.lg,
   },
-  monitoringStateCard: {
-    minHeight: 112,
-  },
   monitoringStateTitle: {
-    fontFamily: FontFamily.geistMedium,
+    fontFamily: FontFamily.geistSemiBold,
     fontSize: 18,
     lineHeight: 24,
-  },
-  threatTitle: {
-    fontFamily: FontFamily.geistSemiBold,
   },
   monitoringStateSubtitle: {
     fontSize: 14,

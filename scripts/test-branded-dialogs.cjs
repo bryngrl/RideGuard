@@ -67,7 +67,7 @@ test("async action failures display a short branded error", async () => {
 });
 
 function modal(width, fontScale, theme) {
-  let listener, cancelled = 0, confirmed = 0;
+  let listener, lockListener, cancelled = 0, confirmed = 0;
   const { ConfirmationModal } = load("src/shared/ui/confirmation-modal.tsx", {
     react: { useRef: (value) => ({ current: value }), useEffect: (work) => work() },
     "react/jsx-runtime": require("react/jsx-runtime"),
@@ -77,11 +77,19 @@ function modal(width, fontScale, theme) {
     "@/shared/hooks/use-theme": { useTheme: () => theme },
     "@/shared/theme": { BorderRadius: { lg: 20 }, Spacing: { two: 8, three: 16, four: 24 }, Typography: {} },
     "./button": { Button: "Button" },
+    "@/modules/mpin/services/mpin-activity": { subscribeMpinLock: (work) => { lockListener = work; return () => {}; } },
   });
   const tree = ConfirmationModal({ visible: true, title: "Discard changes?", description: "Unsaved changes", primaryButtonText: "Discard",
     secondaryButtonText: "Keep editing", onPrimaryPress: () => confirmed++, onSecondaryPress: () => cancelled++ });
-  return { tree, background: () => listener("background"), cancelled: () => cancelled, confirmed: () => confirmed };
+  return { tree, background: () => listener("background"), lock: () => lockListener(), cancelled: () => cancelled, confirmed: () => confirmed };
 }
+
+test("idle locking cancels a pending confirmation without executing its primary action", () => {
+  const view = modal(410, 1, {});
+  view.lock();
+  assert.equal(view.cancelled(), 1);
+  assert.equal(view.confirmed(), 0);
+});
 
 test("shared branded confirmations always stack the primary action above Cancel", () => {
   for (const theme of [{ card: "light-card", modalSurface: "light-modal", border: "light-border", text: "light-text" }, { card: "dark-card", modalSurface: "dark-modal", border: "dark-border", text: "dark-text" }]) {
@@ -125,6 +133,8 @@ test("app-owned alerts no longer import the platform Alert UI", () => {
 
 test("ride and onboarding SweetAlert dialogs use the same vertical button order", () => {
   const { SweetAlert } = load("src/shared/ui/sweet-alert.tsx", {
+    react: { useState: (value) => [value, () => {}], useEffect: (work) => work() },
+    "@/modules/mpin/services/mpin-activity": { subscribeMpinLock: () => () => {} },
     "react/jsx-runtime": require("react/jsx-runtime"),
     "react-native": { Modal: "Modal", Pressable: "Pressable", View: "View", Text: "Text", StyleSheet: { create: (value) => value } },
     "@/assets/icons/alerts/primary-warning.svg": "Warning", "@expo/vector-icons": { Ionicons: "Icon" },

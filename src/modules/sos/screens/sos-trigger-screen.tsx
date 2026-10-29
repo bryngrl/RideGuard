@@ -1,5 +1,6 @@
 import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -11,9 +12,12 @@ import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useSosStore } from "../store/sos.store";
 import { useSosStatus } from "../hooks/use-sos-lifecycle";
 import { createStyles } from "./sos-trigger-screen.styles";
+import { actionFooterPadding } from "@/shared/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function SosTriggerScreen() {
   const colors = useTheme();
+  const { bottom } = useSafeAreaInsets();
   const styles = createStyles(colors);
   const router = useRouter();
   const params = useLocalSearchParams<{ alertId?: string; statusChecked?: string }>();
@@ -39,7 +43,18 @@ export function SosTriggerScreen() {
     ]);
   };
   return <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
-    <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <View style={styles.header}>
+      <Pressable style={styles.headerAction} accessibilityRole="button" accessibilityLabel="Go back"
+        onPress={() => router.canGoBack() ? router.back() : router.replace("/")}>
+        <Ionicons name="chevron-back" size={22} color={colors.text} />
+      </Pressable>
+      <Text accessibilityRole="header" style={styles.headerTitle}>SOS</Text>
+      <Pressable style={styles.headerAction} accessibilityRole="button" accessibilityLabel="SOS preferences"
+        onPress={() => router.push("/settings/sos-preferences")}>
+        <Ionicons name="help-circle-outline" size={22} color={colors.text} />
+      </Pressable>
+    </View>
+    <ScrollView contentContainerStyle={[styles.content, { paddingBottom: actionFooterPadding(bottom, true) }]} showsVerticalScrollIndicator={false}>
     <View style={styles.sosSection}>
       <View style={styles.sosWrapper}>
         <View pointerEvents="none" style={styles.innerRing} />
@@ -67,7 +82,7 @@ export function SosTriggerScreen() {
       <View style={styles.contactsSection}>
         <View style={styles.contactsHeader}>
           <Text style={styles.contactsTitle}>Emergency contacts</Text>
-          <Pressable onPress={() => router.push("/contact")} hitSlop={8}
+          <Pressable onPress={() => router.push("/contact")} hitSlop={8} style={styles.manageAction}
             accessibilityRole="link" accessibilityLabel="Manage emergency contacts">
             <Text style={styles.manageLink}>Manage</Text>
           </Pressable>

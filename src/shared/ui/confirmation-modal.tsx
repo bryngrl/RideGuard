@@ -4,6 +4,7 @@ import { useReducedMotion } from "react-native-reanimated";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { Button } from "./button";
+import { subscribeMpinLock } from "@/modules/mpin/services/mpin-activity";
 
 interface ConfirmationModalProps {
   visible: boolean;
@@ -27,10 +28,11 @@ export function ConfirmationModal({ visible, title, description, primaryButtonTe
   close.current = onSecondaryPress;
   useEffect(() => {
     if (!visible) return;
+    const unsubscribeLock = subscribeMpinLock(() => close.current());
     const subscription = AppState.addEventListener("change", (state) => {
       if (state !== "active") close.current();
     });
-    return () => subscription.remove();
+    return () => { subscription.remove(); unsubscribeLock(); };
   }, [visible]);
   return <Modal transparent animationType={reducedMotion ? "none" : "fade"}
     visible={visible} onRequestClose={onRequestClose ?? onSecondaryPress}>

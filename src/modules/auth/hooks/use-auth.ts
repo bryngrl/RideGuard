@@ -45,6 +45,7 @@ export function useAuth() {
           return;
         }
 
+        let stage = "firebase-account-refresh";
         try {
           setCheckingAuth(true);
           if (firebaseUser.providerData.some((provider) => provider.providerId === "password")) {
@@ -57,9 +58,11 @@ export function useAuth() {
             }
           }
 
+          stage = "firebase-token";
           const firebaseToken =
             await firebaseUser.getIdToken();
 
+          stage = "rideguard-profile";
           const oldUser = firebaseUser.providerData.some((provider) => provider.providerId === "password")
             ? await ensureEmailPasswordProfile(firebaseUser)
             : await checkIsOldUser(firebaseToken);
@@ -72,7 +75,13 @@ export function useAuth() {
           if (isTemporarySessionFailure(error)) {
             setSessionError("Couldn't connect to RideGuard. Try again.");
           }
-          if ((error instanceof APIError && error.status >= 500) || error instanceof TypeError) {
+          const code = error && typeof error === "object" && "code" in error &&
+            typeof error.code === "string" ? error.code : null;
+          if (code?.startsWith("auth/")) {
+            // Keep the full Firebase code visible on narrow terminals without
+            // logging the user object, credentials or a long wrapped stack.
+            console.info("RideGuard Firebase session check failed:", { stage, code });
+          } else if ((error instanceof APIError && error.status >= 500) || error instanceof TypeError) {
             console.info("RideGuard profile check failed:", error instanceof APIError
               ? { status: error.status, endpoint: error.endpoint }
               : { reason: "network-request-failed" });

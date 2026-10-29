@@ -1,5 +1,5 @@
 import { styles } from "./complete-setup-screen.styles";
-import AllSetIcon from "@/assets/icons/logos/all-set.svg";
+import { Image } from "expo-image";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
@@ -13,8 +13,8 @@ import { auth } from "@/lib/firebase";
 import { clearRegistrationOnboardingPending } from "@/modules/auth/services/registration-progress";
 import { mpinApi, mpinErrorMessage, MpinError } from "@/modules/mpin/services/mpin.api";
 import { FormFeedback } from "@/shared/ui/form-feedback";
-import Stepper from "@/shared/ui/stepper";
 import { checkIsOldUser } from "@/modules/auth/services/auth.api";
+import { completeOnboarding } from "@/modules/auth/services/onboarding-progress.api";
 
 export default function CompleteSetupScreen() {
   const router = useRouter();
@@ -68,6 +68,10 @@ export default function CompleteSetupScreen() {
 
     try {
       if (!await checkMpin(new AbortController().signal)) return;
+      const user = auth.currentUser;
+      if (!user) throw new MpinError("expired-session");
+      await completeOnboarding(await user.getIdToken());
+      if (auth.currentUser?.uid !== user.uid) throw new MpinError("expired-session");
       setReady(true);
       await clearRegistrationOnboardingPending(auth.currentUser?.email);
       useAuthStore.getState().setIsOldUser(true);
@@ -90,10 +94,9 @@ export default function CompleteSetupScreen() {
       ]}
     >
       <View style={styles.container}>
-        <Stepper currentStep={10} steps={10} />
         <View style={styles.centerSection}>
           {!ready ? <>{error ? <FormFeedback message={error} /> : <ActivityIndicator color={theme.accent} />}</> : <>
-          <AllSetIcon width={96} height={96} />
+          <Image source={require("@/assets/images/all-set-icon.png")} style={{ width: 96, height: 96 }} contentFit="contain" accessibilityLabel="RideGuard setup complete" />
 
           <Text
             style={[Typography.largeTitle, styles.title, { color: theme.text }]}

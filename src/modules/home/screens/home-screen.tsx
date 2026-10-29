@@ -79,7 +79,7 @@ export function HomeScreen() {
   const displayName = profile.firstName.trim() || "there";
 
   const hasCameraConnected = isCamera1Connected || isCamera2Connected;
-  const activeCameraCount = [isCamera1Connected, isCamera2Connected].filter(
+  const activeCameraCount = [cameraOnline(camera1DeviceId), cameraOnline(camera2DeviceId)].filter(
     Boolean,
   ).length;
 
@@ -89,12 +89,16 @@ export function HomeScreen() {
     monitoringTitle,
     monitoringSubtitle,
     monitoringIcon,
-  } = useMonitoringStatus({ hasCameraConnected });
+  } = useMonitoringStatus({ hasCameraConnected,
+    hasOnlineCamera: cameraOnline(camera1DeviceId) || cameraOnline(camera2DeviceId),
+    checking: camerasLoading, unavailable: !!camerasError,
+  });
 
   let monitoringAction: (() => void) | undefined;
 
   if (monitoringCardState === "no-camera") {
-    monitoringAction = () => router.push("/(onboarding)/devices/camera" as any);
+    const slot = isCamera1Connected || !isCamera2Connected ? 1 : 2;
+    monitoringAction = () => router.push(`/(onboarding)/devices/camera?camera=${slot}&source=settings` as any);
   }
 
   const handleStartRide = () => {
@@ -258,16 +262,8 @@ export function HomeScreen() {
                 title={monitoringTitle}
                 subtitle={monitoringSubtitle}
                 icon={monitoringIcon}
-                style={[
-                  styles.monitoringCard,
-                  monitoringCardState !== "no-camera" &&
-                    styles.monitoringStateCard,
-                ]}
-                titleStyle={
-                  monitoringCardState === "threat"
-                    ? [styles.monitoringStateTitle, styles.threatTitle, { color: colors.dangerHeader }]
-                    : styles.monitoringStateTitle
-                }
+                style={styles.monitoringCard}
+                titleStyle={styles.monitoringStateTitle}
                 subtitleStyle={styles.monitoringStateSubtitle}
                 backgroundColor={
                   monitoringCardState === "no-camera"
@@ -278,7 +274,7 @@ export function HomeScreen() {
                 titleColor={monitoringCardStyles.titleColor}
                 subtitleColor={monitoringCardStyles.subtitleColor}
                 actionTitle={
-                  monitoringCardState === "no-camera" ? "Connect" : undefined
+                  monitoringAction ? "Connect" : undefined
                 }
                 onActionPress={monitoringAction}
               />
@@ -454,7 +450,7 @@ export function HomeScreen() {
                   },
                 ]}
               >
-                {activeCameraCount} of 2 active
+                {camerasLoading ? "Checking…" : camerasError ? "Unavailable" : `${activeCameraCount} of 2 active`}
               </Text>
             </View>
           </View>

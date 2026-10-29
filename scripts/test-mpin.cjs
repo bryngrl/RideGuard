@@ -22,6 +22,7 @@ function load(relativePath, overrides = {}) {
         throw new APIError("Service unavailable", 503);
       } } };
       if (name === "@/shared/api/errors") return load("src/shared/api/errors.ts");
+      if (name === "@/modules/notifications/services/installation-id") return { getInstallationId: async () => "installation-fixture" };
       if (name.startsWith(".")) return load(path.relative(path.resolve(__dirname, ".."), path.resolve(path.dirname(filename), name + ".ts")));
       return require(name);
     },
@@ -222,6 +223,8 @@ test("Change MPIN uses current-PIN proof to request the existing change-code cha
       expiresAt: Date.now() + 600000, resendAt: Date.now() + 60000,
     }; },
   }, "change");
+  store.getState().setStatus("flow-owner", { configured: true, requiresUnlock: false });
+  store.getState().acceptUnlock("flow-owner");
   findControl(flow.render(), (node) => node.type === "PinPad").props.onComplete("0123");
   await flow.task.pending;
   assert.deepEqual(calls, [["current", "0123"], ["send", "server-grant-fixture"]]);
@@ -229,6 +232,91 @@ test("Change MPIN uses current-PIN proof to request the existing change-code cha
   assert.equal(flow.routes[0].params.mode, "change");
   assert.equal(store.getState().delivery.mode, "change");
   assert.equal(store.getState().authorization, null);
+});
+
+test("Change MPIN stays covered until server unlock, then resumes in place with its email challenge", async () => {
+  for (const step of ["current", "verify-identity", "manage", "create", "confirm"]) {
+    const flow = emailFlow(step, {
+      unlock: async () => ({ success: true }),
+      status: async () => ({ configured: true, requiresUnlock: false }),
+    }, "change");
+    store.getState().setDelivery({ challengeId: "change-email", maskedDestination: "r***@gmail.com",
+      expiresAt: Date.now() + 600000, resendAt: Date.now() + 60000 }, "change");
+    store.getState().lock(true);
+    assert.equal(flow.render().type, "Unlock", step);
+    flow.render().props.onComplete("0123");
+    await flow.task.pending;
+    assert.equal(flow.task.error, null);
+    assert.equal(store.getState().unlocked, true);
+    assert.equal(store.getState().delivery.challengeId, "change-email");
+    assert.notEqual(flow.render().type, "Unlock");
+    assert.deepEqual(flow.routes, [], "embedded unlock must retain the management route");
+  }
+});
+
+test("failed management unlock never reveals Change MPIN or navigates to protected settings", async () => {
+  const flow = emailFlow("current", { unlock: async () => { throw new api.MpinError("incorrect-pin"); } }, "change");
+  assert.equal(flow.render().type, "Unlock");
+  flow.render().props.onComplete("0123");
+  await flow.task.pending;
+  assert.equal(store.getState().unlocked, false);
+  assert.equal(flow.render().type, "Unlock");
+  assert.match(flow.task.error, /Incorrect MPIN/);
+  assert.deepEqual(flow.routes, []);
+});
+
+test("management resume shows the existing keypad during server checking instead of a Please wait page", async () => {
+  let attempts = 0;
+  const flow = emailFlow("current", { unlock: async () => { attempts++; return { success: true }; } }, "change");
+  store.getState().beginStatusCheck();
+  const checking = flow.render();
+  assert.equal(checking.type, "Unlock");
+  assert.equal(checking.props.disabled, true);
+  assert.equal(checking.props.busy, true);
+  assert.equal(checking.props.isPending(), true);
+  checking.props.onComplete("0123");
+  assert.equal(attempts, 0);
+  assert.equal(flow.task.pending, null);
+  store.getState().setStatus("flow-owner", { configured: true, requiresUnlock: true });
+  const ready = flow.render();
+  assert.equal(ready.type, "Unlock");
+  assert.equal(ready.props.busy, false);
+  assert.equal(ready.props.disabled, false);
+  assert.deepEqual(flow.routes, []);
+});
+
+test("an authorized quick return keeps Change MPIN visible and blocks submission only during the status check", () => {
+  const flow = emailFlow("current", {}, "change");
+  store.getState().setStatus("flow-owner", { configured: true, requiresUnlock: false });
+  store.getState().acceptUnlock("flow-owner");
+  store.getState().beginStatusCheck();
+  const checking = flow.render();
+  assert.equal(checking.type, "Layout");
+  assert.equal(findControl(checking, (node) => node.type === "PinPad").props.disabled, true);
+  store.getState().setStatus("flow-owner", { configured: true, requiresUnlock: false });
+  assert.equal(flow.render().type, "Layout");
+  assert.equal(store.getState().unlocked, true);
+  assert.deepEqual(flow.routes, []);
+});
+
+test("onboarding MPIN steps stay inside onboarding instead of entering the completed-profile guard", () => {
+  const { mpinStepRoute } = load("src/modules/mpin/utils/mpin-route.ts");
+  for (const step of ["status", "intro", "create", "confirm", "login", "forgot"]) {
+    const route = mpinStepRoute(step, "setup", true);
+    assert.equal(route.pathname, "/(onboarding)/register/mpin");
+    assert.equal(route.params.step, step);
+    assert.equal(route.params.mode, "setup");
+    assert.equal("pin" in route.params, false);
+  }
+});
+
+test("normal MPIN setup and recovery keep the protected MPIN route", () => {
+  const { mpinStepRoute } = load("src/modules/mpin/utils/mpin-route.ts");
+  for (const mode of ["setup", "change", "reset"]) {
+    const route = mpinStepRoute("create", mode, false);
+    assert.equal(route.pathname, "/(mpin)/mpin/[step]");
+    assert.equal(route.params.mode, mode);
+  }
 });
 
 test("MPIN accepts exactly four digits without inventing stronger backend rules", () => {
@@ -523,6 +611,41 @@ test("server time corrects local clock skew for codes, grants and unlock expiry"
 });
 
 const { createMpinSessionChecker } = load("src/modules/mpin/services/mpin-session.ts");
+
+test("mail-app switches retain an unexpired challenge while clearing PINs and authorization", () => {
+  store.getState().reset(); store.getState().setOwner("a");
+  const delivery = { challengeId: "email-challenge", expiresAt: Date.now() + 60000,
+    resendAt: Date.now() + 10000, maskedDestination: "a***@example.test" };
+  assert.equal(store.getState().setDelivery(delivery, "change"), true);
+  store.getState().setDraft("0123", "change");
+  store.getState().suspendFlow(); store.getState().lock(true);
+  assert.equal(store.getState().delivery.challengeId, "email-challenge");
+  assert.equal(store.getState().delivery.mode, "change");
+  assert.equal(store.getState().draft, null);
+  assert.equal(store.getState().authorization, null);
+  assert.equal(store.getState().requiresLocalUnlock, true);
+  store.getState().setAuthorization(grant(), "change");
+  store.getState().setDraft("0123", "change");
+  store.getState().suspendFlow();
+  assert.equal(store.getState().draft, null);
+  assert.equal(store.getState().authorization, null);
+  store.getState().setDelivery(delivery, "reset");
+  store.getState().setOwner("b");
+  assert.equal(store.getState().delivery, null);
+});
+
+test("expired email challenges are discarded and confirmed success survives backgrounding only for its owner", () => {
+  store.getState().reset(); store.getState().setOwner("a");
+  store.setState({ delivery: { challengeId: "expired", expiresAt: Date.now() - 1,
+    resendAt: Date.now() - 1000, maskedDestination: "a***@example.test", mode: "reset" } });
+  store.getState().suspendFlow();
+  assert.equal(store.getState().delivery, null);
+  store.getState().complete("a", "change");
+  store.getState().suspendFlow(); store.getState().lock(true);
+  assert.equal(store.getState().success, "change");
+  store.getState().setOwner("b");
+  assert.equal(store.getState().success, null);
+});
 test("server recheck preserves a locally verified session and respects server expiry", async () => {
   const original = api.mpinApi.status;
   const checker = createMpinSessionChecker();
@@ -588,15 +711,26 @@ test("late status cannot overwrite a newer explicit lock or MPIN save", async ()
 function lifecycleHarness() {
   const effects = [];
   const listeners = new Set();
-  let expiryCallback;
+  let timerId = 0, nativeListener;
+  let elapsed = Date.now();
+  const timers = new Map();
+  const notices = [];
+  const device = { screenOffCount: 0, interactive: true, locked: false };
+  const activity = load("src/modules/mpin/services/mpin-activity.ts");
   const native = { currentState: "active", addEventListener: (_, callback) => {
     listeners.add(callback); return { remove: () => listeners.delete(callback) };
   } };
   const module = load("src/modules/mpin/hooks/use-mpin-lifecycle.ts", {
-    setTimeout: (callback) => { expiryCallback = callback; return 1; }, clearTimeout: () => {},
+    Date: { now: () => elapsed },
+    setTimeout: (callback, delay) => { timers.set(++timerId, { callback, at: elapsed + delay }); return timerId; },
+    clearTimeout: (id) => timers.delete(id),
     modules: {
       react: { useEffect: (effect) => effects.push(effect()) },
       "react-native": { AppState: native }, "expo-router": { useSegments: () => ["(app)", "(tabs)"] },
+      "@/shared/lib/branded-alert": { BrandedAlert: { clear() {}, alert: (...args) => notices.push(args) } },
+      "../../../../modules/app-security": { AppSecurity: { getScreenState: () => device,
+        addListener: (_, work) => { nativeListener = work; return { remove() { nativeListener = null; } }; } } },
+      "../services/mpin-activity": activity,
       "@/modules/auth/store/auth.store": { useAuthStore: {
         getState: () => ({ user: { uid: "a", getIdToken: async () => "fixture" }, isDemo: false, isCheckingAuth: false, isOldUser: true }),
         subscribe: () => () => {},
@@ -607,13 +741,24 @@ function lifecycleHarness() {
   module.useMpinLifecycle();
   return {
     state(next) { native.currentState = next; for (const callback of listeners) callback(next); },
-    expire() { expiryCallback(); },
+    expire() { const [id, timer] = [...timers].sort((a, b) => a[1].at - b[1].at)[0]; timers.delete(id); timer.callback(); },
+    advance(ms) { elapsed += ms; }, notices,
+    fire() { for (let count = 0; count < 50; count++) {
+      const next = [...timers].find(([, timer]) => timer.at <= elapsed);
+      if (!next) break; timers.delete(next[0]); next[1].callback();
+    } },
+    showNotice() { this.fire(); }, activity: activity.recordMpinActivity, device,
+    screenOff() { device.screenOffCount++; device.interactive = false; device.locked = true; nativeListener?.(); },
+    screenOn() { device.interactive = true; device.locked = false; nativeListener?.(); },
     dispose() { for (const cleanup of effects) cleanup?.(); },
   };
 }
 
-test("cold launch and background return require MPIN while inactive interruptions do not", async () => {
+test("fresh launch locks, quick app switches retain unlock, and three minutes away locks with a branded notice", async () => {
   const original = api.mpinApi.status;
+  const originalLock = api.mpinApi.lock;
+  let locks = 0;
+  api.mpinApi.lock = async () => { locks++; return { success: true }; };
   let calls = 0;
   api.mpinApi.enabled = true;
   api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: false }; };
@@ -623,16 +768,29 @@ test("cold launch and background return require MPIN while inactive interruption
     assert.equal(store.getState().acceptUnlock("a"), true);
     h.state("inactive"); h.state("active"); await flush(); assert.equal(calls, 1);
     assert.equal(store.getState().unlocked, true);
-    h.state("background"); h.state("active"); await flush(); assert.equal(calls, 2);
+    h.state("background"); h.advance(10000); h.state("active"); await flush(); assert.equal(calls, 2);
+    assert.equal(locks, 1);
+    assert.equal(store.getState().unlocked, true);
+    assert.equal(h.notices.length, 0);
+    h.state("background"); h.advance(180000); h.state("active"); await flush();
+    assert.equal(locks, 2);
     assert.equal(store.getState().unlocked, false);
+    h.showNotice();
+    assert.equal(h.notices.length, 1);
+    assert.equal(h.notices[0][0], "Session locked");
+    assert.equal(h.notices[0][2][0].text, "Continue");
+    h.state("active"); await flush();
+    assert.equal(h.notices.length, 1);
     api.mpinApi.status = async () => ({ configured: true, requiresUnlock: true });
     h.state("background"); h.state("active"); await flush();
     assert.equal(store.getState().unlocked, false);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.lock = originalLock; api.mpinApi.enabled = true; }
 });
 
 test("foreground expiry checks status and disabled rollout never invokes the adapter", async () => {
   const original = api.mpinApi.status;
+  const originalLock = api.mpinApi.lock;
+  api.mpinApi.lock = async () => ({ success: true });
   let calls = 0;
   api.mpinApi.enabled = true;
   api.mpinApi.status = async () => { calls++; return { configured: true, requiresUnlock: false, unlockExpiresAt: Date.now() + 60000 }; };
@@ -646,7 +804,65 @@ test("foreground expiry checks status and disabled rollout never invokes the ada
     api.mpinApi.enabled = false;
     h.state("background"); h.state("active"); await flush();
     assert.equal(calls, 2);
-  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.enabled = true; }
+  } finally { h.dispose(); api.mpinApi.status = original; api.mpinApi.lock = originalLock; api.mpinApi.enabled = true; }
+});
+
+test("the inactivity threshold is exactly three minutes and duplicate background events cannot restart it", async () => {
+  const originalStatus = api.mpinApi.status, originalLock = api.mpinApi.lock;
+  let locks = 0;
+  api.mpinApi.lock = async () => { locks++; return { success: true }; };
+  api.mpinApi.status = async () => ({ configured: true, requiresUnlock: false });
+  const h = lifecycleHarness();
+  try {
+    await flush(); store.getState().acceptUnlock("a");
+    h.state("background"); h.advance(179999); h.state("active"); await flush();
+    assert.equal(store.getState().unlocked, true);
+    assert.equal(locks, 1);
+    h.state("background"); h.advance(90000); h.state("background"); h.advance(90000); h.state("active"); await flush();
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(locks, 2);
+  } finally { h.dispose(); api.mpinApi.status = originalStatus; api.mpinApi.lock = originalLock; }
+});
+
+test("foreground interaction renews the idle deadline and three untouched minutes lock with one notice", async () => {
+  const originalStatus = api.mpinApi.status, originalLock = api.mpinApi.lock;
+  api.mpinApi.status = async () => ({ configured: true, requiresUnlock: false });
+  api.mpinApi.lock = async () => ({ success: true });
+  const h = lifecycleHarness();
+  try {
+    await flush(); store.getState().acceptUnlock("a");
+    h.advance(179999); h.activity(); h.advance(1); h.fire();
+    assert.equal(store.getState().unlocked, true);
+    h.advance(179999); h.fire(); await flush();
+    assert.equal(store.getState().unlocked, false);
+    assert.equal(store.getState().requiresLocalUnlock, true);
+    assert.equal(h.notices.length, 1);
+    assert.match(h.notices[0][1], /3 minutes/);
+    h.fire(); assert.equal(h.notices.length, 1);
+  } finally { h.dispose(); api.mpinApi.status = originalStatus; api.mpinApi.lock = originalLock; }
+});
+
+test("locking the phone forces MPIN on a short return, including screen events missed while JS slept", async () => {
+  const originalStatus = api.mpinApi.status, originalLock = api.mpinApi.lock;
+  let locks = 0;
+  api.mpinApi.status = async () => ({ configured: true, requiresUnlock: false });
+  api.mpinApi.lock = async () => { locks++; return { success: true }; };
+  try {
+    for (const delayed of [false, true]) {
+      const h = lifecycleHarness();
+      try {
+        await flush(); store.getState().acceptUnlock("a");
+        const before = locks;
+        h.state("background"); h.advance(2000);
+        if (delayed) h.device.screenOffCount++;
+        else { h.screenOff(); h.screenOn(); }
+        h.state("active"); await flush();
+        assert.equal(store.getState().unlocked, false);
+        assert.equal(locks, before + 1, "device lock revokes even within the three-minute grace window");
+        assert.equal(h.notices.length, 0, "a phone lock is not reported as inactivity");
+      } finally { h.dispose(); }
+    }
+  } finally { api.mpinApi.status = originalStatus; api.mpinApi.lock = originalLock; }
 });
 
 test("emergency permission is explicit and restricted to SOS or a specific allowed alert", () => {

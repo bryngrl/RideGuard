@@ -15,7 +15,8 @@ import { MpinUnlockExperience } from "../components/mpin-unlock-experience";
 import { useMpinRequest } from "../hooks/use-mpin-request";
 import { MpinError, mpinApi, setupAndUnlockMpin, type MpinMode, type MpinStatus } from "../services/mpin.api";
 import { useMpinStore } from "../store/mpin.store";
-import { isCompleteMpin, isMpinEntryBlocked, validAuthorization } from "../utils/mpin-policy";
+import { isCompleteMpin, isMpinEntryBlocked, resolveMpinAccess, validAuthorization } from "../utils/mpin-policy";
+import { mpinStepRoute } from "../utils/mpin-route";
 
 const stepCopy: Record<string, { title: string; description: string }> = {
   intro: { title: "Secure your RideGuard account", description: "Create a 4-digit MPIN for quick and secure access to your account." },
@@ -38,12 +39,29 @@ export default function MpinFlowScreen() {
   const preview = false;
   const authenticated = useAuthStore((state) => state.isAuthenticated);
   const checkingAuth = useAuthStore((state) => state.isCheckingAuth);
+  const user = useAuthStore((state) => state.user);
+  const security = useMpinStore();
   if (!checkingAuth && !authenticated) return <Redirect href="/(public)/sign-in" />;
+  const management = !onboarding && mpinApi.enabled &&
+    (step === "manage" || mode === "change" && step !== "success");
+  const access = resolveMpinAccess({ enabled: mpinApi.enabled, demo: false,
+    uid: user?.uid ?? null, owner: security.owner, status: security.status, unlocked: security.unlocked });
+  if (management && access !== "allowed" && access !== "intro") {
+    // A known account with an MPIN can render its unlock UI immediately while
+    // the server recheck runs. Do not insert the separate status/Please wait page.
+    const unlockStep = security.owner === user?.uid && security.status?.configured ? "login" : "status";
+    // Management lives outside the normal app gate. Cover it in place with the
+    // existing unlock UI, rather than revealing Change MPIN until Back is used.
+    return <MpinStep key={`management-lock/${unlockStep}/${user?.uid}`} step={unlockStep}
+      mode="setup" preview={false} onboarding={false} resumeManagement />;
+  }
   // Remount local fields when a route's step changes, rather than retaining PINs.
   return <MpinStep key={`${step}/${mode}/${preview}/${onboarding}`} step={step} mode={mode} preview={preview} onboarding={onboarding} />;
 }
 
-function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: MpinMode; preview: boolean; onboarding: boolean }) {
+function MpinStep({ step, mode, preview, onboarding, resumeManagement = false }: {
+  step: string; mode: MpinMode; preview: boolean; onboarding: boolean; resumeManagement?: boolean;
+}) {
   const theme = useTheme();
   const router = useRouter();
   const navigation = useNavigation("/");
@@ -114,7 +132,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   const go = (next: string, nextMode = mode, replace = false) => {
     if (navigating.current) return;
     navigating.current = true;
-    const href = { pathname: "/(mpin)/mpin/[step]" as const, params: { step: next, mode: nextMode, ...(onboarding ? { onboarding: "true" } : {}) } };
+    const href = mpinStepRoute(next, nextMode, onboarding);
     if (replace) router.replace(href); else router.push(href);
   };
 
@@ -198,8 +216,9 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   };
 
   const finishUnlock = () => {
-    if (!user || !useMpinStore.getState().acceptUnlock(user.uid)) throw new MpinError("failed");
+    if (!user || !useMpinStore.getState().acceptUnlock(user.uid, resumeManagement)) throw new MpinError("failed");
     setPin("");
+    if (resumeManagement) return;
     if (onboarding) { finishOnboarding(); return; }
     navigating.current = true;
     router.dismissTo((state.returnTo === "/" ? "/(app)/(tabs)" : state.returnTo) as Href);
@@ -208,6 +227,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   const receiveStatus = (status: MpinStatus) => {
     if (!user || !useMpinStore.getState().setStatus(user.uid, status)) throw new MpinError("failed");
     setLocked(false); setRetryAt(null);
+    if (resumeManagement) return;
     if (step !== "status") return;
     if (!status.configured) go("intro", "setup", true);
     else if (!useMpinStore.getState().unlocked) go("login", "setup", true);
@@ -230,7 +250,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   }, [step, user?.uid, realOwner, state.checkingStatus]));
 
   useFocusEffect(useCallback(() => {
-    if (step !== "status" || !state.status || state.checkingStatus || navigating.current || task.loading) return;
+    if (resumeManagement || step !== "status" || !state.status || state.checkingStatus || navigating.current || task.loading) return;
     if (!state.status.configured) go("intro", "setup", true);
     else if (!state.unlocked) go("login", "setup", true);
     else {
@@ -241,7 +261,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   }, [step, state.status, state.unlocked, state.checkingStatus, task.loading]));
 
   useFocusEffect(useCallback(() => {
-    if (!preview && mpinApi.enabled && realOwner && (step === "login" || step === "unlock") &&
+    if (!resumeManagement && !preview && mpinApi.enabled && realOwner && (step === "login" || step === "unlock") &&
       state.unlocked && !state.checkingStatus && !navigating.current) {
       if (onboarding) { finishOnboarding(); return; }
       navigating.current = true;
@@ -268,7 +288,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
   };
 
   const onPinComplete = (value: string) => {
-    if (task.loading || !isCompleteMpin(value) || entryBlocked || Date.now() < requestRetryAt) return;
+    if (task.loading || useMpinStore.getState().checkingStatus || !isCompleteMpin(value) || entryBlocked || Date.now() < requestRetryAt) return;
     if (step === "create") {
       if (!canCreate || !useMpinStore.getState().setDraft(value, mode)) return;
       setPin("");
@@ -407,7 +427,8 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
       ? (cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it.")
       : task.error ?? (!entryAllowed ? "Check your MPIN status before continuing." : null);
     return <MpinUnlockExperience value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
-      initialEntry isPending={task.isPending} busy={task.loading} disabled={!!blocked || !entryAllowed || requestRetrySeconds > 0}
+      initialEntry isPending={() => task.isPending() || state.checkingStatus} busy={task.loading || state.checkingStatus}
+      disabled={!!blocked || !entryAllowed || state.checkingStatus || requestRetrySeconds > 0}
       error={message} errorVersion={errorVersion} preview={preview} onExit={mandatory ? undefined : back}
       onForgot={() => { useMpinStore.getState().clearFlow(); go("forgot", "reset"); }}
       footer={mandatory ? emergencyAction : undefined} />;
@@ -495,7 +516,7 @@ function MpinStep({ step, mode, preview, onboarding }: { step: string; mode: Mpi
         {cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it."}
       </Text>}
       <PinPad value={pin} onChange={(value) => { setPin(value); task.setError(null); }} onComplete={onPinComplete}
-        disabled={task.loading || entryBlocked || !entryAllowed || needsDraft || requestRetrySeconds > 0} error={!!task.error || entryBlocked} errorVersion={errorVersion} />
+        disabled={task.loading || state.checkingStatus || entryBlocked || !entryAllowed || needsDraft || requestRetrySeconds > 0} error={!!task.error || entryBlocked} errorVersion={errorVersion} />
       {(step === "confirm" || !entryAllowed) && <Button title={canCreate ? "Start again" : mode === "setup" ? "Try again" : "Verify identity again"}
         variant="ghost" disabled={task.loading} style={styles.secondary} onPress={() => {
           useMpinStore.getState().clearDraft();

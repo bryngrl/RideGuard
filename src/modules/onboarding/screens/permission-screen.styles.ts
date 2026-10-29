@@ -29,11 +29,15 @@ export const styles = StyleSheet.create({
   textContainer: { flex: 1 },
   checkIcon: { width: 16, height: 16, marginLeft: Spacing.three },
   buttonContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: "column",
+    gap: Spacing.two,
+    alignItems: "stretch",
     paddingTop: Spacing.three,
-    paddingBottom: Spacing.three,
+    paddingBottom: 0,
+  },
+  actionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
   },
 });

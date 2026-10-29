@@ -1,5 +1,6 @@
 import { MpinError, mpinApi, type MpinStatusContext } from "./mpin.api";
 import { useMpinStore } from "../store/mpin.store";
+import { MPIN_BACKGROUND_LOCK_MS } from "../utils/mpin-policy";
 
 /** Never grant access from a cached flag or an old-account response. */
 export function createMpinSessionChecker() {
@@ -20,6 +21,14 @@ export function createMpinSessionChecker() {
     try {
       const token = await user.getIdToken();
       if (!current()) return;
+      if (context?.reason === "launch" || context?.forceUnlock ||
+        (context?.inactiveForMs ?? 0) >= MPIN_BACKGROUND_LOCK_MS ||
+        context?.reason === "resume" && context.inactiveForMs === undefined) {
+        // Fresh launch, device lock or the inactivity deadline requires unlock. A quick
+        // app switch may retain an already-authorized session, never create one.
+        await mpinApi.lock(token, request.signal);
+        if (!current()) return;
+      }
       const result = await mpinApi.status(token, request.signal, context);
       if (current() && !useMpinStore.getState().setStatus(user.uid, result)) throw new MpinError("failed");
     } catch {

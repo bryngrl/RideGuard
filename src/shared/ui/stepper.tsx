@@ -66,7 +66,7 @@ const StepItem = ({ isCompleted, isLastStep, size }: StepItemProps) => {
 const Stepper = ({
   steps = 3,
   currentStep,
-  size = 6,
+  size = 4,
   containerStyle,
 }: StepperProps) => {
   const safeSteps = Math.max(1, Math.floor(steps));

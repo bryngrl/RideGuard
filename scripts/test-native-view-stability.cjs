@@ -10,17 +10,18 @@ const flatten = (value) => Array.isArray(value) ? Object.assign({}, ...value.fil
 const native = { View: "View", Text: "Text", Pressable: "NativePressable", ActivityIndicator: "ActivityIndicator",
   StyleSheet: { create: (styles) => styles, absoluteFill: {}, flatten } };
 const base = {
+  "@/modules/mpin/services/mpin-activity": { recordMpinActivity() {} },
   react: require("react"), "react/jsx-runtime": require("react/jsx-runtime"), "react-native": native,
   "@/shared/hooks": { useTheme: () => theme }, "@/shared/hooks/use-theme": { useTheme: () => theme },
   "@/shared/theme": { BorderRadius: {}, BrandColors: {}, Spacing: {}, Typography: {} },
   "@/shared/ui/feedback-pressable": { FeedbackPressable: "Pressable" },
 };
-function load(file, overrides = {}) {
+function load(file, overrides = {}, globals = {}) {
   const compiled = ts.transpileModule(readFileSync(path.join(__dirname, "..", file), "utf8"), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
   const modules = { ...base, ...overrides };
-  const context = { exports: {}, require: (name) => { assert.ok(name in modules, `Unexpected dependency: ${name}`); return modules[name]; } };
+  const context = { exports: {}, ...globals, require: (name) => { assert.ok(name in modules, `Unexpected dependency: ${name}`); return modules[name]; } };
   vm.runInNewContext(compiled, context);
   return context.exports;
 }
@@ -73,20 +74,33 @@ test("Android MPIN navigation has no native transition while iOS retains its ani
 });
 
 test("the app-switcher privacy cover keeps one native view across background and resume", () => {
-  let hidden = false, listener;
+  let hidden = false, mounted = false, frameId = 0;
+  const listeners = new Map(), frames = new Map();
+  const appState = { currentState: "active", addEventListener: (event, callback) => {
+    listeners.set(event, callback); return { remove() { listeners.delete(event); } };
+  } };
+  const emit = (state) => { appState.currentState = state; listeners.get("change")(state); };
+  const nextFrame = () => { const work = [...frames.values()]; frames.clear(); work.forEach((callback) => callback()); };
   const { MpinPrivacyCover } = load("src/modules/mpin/components/mpin-privacy-cover.tsx", {
-    react: { useState: () => [hidden, (value) => { hidden = value; }], useEffect: (effect) => effect() },
-    "react-native": { ...native, AppState: { currentState: "active", addEventListener: (_, callback) => {
-      listener = callback; return { remove() {} };
-    } } },
+    react: { useState: () => [hidden, (value) => { hidden = value; }], useEffect: (effect) => { if (!mounted) { mounted = true; effect(); } } },
+    "react-native": { ...native, Platform: { OS: "android" }, AppState: appState },
     "@/modules/auth/store/auth.store": { useAuthStore: (select) => select({ isAuthenticated: true }) },
-  });
-  const active = MpinPrivacyCover(); listener("background");
-  const background = MpinPrivacyCover(); listener("active");
+  }, { requestAnimationFrame: (work) => { frames.set(++frameId, work); return frameId; },
+    cancelAnimationFrame: (id) => frames.delete(id) });
+  const active = MpinPrivacyCover(); emit("background");
+  const background = MpinPrivacyCover(); emit("active");
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "auto");
+  nextFrame();
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "auto");
+  nextFrame();
   const resumed = MpinPrivacyCover();
   for (const view of [active, background, resumed]) assert.equal(view.props.collapsable, false);
   assert.equal(active.type, background.type);
   assert.equal(background.props.pointerEvents, "auto");
   assert.equal(resumed.props.pointerEvents, "none");
   assert.equal(resumed.props.accessibilityElementsHidden, true);
+  listeners.get("blur")();
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "auto");
+  listeners.get("focus")(); emit("background"); nextFrame(); nextFrame();
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "auto", "a stale reveal cannot uncover a backgrounded app");
 });

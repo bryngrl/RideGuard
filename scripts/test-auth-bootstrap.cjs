@@ -13,6 +13,7 @@ function harness(check) {
     setUser: (user) => { store.user = user; store.isAuthenticated = !!user; },
     setCheckingAuth: (value) => { store.isCheckingAuth = value; }, setIsOldUser: (value) => { store.isOldUser = value; } };
   let cursor = 0, pending = Promise.resolve(), effect, deps;
+  const logs = [];
   const slots = [];
   const modules = {
     react: { useRef: (value) => { const i = cursor++; return slots[i] ??= { current: value }; },
@@ -32,14 +33,14 @@ function harness(check) {
     const compiled = ts.transpileModule(readFileSync(path.join(__dirname, "..", relative), "utf8"), {
       compilerOptions: { module: ts.ModuleKind.CommonJS },
     }).outputText;
-    const context = { exports: {}, console: { info: () => {} }, require: (name) => {
+    const context = { exports: {}, console: { info: (...args) => logs.push(args) }, require: (name) => {
       if (name === "../utils/session-errors") return load("src/modules/auth/utils/session-errors.ts");
       assert.ok(name in modules, name); return modules[name];
     } };
     vm.runInNewContext(compiled, context); return context.exports;
   }
   const hook = load("src/modules/auth/hooks/use-auth.ts").useAuth;
-  return { firebase, store, APIError, render: () => { cursor = 0; return hook(); }, settle: () => pending };
+  return { firebase, store, logs, APIError, render: () => { cursor = 0; return hook(); }, settle: () => pending };
 }
 
 test("profile 500 blocks access but retains Firebase session and retries without a new login", async () => {
@@ -64,6 +65,25 @@ test("unverified account does not run authenticated profile checks", async () =>
   app.render(); await app.settle();
   assert.equal(checks, 0);
   assert.equal(app.store.isAuthenticated, false);
+  assert.equal(app.render().sessionError, null);
+});
+
+test("temporary Firebase connection failure keeps the session and retries before any profile request", async () => {
+  let checks = 0;
+  const app = harness(async () => { checks++; return true; });
+  app.firebase.currentUser.reload = async () => { throw { code: "auth/network-request-failed", message: "private fixture" }; };
+  app.render(); await app.settle();
+  const failure = app.render();
+  assert.match(failure.sessionError, /connect/);
+  assert.equal(checks, 0);
+  assert.equal(app.store.isAuthenticated, false);
+  assert.equal(app.firebase.currentUser.uid, "owner");
+  assert.equal(app.logs[0][1].code, "auth/network-request-failed");
+  assert.equal(app.logs[0][1].stage, "firebase-account-refresh");
+  assert.equal(JSON.stringify(app.logs).includes("private fixture"), false);
+  app.firebase.currentUser.reload = async () => {};
+  failure.retrySession(); app.render(); await app.settle();
+  assert.equal(app.store.isAuthenticated, true);
   assert.equal(app.render().sessionError, null);
 });
 

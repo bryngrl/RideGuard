@@ -1,6 +1,7 @@
 import type { MpinAuthorization, MpinDelivery, MpinStatus } from "../services/mpin.api";
 
 export const MPIN_LENGTH = 4;
+export const MPIN_BACKGROUND_LOCK_MS = 3 * 60_000;
 export const isCompleteMpin = (value: string) => /^\d{4}$/.test(value);
 
 // Convert once when receiving a server response; subsequent UI timers use local time.

@@ -23,14 +23,15 @@ interface MpinStore {
   setDraft: (pin: string, mode: MpinMode) => boolean;
   setAuthorization: (value: MpinAuthorization, mode: "change" | "reset") => boolean;
   setDelivery: (value: MpinDelivery, mode?: "change" | "reset") => boolean;
-  acceptUnlock: (owner: string) => boolean;
+  acceptUnlock: (owner: string, preserveFlow?: boolean) => boolean;
   complete: (owner: string, mode: MpinMode) => boolean;
   setReturnTo: (path: string) => void;
   clearFlow: () => void;
+  suspendFlow: (preserveAuthorization?: boolean) => void;
   clearDraft: () => void;
   invalidateAuthorization: () => void;
   invalidateStatus: () => void;
-  lock: () => void;
+  lock: (preserveFlow?: boolean) => void;
   reset: () => void;
 }
 
@@ -77,12 +78,14 @@ export const useMpinStore = create<MpinStore>((set, get) => ({
       resendAt: localDeadline(value.resendAt, value.serverTime), serverTime: undefined }, authorization: null, draft: null });
     return true;
   },
-  acceptUnlock: (owner) => {
+  acceptUnlock: (owner, preserveFlow = false) => {
     const status = get().status;
     // Call only after this session's POST /mpin/unlock succeeds and status is refreshed.
     if (owner !== get().owner || !status?.configured || status.requiresUnlock || status.locked || status.remainingAttempts === 0 ||
       (status.unlockExpiresAt !== undefined && status.unlockExpiresAt <= Date.now())) return false;
-    set({ draft: null, authorization: null, delivery: null, requiresLocalUnlock: false, unlocked: true });
+    set({ draft: null, authorization: null,
+      delivery: preserveFlow && get().delivery && validDelivery(get().delivery!) ? get().delivery : null,
+      requiresLocalUnlock: false, unlocked: true });
     return true;
   },
   // Call only after an explicit server success. A local PIN match is insufficient.
@@ -97,11 +100,19 @@ export const useMpinStore = create<MpinStore>((set, get) => ({
   clearDraft: () => set({ draft: null }),
   invalidateAuthorization: () => set({ authorization: null, draft: null, delivery: null, generation: get().generation + 1 }),
   invalidateStatus: () => set({ status: null, draft: null, unlocked: false, requiresLocalUnlock: true, checkingStatus: false, statusVersion: get().statusVersion + 1 }),
-  lock: () => {
+  lock: (preserveFlow = false) => {
     set({ unlocked: false, requiresLocalUnlock: true, checkingStatus: false, statusVersion: get().statusVersion + 1,
       status: get().status ? { ...get().status!, requiresUnlock: true } : null, draft: null, authorization: null,
-      delivery: null, success: null, generation: get().generation + 1 });
+      delivery: preserveFlow && get().delivery && validDelivery(get().delivery!) ? get().delivery : null,
+      success: preserveFlow ? get().success : null, generation: get().generation + 1 });
   },
   clearFlow: () => set({ draft: null, authorization: null, delivery: null, success: null, generation: get().generation + 1 }),
+  // Opening the mail app must not destroy the challenge the user is reading.
+  // Never retain entered PINs/codes. An unexpired grant may remain in memory
+  // during the short grace window; a full lock always discards it.
+  suspendFlow: (preserveAuthorization = false) => set({ draft: null,
+    authorization: preserveAuthorization && validAuthorization(get().authorization) ? get().authorization : null,
+    delivery: get().delivery && validDelivery(get().delivery!) ? get().delivery : null,
+    generation: get().generation + 1 }),
   reset: () => set({ ...initial, generation: get().generation + 1, statusVersion: get().statusVersion + 1 }),
 }));

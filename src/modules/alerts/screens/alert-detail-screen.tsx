@@ -342,7 +342,7 @@ export function AlertDetailScreen() {
 
   const handleFlagAsFalseAlarm = () => {
     RNAlert.alert(
-      "Mark as false alarm?",
+      "False alarm?",
       "This will mark the alert as a false alarm and notify your contacts if any were alerted.",
       [
         {
@@ -350,7 +350,7 @@ export function AlertDetailScreen() {
           style: "cancel",
         },
         {
-          text: "Mark as false alarm",
+          text: "False alarm",
           style: "destructive",
           onPress: markAsFalseAlarm,
         },
@@ -366,7 +366,7 @@ export function AlertDetailScreen() {
       contentFlush
       footer={!isFalseAlarm ? (
           <Button
-            title="Mark as false alarm"
+            title="False alarm"
             variant="danger"
             size="md"
             isLoading={isSubmitting}

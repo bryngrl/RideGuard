@@ -3,18 +3,19 @@ import MainLogo from "@/assets/icons//logos/main.svg";
 import LighBulb from "@/assets/icons/actions/lightbulb.svg";
 import { auth } from "@/lib/firebase";
 import { useDeviceStore } from "@/modules/devices";
+import { useDeviceClaimLifecycle } from "@/modules/devices/hooks/use-device-claim-lifecycle";
 import { claimDevice } from "../services/onboarding.api";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { buttonId as normalizeButtonId, formatButtonId, validButtonId } from "@/shared/lib/input-formats";
-import { BrandColors, Spacing, Typography } from "@/shared/theme";
+import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
 import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useState } from "react";
 import { Keyboard, Text, View } from "react-native";
 
 export default function ButtonProvisionScreen() {
@@ -27,6 +28,10 @@ export default function ButtonProvisionScreen() {
   const [buttonId, setButtonId] = useState("");
   const [buttonIdError, setButtonIdError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const claim = useDeviceClaimLifecycle(() => {
+    setIsLoading(false);
+    setAlertState({ visible: false, status: "loading", message: "" });
+  });
 
   const [alertState, setAlertState] = useState<{
     visible: boolean;
@@ -38,8 +43,13 @@ export default function ButtonProvisionScreen() {
     message: "",
   });
 
+  useFocusEffect(useCallback(() => {
+    setIsLoading(false);
+    setAlertState({ visible: false, status: "loading", message: "" });
+  }, []));
+
   const handleConnect = async () => {
-    if (isLoading) return;
+    if (isLoading || alertState.visible) return;
 
     setButtonIdError("");
 
@@ -57,6 +67,8 @@ export default function ButtonProvisionScreen() {
 
     // check for auth user
     const user = auth.currentUser;
+    const attempt = claim.begin(user?.uid ?? null);
+    if (!attempt) return;
 
     if (!user) {
       setAlertState({
@@ -65,11 +77,12 @@ export default function ButtonProvisionScreen() {
         message: "Log in to connect a device.",
       });
 
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         setAlertState((prev) => ({
           ...prev,
           visible: false,
         }));
+        claim.finish(attempt);
       }, 2500);
 
       return;
@@ -85,8 +98,10 @@ export default function ButtonProvisionScreen() {
         message: "Verifying Quick Button...",
       });
       const firebaseToken = await user.getIdToken(true);
+      if (!claim.isCurrent(attempt)) return;
 
       await claimDevice(cleanedButtonId, firebaseToken);
+      if (!claim.isCurrent(attempt)) return;
 
       // Save claimed button
       setButtonDeviceId(cleanedButtonId);
@@ -99,11 +114,12 @@ export default function ButtonProvisionScreen() {
       });
 
       // Redirect after success
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         if (fromSettings) router.dismissTo("/devices");
         else router.replace("/(onboarding)/devices/button");
       }, 1500);
     } catch (error: unknown) {
+      if (!claim.isCurrent(attempt)) return;
       const message =
         error instanceof Error ? error.message : "Button ID not recognized.";
 
@@ -113,14 +129,15 @@ export default function ButtonProvisionScreen() {
         message,
       });
 
-      setTimeout(() => {
+      claim.schedule(attempt, () => {
         setAlertState((prev) => ({
           ...prev,
           visible: false,
         }));
+        claim.finish(attempt);
       }, 2500);
     } finally {
-      setIsLoading(false);
+      if (claim.isCurrent(attempt)) setIsLoading(false);
     }
   };
 
@@ -156,7 +173,7 @@ export default function ButtonProvisionScreen() {
               label="Button ID"
               required
               labelStyle={{ color: theme.text }}
-              placeholder="e.g., ABC-123-XYZ"
+              placeholder="e.g., BUT-123-ABC"
               autoCapitalize="characters"
               autoCorrect={false}
               value={buttonId}
