@@ -57,6 +57,9 @@ test("actual buttons switch surfaces and labels with the palette, including disa
     const disabled = Button({ title: "Save", disabled: true });
     assert.equal(flatten(disabled.props.style).backgroundColor, theme.disabledBackground);
     assert.equal(flatten(disabled.props.children[0].props.children[1].props.style).color, theme.disabledText);
+    const forgot = Button({ title: "Forgot MPIN?", variant: "ghost", disabled: true });
+    assert.equal(flatten(forgot.props.style).backgroundColor, "transparent");
+    assert.equal(forgot.props.disabled, true);
   }
 });
 

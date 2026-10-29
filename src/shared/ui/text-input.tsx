@@ -1,4 +1,5 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
+import { recordMpinActivity } from "@/modules/mpin/services/mpin-activity";
 import { Ionicons } from "@expo/vector-icons";
 import React, { forwardRef, useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { TextInput as RNTextInput, TextInputProps as RNTextInputProps, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from "react-native";
@@ -94,6 +95,7 @@ export const CustomTextInput = forwardRef<RNTextInput, CustomTextInputProps>(
       if (selectionRelease.current !== null) cancelAnimationFrame(selectionRelease.current);
     }, []);
     const changeFormatted = (next: string) => {
+        recordMpinActivity();
       if (!inputFormat) { onChangeText?.(next); return; }
       const { raw, formatted, cursor } = formatInputEdit(previousDisplay.current, next, inputFormat);
       previousDisplay.current = formatted;

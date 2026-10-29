@@ -15,6 +15,27 @@ function load(file, modules) {
   }).outputText, context);
   return context.exports;
 }
+test("reused hardware layouts apply the app lock for Settings and preserve onboarding behavior", () => {
+  for (const source of ["settings", undefined]) {
+    let stateIndex = 0;
+    const Stack = Object.assign(() => {}, { Screen: "StackScreen" });
+    const { default: Layout } = load("src/app/(onboarding)/_layout.tsx", {
+      react: { ...react, useState: (initial) => [stateIndex++ === 0 ? true : initial, () => {}] }, "react/jsx-runtime": require("react/jsx-runtime"),
+      "react-native": { View: "View", ActivityIndicator: "Spinner", Platform: { OS: "android" } },
+      "expo-router": { Stack, Redirect: "Redirect", useRouter: () => ({}), useSegments: () => ["(onboarding)", "devices", "camera"], useGlobalSearchParams: () => ({ source }) },
+      "@/shared/ui/button": {}, "@/shared/ui/form-feedback": {},
+      "@/lib/firebase": { auth: {} },
+      "@/modules/auth/store/auth.store": { useAuthStore: () => ({ user: { uid: "a", providerData: [] }, isCheckingAuth: false }) },
+      "@/modules/auth/services/registration-progress": { onboardingPaths: {} },
+      "@/modules/auth/services/onboarding-progress.api": {},
+      "@/modules/onboarding/store/onboarding.store": {},
+      "@/modules/mpin/components/mpin-app-gate": { MpinAppGate: "SecurityGate" },
+    });
+    const tree = Layout();
+    assert.equal(tree.type, source === "settings" ? "SecurityGate" : Stack);
+    if (source === "settings") assert.equal(tree.props.children.type, Stack);
+  }
+});
 test("Account Edit has a safe destination when opened without back history", () => {
   for (const history of [true, false]) {
     const actions = [];

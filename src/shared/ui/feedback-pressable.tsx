@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { recordMpinActivity } from "@/modules/mpin/services/mpin-activity";
 import { Pressable, StyleSheet, type PressableProps } from "react-native";
 import Animated, {
   useAnimatedStyle,
@@ -49,6 +50,7 @@ export function FeedbackPressable({
       style={style}
       disabled={disabled}
       onPressIn={(event) => {
+        recordMpinActivity();
         if (feedbackEnabled) {
           opacity.value = reducedMotion
             ? feedbackOpacity

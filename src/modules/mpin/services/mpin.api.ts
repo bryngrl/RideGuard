@@ -1,5 +1,6 @@
 import { apiClient } from "@/shared/api";
 import { APIError } from "@/shared/api/errors";
+import { getInstallationId } from "@/modules/notifications/services/installation-id";
 
 export type MpinMode = "setup" | "change" | "reset";
 export type MpinStatus = {
@@ -17,12 +18,12 @@ export type MpinStatus = {
   directChangeEnabled?: boolean;
 };
 export type MpinAuthorization = { token: string; expiresAt: number; serverTime?: number };
-export type MpinStatusContext = { reason: "launch" | "resume" | "expiry"; inactiveForMs?: number };
+export type MpinStatusContext = { reason: "launch" | "resume" | "expiry"; inactiveForMs?: number; forceUnlock?: boolean };
 export type MpinDelivery = { challengeId: string; expiresAt: number; resendAt: number; maskedDestination: string; serverTime?: number };
 export type MpinErrorCode = "unavailable" | "incorrect-pin" | "invalid-code" | "expired-code" |
   "locked" | "expired-session" | "expired-authorization" | "already-configured" | "policy" | "network" | "timeout" | "failed" |
   "account-disabled" | "email-unavailable" | "email-unverified" | "email-delivery-unavailable" |
-  "code-used" | "code-replaced" | "attempt-limit" | "resend-cooldown" | "resend-limit" | "request-limit";
+  "code-used" | "code-replaced" | "attempt-limit" | "resend-cooldown" | "resend-limit" | "request-limit" | "update-in-progress";
 
 export class MpinError extends Error {
   constructor(public readonly code: MpinErrorCode, public readonly retryAt?: number, public remoteStatus?: MpinStatus) {
@@ -37,6 +38,7 @@ export interface MpinBackend {
   /** Existing authenticated six-digit email-code endpoints are connected. */
   emailCodesEnabled: boolean;
   status: (authToken: string, signal: AbortSignal, context?: MpinStatusContext) => Promise<MpinStatus>;
+  lock: (authToken: string, signal: AbortSignal) => Promise<{ success: true }>;
   create: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
   unlock: (authToken: string, pin: string, signal: AbortSignal) => Promise<{ success: true }>;
   authorizeChange: (authToken: string, currentPin: string, signal: AbortSignal) => Promise<MpinAuthorization>;
@@ -52,7 +54,7 @@ export interface MpinBackend {
 }
 
 type Envelope<T> = { success: boolean; data: T; message?: string };
-type Operation = "status" | "create" | "unlock" | "authorizeChange" | "requestChangeCode" |
+type Operation = "status" | "lock" | "create" | "unlock" | "authorizeChange" | "requestChangeCode" |
   "resendChangeCode" | "verifyChangeCode" | "change" | "requestRecovery" |
   "resendRecovery" | "verifyRecovery" | "reset";
 
@@ -70,6 +72,9 @@ function asMpinError(error: unknown, operation: Operation): MpinError {
   if (error instanceof MpinError) return error;
   if (error instanceof APIError) {
     const message = error.message.toLowerCase();
+    const data = error.data && typeof error.data === "object" ? error.data as Record<string, unknown> : {};
+    if (data.code === "CONCURRENT_CHANGE_IN_PROGRESS") return new MpinError("update-in-progress");
+    if (data.code === "PIN_REUSE_FORBIDDEN") return new MpinError("policy");
     if (error.status === 404 || error.status === 503 && !message.includes("email delivery")) return new MpinError("unavailable");
     if (error.status === 401) {
       if (message.includes("incorrect mpin")) return new MpinError("incorrect-pin");
@@ -103,6 +108,7 @@ async function request<T>(operation: Operation, path: string, token: string, sig
       method: operation === "status" ? "GET" : "POST",
       token,
       signal,
+      headers: { "x-device-id": await getInstallationId() },
       ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
     });
     if (envelope?.success !== true || envelope.data === undefined || envelope.data === null) throw new MpinError("failed");
@@ -121,11 +127,17 @@ export const mpinApi: MpinBackend = {
     const params = new URLSearchParams();
     if (context) {
       params.set("reason", context.reason);
-      // The current service ignores inactivity context; do not imply that this
-      // client-selected value establishes a server-side inactivity policy.
+      if (context.inactiveForMs !== undefined && Number.isFinite(context.inactiveForMs)) {
+        params.set("inactiveForMs", String(Math.max(0, Math.floor(context.inactiveForMs))));
+      }
     }
     const query = params.toString();
     return request("status", `${base}/status${query ? `?${query}` : ""}`, token, signal);
+  },
+  lock: async (token, signal) => {
+    const result = await request<{ success: true }>("lock", `${base}/lock`, token, signal);
+    if (result?.success !== true) throw new MpinError("failed");
+    return result;
   },
   create: (token, pin, signal) => request("create", `${base}/setup`, token, signal, { pin }),
   unlock: async (token, pin, signal) => {
@@ -192,6 +204,7 @@ export function mpinErrorMessage(error: unknown): string {
       case "resend-cooldown": return "Wait before requesting another code.";
       case "resend-limit": return "Code limit reached. Try again later.";
       case "request-limit": return "Too many requests. Try again shortly.";
+      case "update-in-progress": return "MPIN update in progress. Try again shortly.";
     }
   }
   if (error instanceof TypeError) return "Connection lost. Check your internet.";

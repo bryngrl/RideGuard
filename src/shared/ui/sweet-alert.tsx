@@ -1,4 +1,6 @@
 import WarningIcon from "@/assets/icons/alerts/primary-warning.svg";
+import { useEffect, useState } from "react";
+import { subscribeMpinLock } from "@/modules/mpin/services/mpin-activity";
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 
@@ -57,6 +59,11 @@ export function SweetAlert({
   closeOnBackdropPress = false,
 }: SweetAlertProps) {
   const theme = useTheme();
+  const [interrupted, setInterrupted] = useState(false);
+  useEffect(() => {
+    if (!visible) { setInterrupted(false); return; }
+    return subscribeMpinLock(() => { setInterrupted(true); onClose?.(); });
+  }, [visible, onClose]);
 
   const getIconColor = () => {
     switch (type) {
@@ -108,7 +115,7 @@ export function SweetAlert({
 
   return (
     <Modal
-      visible={visible}
+      visible={visible && !interrupted}
       transparent
       animationType="fade"
       onRequestClose={onClose}
