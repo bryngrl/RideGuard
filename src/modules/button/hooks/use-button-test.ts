@@ -5,7 +5,9 @@ import type {
   ButtonTestType,
   TestState,
 } from "../types/button-test";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { AppState } from "react-native";
 
 const TEST_TIMEOUT = 3 * 60 * 1000;
 export function useButtonTest(
@@ -20,33 +22,70 @@ export function useButtonTest(
     Record<ButtonColor, boolean>
   >({ white: false, red: false });
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
+  const active = useRef(false);
+  const phase = useRef<TestState>("waiting");
+  const recognized = useRef({ white: false, red: false });
+  const complete = useRef(onShortPressComplete);
+  complete.current = onShortPressComplete;
 
   const clearTimers = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timers.current.forEach(clearTimeout);
+    timers.current.clear();
     timeoutRef.current = null;
   };
 
+  const schedule = (work: () => void, delay: number) => {
+    const timer = setTimeout(() => {
+      timers.current.delete(timer);
+      if (active.current) work();
+    }, delay);
+    timers.current.add(timer);
+    return timer;
+  };
+
   const resetTimeout = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => {
+    if (timeoutRef.current) { clearTimeout(timeoutRef.current); timers.current.delete(timeoutRef.current); }
+    timeoutRef.current = schedule(() => {
       clearTimers();
+      phase.current = "timeout";
       setState("timeout");
     }, TEST_TIMEOUT);
   };
 
-  useEffect(() => {
-    resetTimeout();
-    return clearTimers;
-  }, [testType]);
+  useFocusEffect(useCallback(() => {
+    const resume = () => {
+      active.current = true;
+      phase.current = "waiting";
+      recognized.current = { white: false, red: false };
+      setState("waiting");
+      setRecognizedButtons(recognized.current);
+      setPressedButtons({ white: false, red: false });
+      resetTimeout();
+    };
+    if (AppState.currentState === "active") resume();
+    const subscription = AppState.addEventListener("change", (state) => {
+      active.current = false;
+      clearTimers();
+      if (state === "active") resume();
+    });
+    return () => { subscription.remove(); active.current = false; clearTimers(); };
+  }, [testType]));
 
   const handleButtonEvent = ({ type, button }: ButtonHardwareEvent) => {
-    if (state !== "waiting") return;
+    if (!active.current || phase.current !== "waiting") return;
+
+    if (type === "hold-start" || type === "hold-end") {
+      if (testType === "long") setPressedButtons({ white: false, red: type === "hold-start" });
+      return;
+    }
 
     if (type === "long-press") {
-      if (testType !== "long") return;
+      if (testType !== "long" || button !== "red") return;
 
       clearTimers();
       setPressedButtons({ white: false, red: false });
+      phase.current = "success";
       setState("success");
       return;
     }
@@ -54,35 +93,41 @@ export function useButtonTest(
     if (type !== "pulse" || testType !== "short") return;
 
     setPressedButtons((current) => ({ ...current, [button]: true }));
-    setTimeout(
+    schedule(
       () => setPressedButtons((current) => ({ ...current, [button]: false })),
       180,
     );
-    setRecognizedButtons((current) => {
-      const next = { ...current, [button]: true };
-      if (next.white && next.red) {
-        clearTimers();
-        setState("success");
-        setTimeout(onShortPressComplete, 700);
-      }
-      return next;
-    });
+    const next = { ...recognized.current, [button]: true };
+    recognized.current = next;
+    setRecognizedButtons(next);
+    if (next.white && next.red) {
+      clearTimers();
+      phase.current = "success";
+      setState("success");
+      setPressedButtons({ white: false, red: false });
+      schedule(() => complete.current(), 700);
+    }
   };
 
-  useButtonRealtime(handleButtonEvent);
+  const { connectionState, retryConnect } = useButtonRealtime(handleButtonEvent);
 
   const handleRetry = () => {
+    if (!active.current) return;
     clearTimers();
+    phase.current = "waiting";
+    recognized.current = { white: false, red: false };
     setState("waiting");
     setRecognizedButtons({ white: false, red: false });
     setPressedButtons({ white: false, red: false });
     resetTimeout();
+    retryConnect();
   };
 
   return {
     state,
     recognizedButtons,
     pressedButtons,
+    connectionState,
     handleRetry,
   };
 }
