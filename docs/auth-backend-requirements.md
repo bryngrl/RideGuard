@@ -1,13 +1,16 @@
 # RideGuard backend requirements — current
 
-Updated 28 October 2026. MPIN recovery uses **six-digit email codes**, not links.
+Updated 29 October 2026 against deployed `staging` commit `a765469` (deployment
+confirmed by the user). See [the integration report](BACKEND_STAGING_INTEGRATION_2026-10-29.md)
+for source findings, connected routes and test limits. MPIN recovery continues to use **six-digit email codes**, not links.
 Registration email verification and Forgot Password keep their existing Firebase
 email-link flows. This checklist excludes the already-reported login outage.
 
 ## 1. Configure the existing MPIN email sender
 
-- Replace `MissingMpinEmailSender` in `MpinModule` with a working implementation
-  of `MpinEmailSender.sendCode(to, code, purpose)`.
+- Nodemailer is now wired in `MpinModule`; the missing-sender implementation is
+  no longer the blocker in staging. Configure/verify `SMTP_HOST`, `SMTP_USER`,
+  `SMTP_PASS`, port/TLS and the sender address on Azure, then test actual delivery.
 - Send to the authenticated account's registered, verified email.
 - Support both `change` and `recovery` purposes. Never email/log the MPIN.
 - Return delivery success only after the provider accepts the message; preserve
@@ -35,14 +38,17 @@ email-link flows. This checklist excludes the already-reported login outage.
 - Enforce these on protected data and realtime/media-token endpoints independently
   of frontend navigation. Explicitly scope setup, recovery and emergency exceptions.
 - Revoke grants after logout, PIN change/reset and device revocation.
-- Scope unlock expiry per installation/session; today's account-wide timestamp is
-  insufficient for multiple-device isolation.
+- Device session documents and lock/logout routes now exist and the app sends
+  `x-device-id`. Remove account-wide fallback authorization, require the unlock
+  proof, and register/apply `MpinUnlockGuard` to the intended endpoints. Merely
+  defining the guard does not enforce it.
 
 ## 4. Persist onboarding progress by UID
 
-- Save the current step and completion state on the server.
-- Return the correct state after reinstall, account switch or sign-in on another phone.
-- Require configured MPIN before accepting onboarding completion.
+- GET/PATCH `/auth/onboarding` and POST `/auth/onboarding/complete` now exist and
+  are connected. Completion requires configured MPIN.
+- Validate the step names, draft schema and required completed steps on the server.
+- Define migration for existing users with personal profiles but no onboarding record.
 - Make profile completion idempotent/reconcilable after a lost response.
 - Do not equate profile existence with completion of every onboarding step.
 
@@ -50,14 +56,20 @@ email-link flows. This checklist excludes the already-reported login outage.
 
 - Return the background inactivity interval and authorization expiry policy.
 - Enforce session expiry on the backend and document how foreground/background
-  context affects it. The current frontend locks immediately on background.
+  context affects it. The frontend requires unlock after three minutes without
+  interaction in the foreground or three minutes in the background, and revokes
+  the device window. Android screen-off/device locking requires immediate unlock
+  regardless of elapsed time. This is a client policy; backend inactivity
+  enforcement still needs to match it.
 
 ## 6. Add secure phone-authentication contracts
 
-- Enrollment under recent MPIN authorization, device public-key registration,
-  fresh challenge issuance, signature verification and device/key revocation.
+- Public-key, challenge, signature and revoke routes now exist. Require recent
+  MPIN authorization for enrollment and bind challenges/keys to an explicit account.
 - Verify proofs from Android Keystore keys; do not trust a biometric success Boolean.
-- Issue the same server unlock authorization used by MPIN and preserve MPIN fallback.
+- Signature verification currently returns a verified Boolean/UID, without creating
+  an MPIN unlock session. Issue the same server unlock authorization used by MPIN
+  and preserve MPIN fallback before enabling phone unlock in the app.
 
 ## 7. Improve authentication recovery responses
 
@@ -81,6 +93,7 @@ The base URL already contains `/v1`. All requests below use a Firebase Bearer to
 | Operation | Route | JSON body |
 |---|---|---|
 | Current PIN proof | POST `/mpin/change/authorize` | `{ pin }` |
+| Revoke this installation unlock | POST `/mpin/lock` | No body; `x-device-id` header |
 | Send change code | POST `/mpin/change/code` | `{ authorization }` |
 | Resend change code | POST `/mpin/change/code/resend` | `{ challengeId }` |
 | Verify change code | POST `/mpin/change/code/verify` | `{ challengeId, code }` |
@@ -106,5 +119,5 @@ See [the backend patch](patches/rideguard-node-auth-mpin.patch).
 Test accepted and failed mail delivery, wrong/expired/replaced codes, cooldown,
 exhausted attempts, wrong account/purpose, replay, concurrent requests, a locked
 old PIN followed by successful recovery, network loss during resend/save, and
-reinstallation/multiple devices. Real email delivery is still unverified until
-an actual sender is configured and tested.
+reinstallation/multiple devices. Real email delivery remains unverified in this
+frontend integration session; mocked request tests do not prove inbox delivery.

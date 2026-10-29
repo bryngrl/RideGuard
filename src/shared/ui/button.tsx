@@ -28,6 +28,7 @@ export interface ButtonProps {
 
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
+  feedbackEnabled?: boolean;
 }
 
 export function Button({
@@ -43,6 +44,7 @@ export function Button({
   centerTextWithLeftIcon = false,
   style,
   textStyle,
+  feedbackEnabled = true,
 }: ButtonProps) {
   const theme = useTheme();
   const isDisabled = disabled || isLoading;
@@ -169,6 +171,7 @@ export function Button({
 
   return (
     <Pressable
+      feedbackEnabled={feedbackEnabled}
       feedbackColor={variant === "primary" ? theme.onPrimaryButton : undefined}
       onPress={onPress}
       disabled={isDisabled}
@@ -177,7 +180,7 @@ export function Button({
         sizeStyles.container,
         variantStyles.container,
         fullWidth && styles.fullWidth,
-        isDisabled && [styles.disabledContainer, { backgroundColor: theme.disabledBackground }],
+        isDisabled && [styles.disabledContainer, { backgroundColor: variant === "ghost" ? "transparent" : theme.disabledBackground }],
         style,
       ]}
       accessibilityRole="button"
