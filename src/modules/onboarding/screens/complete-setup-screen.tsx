@@ -1,12 +1,11 @@
 import { styles } from "./complete-setup-screen.styles";
-import { Image } from "expo-image";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { useOnboardingStore } from "../store/onboarding.store";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { auth } from "@/lib/firebase";
@@ -95,8 +94,10 @@ export default function CompleteSetupScreen() {
     >
       <View style={styles.container}>
         <View style={styles.centerSection}>
+          <Image source={require("@/assets/images/all-set-icon.png")}
+            style={{ width: 96, height: 96, marginBottom: Spacing.four }}
+            resizeMode="contain" fadeDuration={0} accessibilityLabel="RideGuard" />
           {!ready ? <>{error ? <FormFeedback message={error} /> : <ActivityIndicator color={theme.accent} />}</> : <>
-          <Image source={require("@/assets/images/all-set-icon.png")} style={{ width: 96, height: 96 }} contentFit="contain" accessibilityLabel="RideGuard setup complete" />
 
           <Text
             style={[Typography.largeTitle, styles.title, { color: theme.text }]}

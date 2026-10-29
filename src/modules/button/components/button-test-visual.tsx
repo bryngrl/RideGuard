@@ -1,5 +1,4 @@
-import { Image } from "expo-image";
-import { StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View } from "react-native";
 import type { ButtonColor } from "../types/button-test";
 
 const artwork = {
@@ -19,14 +18,14 @@ export function ButtonTestVisual({ color, isPressed }: { color: ButtonColor; isP
   return (
     <View style={styles.buttonVisual}>
       <Image source={artwork[color].normal} style={[styles.artwork, { opacity: isPressed ? 0 : 1 }]}
-        contentFit="contain" contentPosition="bottom" />
+        resizeMode="contain" fadeDuration={0} />
       <Image source={artwork[color].pressed} style={[styles.artwork, { opacity: isPressed ? 1 : 0 }]}
-        contentFit="contain" contentPosition="bottom" />
+        resizeMode="contain" fadeDuration={0} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   buttonVisual: { width: 120, height: 110 },
-  artwork: { position: "absolute", bottom: 0, width: 120, height: 110 },
+  artwork: { position: "absolute", left: 0, bottom: 0, width: 120, height: 110 },
 });
