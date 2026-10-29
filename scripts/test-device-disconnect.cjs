@@ -57,7 +57,10 @@ test("empty IDs, unsupported targets and unconfirmed results cannot cause local 
   }
 });
 
-function screen(request, cameraStatus = { cameras: [], isLoading: false, error: null }) {
+function screen(request, cameraStatus = { cameras: [
+  { deviceId: "CAM-111-AAA", source: "esp32", online: false },
+  { deviceId: "CAM-222-BBB", source: "esp32", online: false },
+], isLoading: false, error: null }) {
   let cursor = 0;
   const slots = [], calls = [], cleared = [], routes = [];
   const auth = { currentUser: { uid: "owner", getIdToken: async () => "session-token" } };
@@ -82,9 +85,15 @@ function screen(request, cameraStatus = { cameras: [], isLoading: false, error: 
     "../store/devices.store": { useDeviceStore: Object.assign(() => store, { getState: () => store }) },
     "../hooks/use-device-claim-lifecycle": { useDeviceClaimLifecycle: () => life },
     "@/modules/camera-sensor/hooks/use-cameras": { useCameras: () => cameraStatus },
+    "../hooks/use-buttons": { useButtons: () => ({ buttons: [], buttonsSupported: false, refresh: async () => {} }) },
     "../utils/device-presence": load("src/modules/devices/utils/device-presence.ts", {}),
+    "@/modules/home/utils/home-device-cards": load("src/modules/home/utils/home-device-cards.ts", {
+      "@/modules/devices/utils/device-presence": load("src/modules/devices/utils/device-presence.ts", {}),
+    }),
   }).DeviceStatusScreen;
-  return { auth, calls, cleared, routes, life, render: () => { cursor = 0; return component(); } };
+  let refreshes = 0;
+  cameraStatus.refresh = async () => { refreshes++; };
+  return { auth, calls, cleared, routes, life, store, refreshes: () => refreshes, render: () => { cursor = 0; return component(); } };
 }
 function find(tree, predicate) {
   if (!tree || typeof tree !== "object") return null;
@@ -96,8 +105,22 @@ function find(tree, predicate) {
 }
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 
+test("Quick Button always opens the physical press screen in the protected app stack", () => {
+  const app = screen(async () => {});
+  app.store.buttonDeviceId = "";
+  const connect = find(app.render(), (node) => node.props?.title === "Connect Quick Button");
+  assert.ok(connect);
+  assert.equal(connect.props.disabled, false);
+  connect.props.onPress();
+  assert.equal(app.routes[0], "/(app)/devices/quick-button");
+  app.store.buttonDeviceId = "BUT-333-CCC";
+  find(app.render(), (node) => node.props?.title === "Test Quick Button").props.onPress();
+  assert.equal(app.routes[1], "/(app)/devices/quick-button");
+});
+
 test("Settings presence uses backend online flags and hides preview and unsupported battery rows", () => {
-  const status = { cameras: [{ deviceId: "CAM-111-AAA", source: "esp32", online: true }], isLoading: false, error: null };
+  const status = { cameras: [{ deviceId: "CAM-111-AAA", source: "esp32", online: true },
+    { deviceId: "CAM-222-BBB", source: "esp32", online: false }], isLoading: false, error: null };
   const app = screen(async () => {}, status);
   let tree = app.render();
   assert.ok(find(tree, (node) => node.props?.children === "Online"));
@@ -115,6 +138,21 @@ test("Settings presence uses backend online flags and hides preview and unsuppor
   assert.equal(find(app.render(), (node) => node.props?.title === "Preview camera angle"), null);
   status.error = null; status.isLoading = true;
   assert.equal(find(app.render(), (node) => node.props?.title === "Preview camera angle"), null);
+});
+
+test("Settings uses backend camera assignments with stale saved IDs and exposes refresh", () => {
+  const status = { cameras: [
+    { deviceId: "PHONE-1", source: "phone", online: true },
+    { deviceId: "CAM-999-NEW", source: "esp32", online: true },
+  ], isLoading: false, error: null };
+  const app = screen(async () => {}, status);
+  app.store.camera1DeviceId = "";
+  const tree = app.render();
+  assert.ok(find(tree, (node) => node.props?.children === "Online"));
+  find(tree, (node) => node.props?.title === "Preview camera angle").props.onPress();
+  assert.equal(app.routes[0], "/(onboarding)/devices/camera/camera-preview?camera=1&source=settings");
+  find(tree, (node) => node.props?.title === "Refresh status").props.onPress();
+  assert.equal(app.refreshes(), 1);
 });
 function confirm(app) {
   find(app.render(), (node) => node.props?.title === "Disconnect").props.onPress();

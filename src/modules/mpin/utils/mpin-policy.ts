@@ -68,6 +68,7 @@ export function canAccessMpinEmergency(segments: readonly string[], status: Mpin
 // Only existing app destinations may be resumed after unlocking; never accept
 // arbitrary external URLs or recovery routes as a post-verification destination.
 export function safeReturnPath(value: string): string {
+  if (value === "/register/provision?source=settings") return value;
   if (/^\/devices\/(?:camera(?:\/camera-preview)?|button(?:\/test-page)?)\?source=settings(?:&camera=[12])?$/.test(value)) return value;
   // Contact data already lives in this route's params. Keep it in memory when
   // the security screen is pushed, so returning never creates an empty contact.
@@ -89,12 +90,16 @@ export function safeReturnPath(value: string): string {
   if (["/", "/settings", "/settings/account", "/settings/account/edit", "/settings/location", "/settings/retention",
     "/settings/display", "/settings/notifications", "/settings/search", "/settings/about", "/settings/digital-safety", "/settings/terms-of-service",
     "/settings/archives", "/settings/sos-preferences", "/sos", "/sos/active", "/sos/countdown",
-    "/camera", "/alerts", "/contact", "/contact/add-contact", "/contact/edit-contact", "/devices"].includes(value)) return value;
+    "/camera", "/alerts", "/contact", "/contact/add-contact", "/contact/edit-contact", "/devices",
+    "/devices/quick-button", "/devices/button-setup"].includes(value)) return value;
   if (/^\/alerts\/[A-Za-z0-9_-]+$/.test(value)) return value;
   return "/";
 }
 
 export function mpinReturnPath(path: string, params: Record<string, unknown>): string {
+  if (path === "/register/provision") {
+    return params.source === "settings" ? safeReturnPath(`${path}?source=settings`) : "/devices";
+  }
   if (/^\/devices\/(?:camera(?:\/camera-preview)?|button(?:\/test-page)?)$/.test(path)) {
     if (params.source !== "settings") return "/devices";
     const camera = path.startsWith("/devices/camera") && (params.camera === "1" || params.camera === "2") ? `&camera=${params.camera}` : "";

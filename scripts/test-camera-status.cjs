@@ -75,3 +75,12 @@ test("camera API uses the existing route and requires an actual online boolean",
   assert.deepEqual(calls, [["/devices/cameras", "fixture"]]);
   assert.equal(cameras[0].online, true); assert.equal(cameras[1].online, false);
 });
+
+test("a malformed camera response cannot clear assignments or pretend every camera is offline", async () => {
+  for (const reply of [null, {}, { success: false, data: [] }, { success: true, data: {} }]) {
+    const { getMyCameras } = load("src/modules/camera-sensor/services/cameras.api.ts", {
+      "@/shared/api": { apiClient: { get: async () => reply } },
+    });
+    await assert.rejects(getMyCameras("fixture"));
+  }
+});

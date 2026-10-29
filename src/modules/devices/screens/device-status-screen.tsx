@@ -16,6 +16,8 @@ import { useDeviceStore } from "../store/devices.store";
 import { useDeviceClaimLifecycle } from "../hooks/use-device-claim-lifecycle";
 import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
 import { devicePresence } from "../utils/device-presence";
+import { homeDeviceCards } from "@/modules/home/utils/home-device-cards";
+import { useButtons } from "../hooks/use-buttons";
 
 type DeviceStatus = {
   name: string;
@@ -28,8 +30,11 @@ export function DeviceStatusScreen() {
   const theme = useTheme();
   const router = useRouter();
   const { focus } = useLocalSearchParams<{ focus?: string }>();
-  const { camera1DeviceId, camera2DeviceId, buttonDeviceId } = useDeviceStore();
+  const savedDevices = useDeviceStore();
   const cameraStatus = useCameras();
+  const buttonStatus = useButtons();
+  const status = { ...cameraStatus, ...buttonStatus };
+  const cards = homeDeviceCards(status, savedDevices);
   const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
   const [deviceToDisconnect, setDeviceToDisconnect] = useState<DeviceStatus | null>(null);
   const lifecycle = useDeviceClaimLifecycle(() => {
@@ -47,19 +52,19 @@ export function DeviceStatusScreen() {
   const devices: DeviceStatus[] = [
     {
       name: "Camera 1",
-      deviceId: camera1DeviceId,
+      deviceId: cards.camera1.deviceId,
       type: "camera",
       cameraNumber: 1,
     },
     {
       name: "Camera 2",
-      deviceId: camera2DeviceId,
+      deviceId: cards.camera2.deviceId,
       type: "camera",
       cameraNumber: 2,
     },
     {
       name: "Quick Button",
-      deviceId: buttonDeviceId,
+      deviceId: cards.button.deviceId,
       type: "button",
     },
   ];
@@ -67,14 +72,8 @@ export function DeviceStatusScreen() {
   if (focusedName) devices.sort((a, b) => Number(b.name === focusedName) - Number(a.name === focusedName));
 
   const handleDeviceAction = (device: DeviceStatus) => {
-    const isConnected = Boolean(device.deviceId);
-
     if (device.type === "button") {
-      router.push(
-        (isConnected
-          ? "/(onboarding)/devices/button?source=settings"
-          : "/(onboarding)/register/provision?source=settings") as never,
-      );
+      router.push("/(app)/devices/quick-button");
       return;
     }
 
@@ -94,7 +93,7 @@ export function DeviceStatusScreen() {
     }
     const current = useDeviceStore.getState();
     const selectedId = device.type === "button" ? current.buttonDeviceId
-      : device.cameraNumber === 2 ? current.camera2DeviceId : current.camera1DeviceId;
+      : device.cameraNumber === 2 ? cards.camera2.deviceId : cards.camera1.deviceId;
     if (!device.deviceId || current.ownerUid !== user.uid || selectedId !== device.deviceId) return;
     const attempt = lifecycle.begin(user.uid);
     if (!attempt) return;
@@ -112,9 +111,10 @@ export function DeviceStatusScreen() {
       if (!lifecycle.isCurrent(attempt) || controller.signal.aborted) return;
       await releaseDevice(device.deviceId, token, device.type, controller.signal);
       if (!lifecycle.isCurrent(attempt)) return;
-      if (useDeviceStore.getState().clearDisconnectedDevice(user.uid, device.deviceId)) {
-        setNotice({ message: `${device.name} disconnected and unpaired.`, type: "success" });
-      }
+      useDeviceStore.getState().clearDisconnectedDevice(user.uid, device.deviceId);
+      void cameraStatus.refresh();
+      void buttonStatus.refresh();
+      setNotice({ message: `${device.name} disconnected and unpaired.`, type: "success" });
     } catch (error) {
       if (!lifecycle.isCurrent(attempt)) return;
       const message = error instanceof APIError && error.status === 401 ? "Session expired. Log in again."
@@ -146,7 +146,7 @@ export function DeviceStatusScreen() {
       <View style={styles.content}>
         {devices.map((device) => {
           const isConnected = Boolean(device.deviceId);
-          const presence = devicePresence(device, cameraStatus);
+          const presence = devicePresence(device, status);
           const actionTitle =
             device.type === "button"
               ? isConnected
@@ -188,6 +188,10 @@ export function DeviceStatusScreen() {
                 </View>
               </View>
 
+              {device.type === "button" && isConnected && buttonStatus.buttonsSupported === false && <Text style={[Typography.bodySmall, { color: theme.textMuted }]}>
+                Live status is unavailable. Test your Quick Button to check physical presses.
+              </Text>}
+
               {(device.type === "button" || presence.online || presence.canConnect) && <Button
                 title={actionTitle}
                 variant={isConnected ? "primary" : "outline"}
@@ -210,6 +214,8 @@ export function DeviceStatusScreen() {
             </View>
           );
         })}
+        <Button title="Refresh status" variant="ghost" isLoading={cameraStatus.isLoading || buttonStatus.buttonsLoading}
+          onPress={() => { void cameraStatus.refresh(); void buttonStatus.refresh(); }} />
       </View>
       <ConfirmationModal
         visible={deviceToDisconnect !== null}

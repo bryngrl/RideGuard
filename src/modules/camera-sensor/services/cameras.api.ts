@@ -48,7 +48,9 @@ export async function getMyCameras(
     firebaseToken,
   );
 
-  const list = Array.isArray(envelope?.data) ? envelope.data : [];
+  if (envelope?.success === false || !Array.isArray(envelope?.data)) {
+    throw new Error("Couldn't load cameras.");
+  }
 
-  return list.map(mapCamera);
+  return envelope.data.map(mapCamera);
 }

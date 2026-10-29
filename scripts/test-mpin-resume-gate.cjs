@@ -75,7 +75,8 @@ test("normal tab and page navigation does not repeat onboarding checks or cover 
   const app = harness("/");
   app.render(); await settle(); app.render();
   assert.equal(app.progressChecks(), 1);
-  for (const path of ["/alerts", "/camera", "/settings", "/settings/account", "/contact", "/"]) {
+  for (const path of ["/alerts", "/camera", "/settings", "/settings/account", "/contact",
+    "/devices/quick-button", "/devices/button-setup", "/"]) {
     app.navigate(path);
     const tree = app.render();
     assert.equal(tree.props.children[0].props.pointerEvents, "auto");
@@ -154,7 +155,7 @@ test("all normal app routes have an allowed MPIN return destination", () => {
 });
 
 test("settings hardware return preserves camera slot and settings behavior", () => {
-  for (const route of ["/devices/camera", "/devices/camera/camera-preview", "/devices/button", "/devices/button/test-page"]) {
+  for (const route of ["/devices/camera", "/devices/camera/camera-preview", "/devices/button", "/devices/button/test-page", "/register/provision"]) {
     const target = policy.mpinReturnPath(route, { source: "settings", camera: "2" });
     assert.equal(policy.safeReturnPath(target), target);
     assert.ok(target.includes("source=settings"));
@@ -164,10 +165,20 @@ test("settings hardware return preserves camera slot and settings behavior", () 
   assert.equal(policy.safeReturnPath("/devices/camera?source=onboarding&camera=2"), "/");
 });
 
+test("Quick Button pairing resumes only as an explicitly allowed Settings screen", () => {
+  assert.equal(policy.mpinReturnPath("/register/provision", { source: "settings" }),
+    "/register/provision?source=settings");
+  for (const route of ["/register/provision", "/register/provision?source=onboarding",
+    "/register/provision?source=settings&next=https://example.com", "/register/profile?source=settings"]) {
+    assert.equal(policy.safeReturnPath(route), "/");
+  }
+});
+
 test("repeated app switches do not replace existing forms or dispatch duplicate lock screens", async () => {
   for (const [route, params] of [["/settings/account/edit", {}], ["/contact/add-contact", {}],
     ["/settings/search", {}], ["/settings/archives", {}], ["/settings/sos-preferences", {}],
-    ["/alerts/alert-123", {}], ["/devices/camera", { source: "settings", camera: "2" }]]) {
+    ["/alerts/alert-123", {}], ["/devices/camera", { source: "settings", camera: "2" }],
+    ["/register/provision", { source: "settings" }]]) {
     const app = harness(route, params);
     app.render(); await settle(); app.render();
     for (let i = 0; i < 3; i++) {

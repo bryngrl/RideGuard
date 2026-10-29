@@ -1,8 +1,7 @@
-import type { LiveCamera } from "@/modules/camera-sensor/types/live-camera.types";
-import { devicePresence } from "@/modules/devices/utils/device-presence";
+import { devicePresence, type DevicePresenceSnapshot } from "@/modules/devices/utils/device-presence";
 
 /** Match Camera Preview's external-camera ordering and backend presence. */
-export function homeDeviceCards(status: { cameras: LiveCamera[]; isLoading: boolean; error: string | null },
+export function homeDeviceCards(status: DevicePresenceSnapshot,
   saved: { camera1DeviceId: string; camera2DeviceId: string; buttonDeviceId: string }) {
   const external = status.cameras.filter((camera) => camera.source !== "phone");
   const confirmed = !status.isLoading && !status.error;
