@@ -9,6 +9,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { ButtonTestStatus } from "../components/button-test-status";
 import { ButtonTestVisual } from "../components/button-test-visual";
+import { ButtonHoldProgress } from "../components/button-hold-progress";
 import { useButtonTest } from "../hooks/use-button-test";
 import type { ButtonColor, ButtonTestType } from "../types/button-test";
 
@@ -108,6 +109,7 @@ export function ButtonTestScreen({
       );
     }
 
+    if (pressedButtons.red) return <ButtonHoldProgress color={theme.text} borderColor={theme.border} />;
     return (
       <ButtonTestStatus
         text="Waiting for long press"
@@ -211,6 +213,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     flex: 1,
+    gap: Spacing.four,
   },
   footer: {
     paddingBottom: Spacing.two,

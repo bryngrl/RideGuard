@@ -94,7 +94,7 @@ export default function CompleteSetupScreen() {
     >
       <View style={styles.container}>
         <View style={styles.centerSection}>
-          <Image source={require("@/assets/images/all-set-icon.png")}
+          <Image source={require("../../../../assets/images/all-set-icon.png")}
             style={{ width: 96, height: 96, marginBottom: Spacing.four }}
             resizeMode="contain" fadeDuration={0} accessibilityLabel="RideGuard" />
           {!ready ? <>{error ? <FormFeedback message={error} /> : <ActivityIndicator color={theme.accent} />}</> : <>
