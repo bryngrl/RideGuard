@@ -9,6 +9,13 @@ export const BrandColors = {
 
 export const Colors = {
   light: {
+    sosReadyButton: "#1A2B4C",
+    sosReadyRing: "#D9E6FF",
+    sosSurface: "#DF1014",
+    sosOnSurface: "#FFFFFF",
+    sosSoftSurface: "#FDE2E2",
+    successForeground: "#147D38",
+    successBackground: "#EAF8EE",
     logo: "#1A2B4C",
     icon: "#444444",
     iconMuted: "#A6B0BF",
@@ -89,6 +96,13 @@ export const Colors = {
   },
 
   dark: {
+    sosReadyButton: "#1A2B4C",
+    sosReadyRing: "#142039",
+    sosSurface: "#DF1014",
+    sosOnSurface: "#FFFFFF",
+    sosSoftSurface: "#2A1015",
+    successForeground: "#4ADE80",
+    successBackground: "#0B2111",
     primary: "#DFECFF",
     secondary: "#FFFFFF",
     accent: "#65A7FF",

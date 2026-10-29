@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import { useRouter } from "expo-router";
 import { actionFooterPadding, BrandColors, Typography } from "@/shared/theme";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -33,13 +35,13 @@ function ContactCard({ recipient, now, compact = false }: { recipient: SosRecord
   const [expanded, setExpanded] = useState(false);
   const presentation = messagePresentation(recipient.initial, now);
   const tones = {
-    Delivered: { text: colors.success, badge: `${colors.success}18`, bar: colors.success, steps: 3 },
+    Delivered: { text: colors.successForeground, badge: colors.successBackground, bar: colors.successForeground, steps: 3 },
     Sent: { text: colors.accent, badge: colors.infoBackground, bar: colors.accent, steps: 2 },
     Submitted: { text: compact ? colors.text : colors.accent, badge: compact ? colors.backgroundSelected : colors.infoBackground, bar: colors.accent, steps: 1 },
   };
   const failed = presentation.label === "Failed";
   const tone = tones[presentation.label as keyof typeof tones] ?? {
-    text: failed ? colors.error : colors.textMuted,
+    text: failed ? colors.error : colors.text,
     badge: failed ? colors.errorBackground : colors.backgroundSelected,
     bar: failed ? colors.error : colors.textMuted, steps: 0,
   };
@@ -83,6 +85,7 @@ function ContactCard({ recipient, now, compact = false }: { recipient: SosRecord
 export function SosActiveScreen() {
   const { bottom } = useSafeAreaInsets();
   const colors = useTheme();
+  const scheme = useColorScheme();
   const styles = createStyles(colors);
   const router = useRouter();
   const state = useSosStore();
@@ -106,11 +109,16 @@ export function SosActiveScreen() {
   };
   const locationIncluded = !!record?.location && !record.recipients.some(r => r.initial.errorCode === "location_omitted_message_limit");
   const refreshDisabled = !!refreshing || cooldown > 0 || state.phase === "submitting";
+  const endMessagesPending = record?.recipients.some((recipient) => recipient.ended &&
+    (recipient.ended.status === "queued" || recipient.ended.status === "sending"));
   if (record?.status === "ended") return <SafeAreaView style={styles.endedContainer} edges={["top", "bottom"]}>
+    <StatusBar style={scheme === "dark" ? "light" : "dark"} />
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.endedContent}>
       <View style={styles.endedHeading}>
         <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={styles.endedTitle}>SOS ended</Text>
-        <Text style={styles.endedSubtitle}>We're texting your contacts once to let them know your SOS has ended.</Text>
+        <Text style={styles.endedSubtitle}>{endMessagesPending
+          ? "We're notifying your contacts that your SOS has ended."
+          : "Your SOS has ended. Check each contact's message status below."}</Text>
       </View>
       {record.recipients.length > 0 && <View style={styles.endedStatusSection}>
         <Text accessibilityRole="header" style={styles.endedSectionTitle}>SMS STATUS</Text>
@@ -136,30 +144,37 @@ export function SosActiveScreen() {
     </View>
   </SafeAreaView>;
   return <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <StatusBar style="light" />
     <View style={styles.header}>
       <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="Go back"
         onPress={() => router.canGoBack() ? router.back() : router.replace("/sos")}>
-        <Ionicons name="chevron-back" size={22} color="#FFFFFF" />
+        <Ionicons name="chevron-back" size={22} color={colors.sosOnSurface} />
       </Pressable>
       <View style={styles.headerTitle}>
-        <View style={styles.activeDotHalo}><View style={styles.activeDot} /></View>
+        {record?.status === "active" ? <View style={styles.activeDotHalo}><View style={styles.activeDot} /></View>
+          : <Ionicons name="alert-circle-outline" size={18} color={colors.sosOnSurface} />}
         <Text accessibilityLiveRegion="polite" style={styles.title}>{title.toUpperCase()}</Text>
       </View>
       <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="SOS preferences"
         onPress={() => router.push("/settings/sos-preferences")}>
-        <Ionicons name="settings-outline" size={24} color="#FFFFFF" />
+        <Ionicons name="settings-outline" size={22} color={colors.sosOnSurface} />
       </Pressable>
     </View>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
+      <View style={styles.hero}>
+        <Text accessibilityRole="header" style={styles.heroTitle}>{record?.status === "active" ? "Slide to stop" : title}</Text>
+        {record?.status === "active" && <Text style={styles.heroDescription}>Check each contact's message status below.</Text>}
+        <Ionicons name="alert-circle-outline" size={72} color={colors.sosOnSurface} accessible={false} />
+      </View>
       <View style={styles.statusBar}>
         <View style={styles.locationBadge} accessible accessibilityLabel={locationIncluded ? "Location snapshot included. This is not live tracking." : "Location not included"}>
-          <MaterialCommunityIcons name={locationIncluded ? "map-marker-outline" : "map-marker-off-outline"} size={16} color="#FFFFFF" />
+          <MaterialCommunityIcons name={locationIncluded ? "map-marker-outline" : "map-marker-off-outline"} size={16} color={colors.sosOnSurface} />
           <Text style={styles.locationText}>{locationIncluded ? "Location included" : "Location not included"}</Text>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="Refresh message status"
           accessibilityState={{ disabled: refreshDisabled || state.refreshing }} disabled={refreshDisabled || state.refreshing}
           onPress={() => void refreshStatus()} style={[styles.refreshButton, refreshDisabled && styles.disabled]}>
-          <Ionicons name="refresh" size={16} color="#FFFFFF" />
+          <Ionicons name="refresh" size={16} color={colors.sosOnSurface} />
           <Text style={styles.locationText}>{refreshing ? "Checking" : cooldown > 0 ? `${Math.ceil(cooldown / 1000)}s` : "Refresh"}</Text>
         </Pressable>
       </View>
@@ -187,8 +202,8 @@ export function SosActiveScreen() {
       <SlideButton key={state.stopping ? "stopping" : "ready"}
         label={state.stopping ? "Stopping SOS" : "Slide to stop SOS"}
         disabled={state.stopping} onComplete={() => void state.stop()} direction="right" thumbSymbol={"\u00D7"}
-        style={styles.slider} trackColor="#B51014" borderColor="#B51014"
-        thumbColor="#FFFFFF" labelColor="#FFFFFF" arrowColor="#DF1014" />
+        style={styles.slider} trackColor={colors.sosOnSurface} borderColor={colors.sosOnSurface}
+        thumbColor={colors.sosSurface} labelColor={colors.sosSurface} arrowColor={colors.sosOnSurface} />
     </View>}
   </SafeAreaView>;
 }
