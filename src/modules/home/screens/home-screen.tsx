@@ -7,6 +7,7 @@ import ErrorIcon from "@/assets/icons/status/error.svg";
 import { useProfile } from "@/modules/settings/hooks/use-profile";
 import { useDeviceStore } from "@/modules/devices";
 import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
+import { useButtons } from "@/modules/devices/hooks/use-buttons";
 import { homeDeviceCards } from "../utils/home-device-cards";
 import { useMonitoringStatus } from "@/modules/home/hooks/use-monitoring-status";
 import { useRideTimer } from "@/modules/home/hooks/use-ride-timer";
@@ -66,8 +67,9 @@ export function HomeScreen() {
 
   const savedDevices = useDeviceStore();
   const status = useCameras();
+  const buttons = useButtons();
   const { isLoading: camerasLoading, error: camerasError } = status;
-  const cards = homeDeviceCards(status, savedDevices);
+  const cards = homeDeviceCards({ ...status, ...buttons }, savedDevices);
   const camera1DeviceId = cards.camera1.deviceId;
   const camera2DeviceId = cards.camera2.deviceId;
   const buttonDeviceId = cards.button.deviceId;

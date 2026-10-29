@@ -10,7 +10,9 @@ No backend checkout, firmware, device assignment or live SOS was changed.
   account's button ID is updated only after the request succeeds.
 - Onboarding continues to the existing short-press screen, then the long-press
   screen, then MPIN. Skipping Camera 1 skips Camera 2 but still opens Quick Button
-  connection. Settings connection retains its return to Devices.
+  connection. Settings now opens the short-press test directly inside the app
+  stack; a missing local Button ID offers ID entry and returns to that test after
+  claiming. Completing the Settings test returns to Devices.
 - `/auth/ably-token` grants subscription to `rideguard:buttons:device` in staging.
   This is an internet/Ably integration, not a direct phone Bluetooth connection.
 

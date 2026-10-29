@@ -13,7 +13,6 @@ import {
 } from "@/modules/phone-camera";
 import { PHONE_CAPTURE_ENABLED } from "@/shared/constants/phone-capture";
 import { useTheme } from "@/shared/hooks/use-theme";
-import { useDeviceStore } from "@/modules/devices/store/devices.store";
 import { BorderRadius, DeviceCardLayout, Spacing, Typography } from "@/shared/theme";
 import { Card } from "@/shared/ui/card";
 import { KeyboardAvoidingWrapper } from "@/shared/ui/keyboard-avoiding-wrapper";
@@ -52,7 +51,6 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
   const colors = useTheme();
   const router = useRouter();
   const { cameras, isLoading, error } = useCameras();
-  const camera2DeviceId = useDeviceStore((state) => state.camera2DeviceId);
   // Phone cameras come from the phone hook, not the hardware list.
   const externals: External[] = cameras
     .filter((camera) => camera.source !== "phone")
@@ -120,7 +118,7 @@ function CameraPreview({ phone }: { phone: PhoneCapture | null }) {
     );
   } else if (selectedExternal) {
     preview = <HardwareCameraPreview camera={selectedExternal.camera} label={selectedExternal.label} error={error}
-      onConnect={() => router.push(`/(onboarding)/devices/camera?camera=${selectedExternal.camera.deviceId === camera2DeviceId ? 2 : 1}&source=settings` as never)} />;
+      onConnect={() => router.push(`/(onboarding)/devices/camera?camera=${externals.indexOf(selectedExternal) + 1}&source=settings` as never)} />;
   } else if (selected === ADD_KEY) {
     preview = (
       <Placeholder

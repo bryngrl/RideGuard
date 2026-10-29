@@ -18,10 +18,10 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Keyboard, Text, View } from "react-native";
 
-export default function ButtonProvisionScreen() {
+export default function ButtonProvisionScreen({ source: entrySource }: { source?: "settings" } = {}) {
   const router = useRouter();
   const { source } = useLocalSearchParams<{ source?: string }>();
-  const fromSettings = source === "settings";
+  const fromSettings = entrySource === "settings" || source === "settings";
   const theme = useTheme();
   const setButtonDeviceId = useDeviceStore((state) => state.setButtonDeviceId);
 
@@ -115,7 +115,7 @@ export default function ButtonProvisionScreen() {
 
       // Redirect after success
       claim.schedule(attempt, () => {
-        if (fromSettings) router.dismissTo("/devices");
+        if (fromSettings) router.replace("/(app)/devices/quick-button");
         else router.replace("/(onboarding)/devices/button");
       }, 1500);
     } catch (error: unknown) {

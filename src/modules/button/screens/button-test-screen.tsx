@@ -10,20 +10,26 @@ import { StyleSheet, Text, View } from "react-native";
 import { ButtonTestStatus } from "../components/button-test-status";
 import { ButtonTestVisual } from "../components/button-test-visual";
 import { ButtonHoldProgress } from "../components/button-hold-progress";
+import { useDeviceStore } from "@/modules/devices/store/devices.store";
+import { useButtons } from "@/modules/devices/hooks/use-buttons";
 import { useButtonTest } from "../hooks/use-button-test";
 import type { ButtonColor, ButtonTestType } from "../types/button-test";
 
 export function ButtonTestScreen({
   test = "short",
+  source,
 }: {
   test?: ButtonTestType;
+  source?: "settings";
 }) {
   const router = useRouter();
   const params = useLocalSearchParams<{ test?: string; source?: string }>();
   const testType: ButtonTestType =
     params.test === "long" || test === "long" ? "long" : "short";
   const theme = useTheme();
-  const fromSettings = params.source === "settings";
+  const fromSettings = source === "settings" || params.source === "settings";
+  const buttonDeviceId = useDeviceStore((state) => state.buttonDeviceId);
+  useButtons(); // Restore this account's assigned ID before receiving hardware events.
   const {
     state,
     recognizedButtons,
@@ -168,7 +174,19 @@ export function ButtonTestScreen({
         )}
 
         <View style={styles.footer}>
-          {state === "waiting" && connectionState !== "ready" ? (
+          {!buttonDeviceId ? (
+            <>
+              <ButtonTestStatus
+                text="Connect your Quick Button"
+                color={theme.text}
+                subtitle="Enter the Button ID printed on your device to start the press test."
+                subtitleColor={theme.textMuted}
+              />
+              <Button title="Enter Button ID" onPress={() => router.push(
+                fromSettings ? "/(app)/devices/button-setup" : "/(onboarding)/register/provision",
+              )} style={styles.continueButton} />
+            </>
+          ) : state === "waiting" && connectionState !== "ready" ? (
             <>
               <ButtonTestStatus
                 text={connectionState === "error" ? "Couldn't connect to Quick Button" : "Connecting to Quick Button…"}
@@ -177,23 +195,24 @@ export function ButtonTestScreen({
                 subtitleColor={theme.textMuted}
               />
               {connectionState === "error" && <Button title="Try again" onPress={handleRetry} style={styles.continueButton} />}
-              <Button title="Skip for now" variant="ghost" onPress={handleSkip} style={styles.secondaryButton} />
+              {!fromSettings && <Button title="Skip for now" variant="ghost" onPress={handleSkip} style={styles.secondaryButton} />}
             </>
           ) : state === "timeout" ? (
             <>
               <Button title="Try again" onPress={handleRetry} />
-              <Button
+              {!fromSettings && <Button
                 title="Skip for now"
                 variant="ghost"
                 onPress={handleSkip}
                 style={styles.secondaryButton}
-              />
+              />}
             </>
           ) : testType === "long" ? (
             renderLongStatus()
           ) : (
             renderShortStatus()
           )}
+          {fromSettings && <Button title="Back to devices" variant="ghost" onPress={handleSkip} style={styles.secondaryButton} />}
         </View>
       </View>
     </KeyboardAvoidingWrapper>
