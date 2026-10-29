@@ -38,7 +38,7 @@ function setup(type = "short") {
 test("both physical short presses schedule exactly one completion even with repeated events", () => {
   const app = setup(); app.event("white"); app.event("red"); app.event("red");
   assert.equal(app.values[0], "success");
-  assert.equal(app.timers.size, 1);
+  assert.equal(app.timers.size, 2);
   app.run(700); assert.equal(app.completed(), 1);
 });
 

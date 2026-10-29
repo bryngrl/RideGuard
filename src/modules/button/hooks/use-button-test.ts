@@ -84,7 +84,7 @@ export function useButtonTest(
       if (testType !== "long" || button !== "red") return;
 
       clearTimers();
-      setPressedButtons({ white: false, red: false });
+      setPressedButtons({ white: false, red: true });
       phase.current = "success";
       setState("success");
       return;
@@ -104,7 +104,7 @@ export function useButtonTest(
       clearTimers();
       phase.current = "success";
       setState("success");
-      setPressedButtons({ white: false, red: false });
+      schedule(() => setPressedButtons({ white: false, red: false }), 180);
       schedule(() => complete.current(), 700);
     }
   };
