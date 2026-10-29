@@ -57,6 +57,15 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
   const requestIdRef = useRef(0);
   const currentStatusRef = useRef(status);
   currentStatusRef.current = status;
+  const currentUserRef = useRef(user);
+  currentUserRef.current = user;
+
+  useEffect(() => () => {
+    // Home also consumes this hook: a request may outlive a tab or account.
+    requestIdRef.current += 1;
+    isFetchingRef.current = false;
+    fetchingStatusRef.current = null;
+  }, [user]);
 
   // Invalidate a pending live response when a development preview is selected.
   useEffect(() => {
@@ -88,6 +97,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
 
       try {
         const token = await user.getIdToken();
+        if (requestIdRef.current !== requestId || currentUserRef.current?.uid !== user.uid) return;
         const pageIds: string[] = [];
         let cursor = mode === "more" ? cursorRef.current : null;
         let nextCursor: string | null = null;
@@ -99,7 +109,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
             limit: ALERTS_PAGE_SIZE,
             cursor: cursor ?? undefined,
           });
-          if (!enabled || requestIdRef.current !== requestId || currentStatusRef.current !== status) return;
+          if (!enabled || requestIdRef.current !== requestId || currentStatusRef.current !== status || currentUserRef.current?.uid !== user.uid) return;
 
           mergeAlerts(page.alerts);
           pageIds.push(
@@ -122,7 +132,7 @@ export function useAlertsList(status: AlertListStatus, enabled = true) {
         hasMoreRef.current = nextCursor !== null;
       } catch (error) {
         if (requestIdRef.current === requestId) setError("Couldn't load alerts.");
-        console.error(`[Alerts] Failed to load ${status} alerts:`, error);
+        console.info(`[Alerts] ${status} alerts unavailable; retry on refresh.`);
       } finally {
         if (requestIdRef.current === requestId) {
           isFetchingRef.current = false;
