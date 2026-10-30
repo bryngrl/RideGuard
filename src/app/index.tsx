@@ -32,7 +32,10 @@ export default function Index() {
   }, [playIntro]);
 
   useFocusEffect(useCallback(() => {
-    if (isCheckingAuth || !introFinished) return;
+    // The decorative welcome animation must not delay restoring a confirmed
+    // session. New visitors keep the intro; returning users route immediately
+    // after authentication, then still pass onboarding and MPIN guards.
+    if (isCheckingAuth || (!introFinished && !isAuthenticated)) return;
 
     if (!isAuthenticated) {
       const pending = auth.currentUser;

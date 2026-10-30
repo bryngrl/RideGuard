@@ -105,9 +105,9 @@ export default function OnboardingLayout() {
   return source === "settings" ? <MpinAppGate>{stack}</MpinAppGate> :
     <OnboardingProgressContext.Provider value={true}>
       <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: theme.background }}>
-        <View style={{ width: "100%", maxWidth: MaxContentWidth, alignSelf: "center", paddingHorizontal: Spacing.five, paddingTop: Spacing.four }}>
+          {step !== "complete-setup" && <View style={{ width: "100%", maxWidth: MaxContentWidth, alignSelf: "center", paddingHorizontal: Spacing.five, paddingTop: Spacing.four }}>
           <Stepper standalone currentStep={progressStep} steps={10} size={4} />
-        </View>
+          </View>}
         <View style={{ flex: 1 }}>{stack}</View>
       </SafeAreaView>
     </OnboardingProgressContext.Provider>;

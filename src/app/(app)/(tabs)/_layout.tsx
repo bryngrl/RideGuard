@@ -1,14 +1,14 @@
 import { Tabs } from "expo-router";
-import { useReducedMotion } from "react-native-reanimated";
 
-import { BottomNavigation } from "@/components/navigation/bottom-navigation";
+import { BottomNavigation, type BottomNavigationProps } from "@/components/navigation/bottom-navigation";
+
+const renderTabBar = (props: BottomNavigationProps) => <BottomNavigation {...props} />;
 
 export default function TabsLayout() {
-  const reducedMotion = useReducedMotion();
   return (
     <Tabs
-      tabBar={() => <BottomNavigation />}
-      screenOptions={{ headerShown: false, animation: reducedMotion ? "none" : "fade", tabBarHideOnKeyboard: true }}
+      tabBar={renderTabBar}
+      screenOptions={{ headerShown: false, animation: "none", tabBarHideOnKeyboard: true }}
     >
       <Tabs.Screen name="index" />
       <Tabs.Screen name="alerts" />

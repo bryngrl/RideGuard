@@ -84,9 +84,9 @@ test("name field order and edits preserve the distinct first and last name mappi
   assert.equal(values.firstName, "Maria"); assert.equal(values.lastName, "Santos");
 });
 
-function verifiedScreen(authorized = true) {
+function verifiedScreen(authorized = true, loginRequired = false) {
   const animations = [], routes = [], cleanups = [];
-  const handoff = { uid: "owner", destination: "/(onboarding)/register/profile" };
+  const handoff = { uid: "owner", destination: loginRequired ? "/(public)/sign-in" : "/(onboarding)/register/profile" };
   let cleared = 0;
   class Value { interpolate() { return 0; } }
   const Screen = load("src/modules/auth/screens/account-verified-screen.tsx", {
@@ -101,9 +101,9 @@ function verifiedScreen(authorized = true) {
     "react-native-safe-area-context": { SafeAreaView: "SafeArea" },
     "react-native-svg": { default: "Svg", Circle: "Circle" },
     "react-native-reanimated": { useReducedMotion: () => false },
-    "@/lib/firebase": { auth: { currentUser: { uid: "owner", emailVerified: authorized } } },
+    "@/lib/firebase": { auth: { currentUser: loginRequired ? null : { uid: "owner", emailVerified: authorized } } },
     "@/shared/hooks/use-theme": { useTheme: () => ({}) }, "@/shared/theme": { Spacing: {}, Typography: {} },
-    "../services/verified-success": { getVerifiedSuccess: () => authorized ? handoff : null, clearVerifiedSuccess: () => cleared++ },
+    "../services/verified-success": { getVerifiedSuccess: () => authorized || loginRequired ? handoff : null, clearVerifiedSuccess: () => cleared++ },
   }).default;
   return { render: Screen, animations, routes, cleanup: () => cleanups.forEach((work) => work?.()), cleared: () => cleared };
 }
@@ -119,4 +119,63 @@ test("unverified/direct access never displays success; unmount cancels navigatio
   const invalid = verifiedScreen(false); assert.equal(invalid.render().type, "Redirect"); assert.equal(invalid.animations.length, 0);
   const valid = verifiedScreen(); valid.render(); valid.cleanup();
   valid.animations.at(-1).done({ finished: true }); assert.equal(valid.routes.length, 0);
+});
+
+test("server-confirmed verification without a Firebase session leads only to Login", () => {
+  const app = verifiedScreen(false, true);
+  assert.notEqual(app.render().type, "Redirect");
+  app.animations.find((item) => item.options.duration === 3000).done({ finished: true });
+  assert.deepEqual(app.routes, ["/(public)/sign-in"]);
+  assert.equal(app.cleared(), 1);
+});
+
+test("simultaneous account reads share transport without caching later requests or sharing tokens", async () => {
+  const calls = [];
+  const { APIClient } = load("src/shared/api/client.ts", { "./errors": { APIError: Error } }, {
+    process: { env: {} }, AbortController, setTimeout, clearTimeout,
+    fetch: (_url, options) => new Promise((resolve) => calls.push({ options, resolve })),
+  });
+  const client = new APIClient("https://fixture.invalid");
+  const first = client.get("/profile/me", "one");
+  assert.equal(client.get("/profile/me", "one"), first);
+  const other = client.get("/profile/me", "two");
+  assert.equal(calls.length, 2);
+  const respond = (item, value) => item.resolve({ ok: true, text: async () => JSON.stringify(value) });
+  respond(calls[0], { owner: "one" }); respond(calls[1], { owner: "two" });
+  assert.equal((await first).owner, "one"); assert.equal((await other).owner, "two");
+  const next = client.get("/profile/me", "one"); assert.equal(calls.length, 3);
+  respond(calls[2], { fresh: true }); assert.equal((await next).fresh, true);
+});
+
+test("failed shared reads can retry and mutations always remain separate requests", async () => {
+  let calls = 0;
+  const { APIClient } = load("src/shared/api/client.ts", { "./errors": { APIError: Error } }, {
+    process: { env: {} }, AbortController, setTimeout, clearTimeout,
+    fetch: async () => { calls++; if (calls === 1) throw new TypeError("offline");
+      return { ok: true, text: async () => '{"success":true}' }; },
+  });
+  const client = new APIClient("https://fixture.invalid");
+  await assert.rejects(client.get("/profile/me", "one"));
+  assert.equal((await client.get("/profile/me", "one")).success, true);
+  await Promise.all([client.post("/profile/me", {}, "one"), client.post("/profile/me", {}, "one")]);
+  assert.equal(calls, 4);
+});
+
+test("a stalled shared inventory read times out, aborts and allows a fresh retry", async () => {
+  let timer, signal, calls = 0;
+  class APIError extends Error { constructor(message, status) { super(message); this.status = status; } }
+  const { APIClient } = load("src/shared/api/client.ts", { "./errors": { APIError } }, {
+    process: { env: {} }, AbortController,
+    setTimeout: (work) => { timer = work; return 1; }, clearTimeout() {},
+    fetch: async (_url, options) => { calls++; signal = options.signal;
+      return { ok: true, text: () => calls === 1 ? new Promise(() => {}) : Promise.resolve('{"success":true}') }; },
+  });
+  const client = new APIClient("https://fixture.invalid");
+  const first = client.get("/devices/cameras", "one");
+  assert.equal(client.get("/devices/cameras", "one"), first);
+  const failure = assert.rejects(first, (error) => error.status === 408);
+  await Promise.resolve(); timer(); await failure;
+  assert.equal(signal.aborted, true); assert.equal(calls, 1);
+  assert.equal((await client.get("/devices/cameras", "one")).success, true);
+  assert.equal(calls, 2);
 });

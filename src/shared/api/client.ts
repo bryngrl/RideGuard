@@ -11,15 +11,17 @@ export interface RequestOptions extends RequestInit {
 
 export class APIClient {
   private baseUrl: string;
+  private pendingGets = new Map<string, Promise<unknown>>();
 
   constructor(baseUrl: string = API_BASE_URL) {
     this.baseUrl = baseUrl;
   }
 
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
-    // Auth and onboarding gate navigation. Bound both headers and body reads,
-    // abort the transport, and never retry a potentially committed mutation.
-    if (!endpoint.startsWith("/auth/") && !endpoint.startsWith("/profile/")) return this.performRequest<T>(endpoint, options);
+    // Bound shared reads as well as auth/onboarding, so a stalled transport
+    // cannot pin future refreshes to an in-flight promise forever. Never retry
+    // a potentially committed mutation automatically.
+    if (!endpoint.startsWith("/auth/") && !endpoint.startsWith("/profile/") && options.method !== "GET") return this.performRequest<T>(endpoint, options);
     const controller = new AbortController();
     const abort = () => controller.abort();
     if (options.signal?.aborted) controller.abort();
@@ -121,10 +123,21 @@ export class APIClient {
   }
 
   get<T>(endpoint: string, token?: string): Promise<T> {
-    return this.request<T>(endpoint, {
+    // Multiple mounted screens can ask for the same account data at once.
+    // Share only an in-flight read; later reads still reach the backend, and
+    // different sessions never share responses. Mutations are never coalesced.
+    const key = `${token ?? ""}\n${endpoint}`;
+    const existing = this.pendingGets.get(key);
+    if (existing) return existing as Promise<T>;
+    const pending = this.request<T>(endpoint, {
       method: "GET",
       token,
     });
+    this.pendingGets.set(key, pending);
+    void pending.finally(() => {
+      if (this.pendingGets.get(key) === pending) this.pendingGets.delete(key);
+    }).catch(() => undefined);
+    return pending;
   }
 
   post<T>(endpoint: string, body?: unknown, token?: string): Promise<T> {

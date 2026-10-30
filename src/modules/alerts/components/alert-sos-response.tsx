@@ -6,7 +6,6 @@ import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { messagePresentation, type SosRecord } from "@/modules/sos/types";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
-import { Button } from "@/shared/ui/button";
 import { getAlertSos } from "../services/alert-sos.api";
 
 export function AlertSosResponse({ alertId }: { alertId: string }) {
@@ -16,7 +15,6 @@ export function AlertSosResponse({ alertId }: { alertId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fetchedAt, setFetchedAt] = useState<string | null>(null);
-  const [retry, setRetry] = useState(0);
   useFocusEffect(useCallback(() => {
     let active = true;
     const controller = new AbortController();
@@ -28,7 +26,7 @@ export function AlertSosResponse({ alertId }: { alertId: string }) {
     const current = () => active && !controller.signal.aborted && !!user && auth.currentUser?.uid === user.uid;
     const timer = setTimeout(() => {
       if (!active) return;
-      controller.abort(); setError("Couldn't confirm response status. Try refreshing."); setLoading(false);
+      controller.abort(); setError("Couldn't confirm response status. Reopen this alert to try again."); setLoading(false);
     }, 20_000);
     void (async () => {
       try {
@@ -39,11 +37,11 @@ export function AlertSosResponse({ alertId }: { alertId: string }) {
         if (!current()) return;
         setRecord(result); setFetchedAt(new Date().toLocaleTimeString());
       } catch {
-        if (current()) setError("Response status is unavailable. Try refreshing.");
+        if (current()) setError("Response status is unavailable. Reopen this alert to try again.");
       } finally { clearTimeout(timer); if (current()) setLoading(false); }
     })();
     return () => { active = false; controller.abort(); clearTimeout(timer); };
-  }, [alertId, user, retry]));
+  }, [alertId, user]));
 
   return <View style={{ gap: Spacing.two }}>
     {loading ? <ActivityIndicator color={theme.accent} accessibilityLabel="Checking this alert's SOS response" /> : error ?
@@ -62,6 +60,5 @@ export function AlertSosResponse({ alertId }: { alertId: string }) {
         </View>)}
       </>}
     {!!fetchedAt && <Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Last checked {fetchedAt}</Text>}
-    <Button title="Refresh response status" variant="ghost" disabled={loading || !user} onPress={() => setRetry((value) => value + 1)} />
   </View>;
 }

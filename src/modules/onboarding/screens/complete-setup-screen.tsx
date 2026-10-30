@@ -98,16 +98,16 @@ export default function CompleteSetupScreen() {
       <View style={styles.container}>
         <View style={styles.centerSection}>
           <Image source={require("../../../../assets/images/all-set-icon.png")}
-            style={{ width: 96, height: 96, marginBottom: Spacing.four }}
+            style={styles.badge}
             resizeMode="contain" fadeDuration={0} accessibilityLabel="RideGuard" />
           {!ready ? <>{error ? <FormFeedback message={error} /> : <ActivityIndicator color={theme.accent} />}</> : <>
 
           <Text
             style={[Typography.largeTitle, styles.title, { color: theme.text }]}
           >
-            You're all set,{"\n"}
-            {displayName}
+            You’re all set,
           </Text>
+          <Text style={[Typography.largeTitle, styles.name, { color: theme.text }]}>{displayName}</Text>
 
           <Text
             style={[
@@ -116,7 +116,7 @@ export default function CompleteSetupScreen() {
               { color: theme.textMuted },
             ]}
           >
-            Your account is set up and ready to use.
+            Your account is set up and RideGuard is ready to use.
           </Text>
           {error ? <FormFeedback message={error} /> : null}
           </>}

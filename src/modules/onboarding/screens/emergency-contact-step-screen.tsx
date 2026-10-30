@@ -14,13 +14,12 @@ import { CustomTextInput } from "@/shared/ui/text-input";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { FormDropdown } from "@/shared/ui/form-dropdown";
 import { useRouter } from "expo-router";
-import { getAuth } from "firebase/auth";
 import { APIError } from "@/shared/api/errors";
 import { useRef, useState } from "react";
 import { Keyboard, Text, TextInput, View } from "react-native";
-import { ProfilePayload, submitProfile } from "../services/onboarding.api";
+import { ProfilePayload } from "../services/onboarding.api";
+import { saveOnboardingDetails } from "../services/save-onboarding-details";
 import { useOnboardingStore } from "../store/onboarding.store";
-import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 export default function RegisterStepThreeScreen() {
   const router = useRouter();
@@ -112,30 +111,12 @@ export default function RegisterStepThreeScreen() {
       payload.relationship = store.relationship.trim();
     }
 
-    const snapshot = JSON.stringify(payload);
-    // Returning through earlier screens must not repeat a confirmed create.
-    if (store.savedProfile === snapshot) return true;
-
     try {
       submitting.current = true;
       Keyboard.dismiss();
       setIsLoading(true);
 
-      const auth = getAuth();
-      const user = auth.currentUser;
-
-      if (!user) {
-        setSaveError("Session expired. Log in again.");
-
-        return false;
-      }
-
-      const firebaseToken = await user.getIdToken();
-
-      const response = await submitProfile(payload, firebaseToken);
-      if (response?.success !== true) throw new Error("Profile save was not confirmed.");
-      store.updateDraft({ savedProfile: snapshot });
-      useAuthStore.getState().setIsOldUser(true);
+      await saveOnboardingDetails(payload, validateEmergencyContact);
 
       return true;
     } catch (error: unknown) {

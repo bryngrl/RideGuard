@@ -1,5 +1,5 @@
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
-import { usePathname, useRouter } from "expo-router";
+import type { Tabs } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,41 +37,37 @@ type Tab = {
 const tabs: Tab[] = [
   {
     label: "Home",
-    route: "/(tabs)",
+    route: "index",
     ActiveIcon: HomeActiveIcon,
     InactiveIcon: HomeInactiveIcon,
   },
   {
     label: "Alerts",
-    route: "/alerts",
+    route: "alerts",
     ActiveIcon: AlertActiveIcon,
     InactiveIcon: AlertInactiveIcon,
   },
   {
     label: "Camera",
-    route: "/camera",
+    route: "camera",
     ActiveIcon: CameraActiveIcon,
     InactiveIcon: CameraInactiveIcon,
   },
   {
     label: "Settings",
-    route: "/settings",
+    route: "settings",
     ActiveIcon: SettingActiveIcon,
     InactiveIcon: SettingInactiveIcon,
   },
 ];
 
-export function BottomNavigation() {
-  const router = useRouter();
-  const pathname = usePathname();
+export type BottomNavigationProps = Parameters<NonNullable<React.ComponentProps<typeof Tabs>["tabBar"]>>[0];
+
+export function BottomNavigation({ state, navigation }: BottomNavigationProps) {
 
   const colors = useTheme();
   // Android is edge-to-edge: keep the bar above the system navigation.
   const { bottom } = useSafeAreaInsets();
-
-  const handleNavigation = (route: string) => {
-    router.navigate(route as never);
-  };
 
   return (
     // The padding around the pill would otherwise show the navigator's grey
@@ -95,10 +91,9 @@ export function BottomNavigation() {
         ]}
       >
         {tabs.map((tab) => {
-          const isActive =
-            tab.label === "Home"
-              ? pathname === "/" || pathname === "/(tabs)"
-              : pathname === tab.route;
+          const route = state.routes.find((route) => route.name === tab.route);
+          if (!route) return null;
+          const isActive = state.routes[state.index]?.key === route.key;
 
           const Icon = isActive ? tab.ActiveIcon : tab.InactiveIcon;
 
@@ -114,7 +109,11 @@ export function BottomNavigation() {
                   backgroundColor: colors.infoBackground,
                 },
               ]}
-              onPress={() => handleNavigation(tab.route)}
+              onPress={() => {
+                const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
+                if (!isActive && !event.defaultPrevented) navigation.navigate(route.name, route.params);
+              }}
+              onLongPress={() => navigation.emit({ type: "tabLongPress", target: route.key })}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >

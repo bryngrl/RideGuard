@@ -9,7 +9,9 @@ export const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  title: { textAlign: "center", marginBottom: Spacing.two },
-  subtitle: { textAlign: "center", maxWidth: 280 },
+  badge: { width: 114, height: 114, marginBottom: Spacing.five + Spacing.two },
+  title: { textAlign: "center", fontSize: 26, lineHeight: 32 },
+  name: { textAlign: "center", fontSize: 42, lineHeight: 48, marginBottom: Spacing.three },
+  subtitle: { textAlign: "center", maxWidth: 280, fontSize: 12, lineHeight: 18 },
   footer: { width: "100%", paddingBottom: Spacing.five },
 });
