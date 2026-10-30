@@ -24,6 +24,7 @@ import { CachedPhoto } from "@/shared/ui/cached-photo";
 import { LinearGradient } from "expo-linear-gradient";
 import { styles } from "./edit-contact-screen.styles";
 import { RelationshipPicker } from "../components/relationship-picker";
+import { ContactDeliveryNotice } from "../components/contact-delivery-notice";
 import { deleteContact, updateContact } from "../services/contacts.api";
 
 type ConfirmationType = "discard" | "delete" | null;
@@ -38,12 +39,14 @@ export function EditContactScreen() {
     contactId,
     contactName: initialContactName,
     phoneNumber: initialPhoneNumber,
+    email: initialEmail,
     relationship: initialRelationship,
     profileImage: initialProfileImage,
   } = useLocalSearchParams<{
     contactId?: string;
     contactName?: string;
     phoneNumber?: string;
+    email?: string;
     relationship?: string;
     profileImage?: string;
   }>();
@@ -53,6 +56,7 @@ export function EditContactScreen() {
   const [phoneNumber, setPhoneNumber] = useState(
     normalizePhoneNumber(initialPhoneNumber ?? ""),
   );
+  const [email, setEmail] = useState(initialEmail ?? "");
   const [relationship, setRelationship] = useState(initialRelationship ?? "");
   const nameRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
@@ -66,6 +70,7 @@ export function EditContactScreen() {
 
   const [contactNameError, setContactNameError] = useState("");
   const [phoneNumberError, setPhoneNumberError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [activeConfirmation, setActiveConfirmation] =
@@ -164,10 +169,12 @@ export function EditContactScreen() {
 
     setContactNameError("");
     setPhoneNumberError("");
+    setEmailError("");
     setRelationshipError("");
 
     const trimmedName = contactName.trim();
     const trimmedPhone = phoneNumber.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedName) {
       setContactNameError("Enter the contact name.");
@@ -179,6 +186,14 @@ export function EditContactScreen() {
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Enter a valid 10-digit mobile number.");
+      isValid = false;
+    }
+
+    if (!trimmedEmail) {
+      setEmailError("Enter an email address.");
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEmailError("Enter a valid email address.");
       isValid = false;
     }
 
@@ -199,10 +214,12 @@ export function EditContactScreen() {
     const initialName = initialContactName ?? "";
     const initialPhone = normalizePhoneNumber(initialPhoneNumber ?? "");
     const initialRelationshipValue = initialRelationship ?? "";
+    const initialEmailValue = initialEmail ?? "";
     return (
       contactName.trim() !== initialName.trim() ||
       phoneNumber !== initialPhone ||
       relationship.trim() !== initialRelationshipValue.trim() ||
+      email.trim().toLowerCase() !== initialEmailValue.trim().toLowerCase() ||
       photoAsset !== null
     );
   };
@@ -210,6 +227,7 @@ export function EditContactScreen() {
   const resetForm = () => {
     setContactName(initialContactName ?? "");
     setPhoneNumber(normalizePhoneNumber(initialPhoneNumber ?? ""));
+    setEmail(initialEmail ?? "");
     setRelationship(initialRelationship ?? "");
     setProfileImage(initialProfileImage || null);
     setPhotoAsset(null);
@@ -265,7 +283,7 @@ export function EditContactScreen() {
       return true;
     });
     return () => subscription.remove();
-  }, [contactId, contactName, phoneNumber, relationship, photoAsset, isEditing, pickingPhoto, router]));
+  }, [contactId, contactName, phoneNumber, email, relationship, photoAsset, isEditing, pickingPhoto, router]));
 
   const handleSave = async () => {
     if (savingRef.current || pickingPhoto || !hasChanges()) return;
@@ -282,6 +300,7 @@ export function EditContactScreen() {
       await updateContact(contactId, {
         name: contactName.trim(),
         phone: `+63${phoneNumber}`,
+        email: email.trim().toLowerCase(),
         relationship: relationship.trim(),
         photoAsset,
       });
@@ -439,6 +458,7 @@ export function EditContactScreen() {
         </View>
 
         <View style={styles.formContainer}>
+          <ContactDeliveryNotice />
           <CustomTextInput
             label="Contact name"
             ref={nameRef}
@@ -466,6 +486,25 @@ export function EditContactScreen() {
               if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
+          />
+
+          <CustomTextInput
+            label="Email address"
+            required
+            value={email}
+            error={emailError}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            onBlur={() => {
+              if (!email.trim()) setEmailError("Enter an email address.");
+              else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) setEmailError("Enter a valid email address.");
+            }}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (emailError) setEmailError("");
+            }}
           />
 
           <RelationshipPicker

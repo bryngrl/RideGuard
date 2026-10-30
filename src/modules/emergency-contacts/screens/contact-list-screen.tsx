@@ -70,6 +70,7 @@ export function ContactListScreen() {
         contactId: contact.id,
         contactName: contact.name,
         phoneNumber: contact.phoneNumber,
+        email: contact.email,
         relationship: contact.relationship ?? "",
         profileImage: contact.profileImage ?? "",
       },

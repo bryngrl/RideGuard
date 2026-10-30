@@ -20,6 +20,7 @@ import { CustomTextInput } from "@/shared/ui/text-input";
 import { CachedPhoto } from "@/shared/ui/cached-photo";
 import { createContact, listContacts } from "../services/contacts.api";
 import { RelationshipPicker } from "../components/relationship-picker";
+import { ContactDeliveryNotice } from "../components/contact-delivery-notice";
 import { styles } from "./add-contact-screen.styles";
 
 export function AddContactScreen() {
@@ -29,12 +30,14 @@ export function AddContactScreen() {
 
   const [contactName, setContactName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
   const [relationship, setRelationship] = useState("");
   const nameRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
 
   const [contactNameError, setContactNameError] = useState("");
   const [phoneNumberError, setPhoneNumberError] = useState("");
+  const [emailError, setEmailError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
 
   const [profileImage, setProfileImage] = useState<string | null>(null);
@@ -120,10 +123,12 @@ export function AddContactScreen() {
 
     setContactNameError("");
     setPhoneNumberError("");
+    setEmailError("");
     setRelationshipError("");
 
     const trimmedName = contactName.trim();
     const trimmedPhone = phoneNumber.trim();
+    const trimmedEmail = email.trim().toLowerCase();
 
     if (!trimmedName) {
       setContactNameError("Enter the contact name.");
@@ -135,6 +140,14 @@ export function AddContactScreen() {
       isValid = false;
     } else if (!validNationalMobile(trimmedPhone)) {
       setPhoneNumberError("Enter a valid 10-digit mobile number.");
+      isValid = false;
+    }
+
+    if (!trimmedEmail) {
+      setEmailError("Enter an email address.");
+      isValid = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setEmailError("Enter a valid email address.");
       isValid = false;
     }
 
@@ -166,6 +179,7 @@ export function AddContactScreen() {
       await createContact({
         name: contactName.trim(),
         phone: `+63${phoneNumber}`,
+        email: email.trim().toLowerCase(),
         relationship: relationship.trim(),
         photoAsset,
       });
@@ -194,7 +208,7 @@ export function AddContactScreen() {
 
   const handleCancel = () => {
     if (savingRef.current || pickingPhotoRef.current) return;
-    if (contactName.trim() || phoneNumber || relationship || photoAsset) {
+    if (contactName.trim() || phoneNumber || email || relationship || photoAsset) {
       Alert.alert("Discard changes?", "Your new contact has not been saved.", [
         { text: "Keep editing", style: "cancel" },
         { text: "Discard", style: "destructive", onPress: leaveContact },
@@ -210,7 +224,7 @@ export function AddContactScreen() {
       return true;
     });
     return () => subscription.remove();
-  }, [contactName, phoneNumber, relationship, photoAsset, router]));
+  }, [contactName, phoneNumber, email, relationship, photoAsset, router]));
 
   const handleHelp = () => {
     Alert.alert(
@@ -276,6 +290,7 @@ export function AddContactScreen() {
         </View>
 
         <View style={styles.formContainer}>
+          <ContactDeliveryNotice />
           <CustomTextInput
             label="Contact name"
             ref={nameRef}
@@ -306,6 +321,25 @@ export function AddContactScreen() {
               if (phoneNumber && !validNationalMobile(phoneNumber)) setPhoneNumberError("Enter a valid 10-digit mobile number.");
             }}
             onChangeText={handlePhoneChange}
+          />
+
+          <CustomTextInput
+            label="Email address"
+            required
+            value={email}
+            error={emailError}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="email-address"
+            autoComplete="email"
+            onBlur={() => {
+              if (!email.trim()) setEmailError("Enter an email address.");
+              else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) setEmailError("Enter a valid email address.");
+            }}
+            onChangeText={(text) => {
+              setEmail(text);
+              if (emailError) setEmailError("");
+            }}
           />
 
           <RelationshipPicker
