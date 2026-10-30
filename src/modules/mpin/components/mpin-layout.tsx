@@ -1,8 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { type ReactNode } from "react";
-import { ActivityIndicator, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { BrandLoading } from "@/shared/ui/brand-loading";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { actionFooterPadding, BorderRadius, PinLayout, Spacing, Typography } from "@/shared/theme";
 import { FormFeedback } from "@/shared/ui/form-feedback";
@@ -35,7 +36,7 @@ export function MpinLayout({ title, description, children, busy, error, preview 
             {preview && <View style={styles.feedback}><FormFeedback tone="info" message="Design preview only. No MPIN is saved, verified, or used to unlock your account." /></View>}
             {error && <View style={styles.feedback}><FormFeedback message={error} /></View>}
             {busy && <View style={styles.busy} accessible accessibilityLabel="Processing MPIN request" accessibilityLiveRegion="polite">
-              <ActivityIndicator color={theme.text} /><Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Please wait…</Text>
+              <BrandLoading size={24} label="Verifying MPIN" />
             </View>}
             {children}
           </View>

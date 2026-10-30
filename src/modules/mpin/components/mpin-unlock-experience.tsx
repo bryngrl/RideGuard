@@ -2,11 +2,12 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, AppState, BackHandler, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { AppState, BackHandler, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { BrandLockup } from "@/components/brand-lockup";
+import { BrandLoading } from "@/shared/ui/brand-loading";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { actionFooterPadding, BorderRadius, PinLayout, Spacing, Typography, getPinKeypadGap } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
@@ -137,7 +138,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
             onLayout={(event) => setFeedbackHeight(event.nativeEvent.layout.height)}>
             {error && <FormFeedback message={error} />}
             {busy && <View style={styles.busy} accessibilityLiveRegion="polite" accessible accessibilityLabel="Verifying MPIN">
-              <ActivityIndicator color={theme.text} />
+              <BrandLoading size={24} label="Verifying MPIN" />
             </View>}
           </View>
           <PinPad value={value} onChange={onChange} onComplete={onComplete} disabled={disabled || busy || !entry}

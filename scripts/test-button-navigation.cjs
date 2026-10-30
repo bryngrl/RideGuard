@@ -24,6 +24,8 @@ const common = {
   "@/shared/ui/button": { Button: "Button" },
   "@/shared/ui/keyboard-avoiding-wrapper": { KeyboardAvoidingWrapper: "Layout" },
   "@/shared/ui/stepper": { default: "Stepper" },
+  "@/shared/ui/back-arrow-icon": { BackArrowIcon: "BackArrow", BACK_ARROW_TOUCH_SIZE: 48, BACK_ARROW_TOUCH_LEFT: 11 },
+  "@/shared/ui/feedback-pressable": { FeedbackPressable: "Pressable" },
 };
 function find(tree, predicate) {
   if (!tree || typeof tree !== "object") return null;
@@ -70,7 +72,10 @@ test("an unpaired button keeps the press screen open and offers account-scoped I
   assert.equal(app.routes.length, 0);
   find(tree, (node) => node.props?.title === "Enter Button ID").props.onPress();
   assert.equal(app.routes[0], "/(app)/devices/button-setup");
-  find(tree, (node) => node.props?.title === "Back to devices").props.onPress();
+  assert.equal(tree.type, "Layout");
+  assert.ok(find(tree, (node) => node.type === "BackArrow"));
+  assert.equal(find(tree, (node) => node.props?.title === "Back to devices"), null);
+  find(tree, (node) => node.props?.accessibilityLabel === "Go back").props.onPress();
   assert.equal(app.routes[1], "/devices");
 });
 

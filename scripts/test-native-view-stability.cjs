@@ -11,7 +11,8 @@ const native = { View: "View", Text: "Text", Pressable: "NativePressable", Activ
   StyleSheet: { create: (styles) => styles, absoluteFill: {}, flatten } };
 const base = {
   "@/modules/mpin/services/mpin-activity": { recordMpinActivity() {} },
-  react: require("react"), "react/jsx-runtime": require("react/jsx-runtime"), "react-native": native,
+  react: require("react"), "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" }, "react-native": native,
   "@/shared/hooks": { useTheme: () => theme }, "@/shared/hooks/use-theme": { useTheme: () => theme },
   "@/shared/theme": { BorderRadius: {}, BrandColors: {}, Spacing: {}, Typography: {} },
   "@/shared/ui/feedback-pressable": { FeedbackPressable: "Pressable" },
