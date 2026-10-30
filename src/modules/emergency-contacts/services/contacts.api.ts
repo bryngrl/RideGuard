@@ -9,13 +9,14 @@ type ContactRecord = {
   id: string;
   name: string;
   phone: string;
+  email: string;
   relationship: string;
   photo_url: string | null;
   public_id: string | null;
 };
 
 type Envelope<T> = { success: boolean; message?: string; data: T };
-type ContactInput = { name: string; phone: string; relationship: string; photoAsset?: ImagePickerAsset | null };
+export type ContactInput = { name: string; phone: string; email: string; relationship: string; photoAsset?: ImagePickerAsset | null };
 
 const CACHE_MS = 30_000;
 let cacheOwner: string | null = null;
@@ -83,6 +84,7 @@ function toContact(record: ContactRecord): EmergencyContact {
     id: record.id,
     name: record.name,
     phoneNumber: record.phone,
+    email: record.email || "",
     relationship: record.relationship,
     profileImage: record.photo_url?.trim() || undefined,
   };
@@ -92,6 +94,7 @@ async function form(input: ContactInput) {
   const data = new FormData();
   data.append("name", input.name);
   data.append("phone", input.phone);
+  data.append("email", input.email);
   data.append("relationship", input.relationship);
   if (input.photoAsset) await appendPhoto(data, input.photoAsset);
   return data;

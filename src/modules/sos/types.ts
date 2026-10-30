@@ -9,13 +9,16 @@ export type Delivery = {
 export type StatusRefresh = { state: "idle" | "pending" | "complete" | "partial" | "unavailable";
   requestedAt: string | null; expiresAt: string | null; nextAllowedAt: string | null };
 export type Submission = { status: SubmissionStatus; updatedAt: string; errorCode?: string; delivery?: Delivery | null };
+export type EmailSubmission = { status: "queued" | "sending" | "sent" | "failed" | "unknown"; updatedAt: string; errorCode?: string };
 export type SosLocation = { latitude: number; longitude: number; capturedAt: string; accuracyMeters: number | null };
 export type SosInput = { requestId: string; alertId?: string; location: SosLocation | null };
 export type SosRecord = {
   sosId: string; requestId: string; alertId: string | null; status: "active" | "ended";
   createdAt: string; endedAt: string | null; location: SosLocation | null;
   statusRefresh?: StatusRefresh;
-  recipients: { contactId: string; name: string; phone: string; initial: Submission; ended: Submission | null }[];
+  // Email is independent from SMS; the backend may omit it on legacy SOS records.
+  recipients: { contactId: string; name: string; phone: string; email?: string; initial: Submission; ended: Submission | null;
+  initialEmail?: EmailSubmission; endedEmail?: EmailSubmission | null }[];
 };
 export type Recovery = { uid: string; requestId: string; body: SosInput | null; sosId: string | null; stopPending: boolean };
 
@@ -25,7 +28,8 @@ export function trackingDeadline(record: SosRecord | null): number | null {
   return dates.length ? Math.max(...dates) : null;
 }
 export function hasPending(record: SosRecord | null, now = Date.now()): boolean {
-  return !!record && (!!record.recipients.some(r => [r.initial, r.ended].some(s => s?.status === "queued" || s?.status === "sending")) ||
+  return !!record && (!!record.recipients.some(r => [r.initial, r.ended].some(s => s?.status === "queued" || s?.status === "sending") ||
+    [r.initialEmail, r.endedEmail].some(s => s?.status === "queued" || s?.status === "sending")) ||
     (trackingDeadline(record) ?? 0) > now);
 }
 

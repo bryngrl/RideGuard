@@ -29,6 +29,12 @@ function MessageRow({ label, value, now, color }: { label: string; value: Submis
   </View>;
 }
 
+function EmailRow({ label, status, color }: { label: string; status: "queued" | "sending" | "sent" | "failed" | "unknown"; color: string }) {
+  const text = status === "sent" ? "Email sent" : status === "failed" ? "Email delivery failed" :
+    status === "sending" ? "Email sending" : status === "queued" ? "Email queued" : "Email delivery unconfirmed";
+  return <Text accessibilityLiveRegion="polite" style={[Typography.bodySmall, { color }]}>{label}: {text}</Text>;
+}
+
 function ContactCard({ recipient, now, compact = false }: { recipient: SosRecord["recipients"][number]; now: number; compact?: boolean }) {
   const colors = useTheme();
   const styles = createStyles(colors);
@@ -74,7 +80,9 @@ function ContactCard({ recipient, now, compact = false }: { recipient: SosRecord
     </View>}
     {failed && <Text style={[Typography.bodySmall, { color: colors.error }]}>{presentation.detail}</Text>}
     {recipient.initial.status === "unknown" && <Text style={[Typography.bodySmall, { color: colors.text }]}>{presentation.detail}</Text>}
+    {recipient.initialEmail && <EmailRow label="SOS email" status={recipient.initialEmail.status} color={colors.text} />}
     {recipient.ended && (!compact || expanded) && <MessageRow label="SOS ended message" value={recipient.ended} now={now} color={colors.text} />}
+    {recipient.endedEmail && (!compact || expanded) && <EmailRow label="Ended-SOS email" status={recipient.endedEmail.status} color={colors.text} />}
     {expanded && <View style={styles.contactDetails}>
       <Text selectable style={[Typography.bodySmall, { color: colors.text }]}>{recipient.phone}</Text>
       <MessageRow label="SOS message" value={recipient.initial} now={now} color={colors.text} />
@@ -121,7 +129,7 @@ export function SosActiveScreen() {
           : "Your SOS has ended. Check each contact's message status below."}</Text>
       </View>
       {record.recipients.length > 0 && <View style={styles.endedStatusSection}>
-        <Text accessibilityRole="header" style={styles.endedSectionTitle}>SMS STATUS</Text>
+        <Text accessibilityRole="header" style={styles.endedSectionTitle}>MESSAGE STATUS</Text>
         <View style={styles.endedContacts}>
           {record.recipients.map((recipient, index) => <View key={recipient.contactId}
             style={index > 0 ? styles.endedContactDivider : undefined}>

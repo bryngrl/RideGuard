@@ -12,4 +12,4 @@ For an Android APK when EAS Build is unavailable or its quota is exhausted, foll
 
 ## Domain vocabulary
 
-Terms are defined once, for every repository, in the ecosystem glossary: `GLOSSARY.md` at the root of [the `RideGuard-Documentations` repository](https://github.com/XpnsiveSharks/RideGuard-Documentations), or `../docs/GLOSSARY.md` when the repositories sit side by side. Read it before naming a type, field, route or event. If the code disagrees with the glossary, fix the code or fix the glossary - do not introduce a second word for the same thing. In particular, an alert is never an incident, and a ride is not part of this domain.
+Terms are defined once, for every repository, in the ecosystem glossary: `GLOSSARY.md` at the root of [the `RideGuard-Documentations` repository](https://github.com/XpnsiveSharks/RideGuard-Documentations), or `../docs/GLOSSARY.md` when the repositories sit side by side. Read it before naming a type, field, route or event. If the code disagrees with the glossary, fix the code or fix the glossary — do not introduce a second word for the same thing. In particular, an alert is never an incident, and a ride is not part of this domain.

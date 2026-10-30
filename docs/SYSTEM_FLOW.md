@@ -1,6 +1,6 @@
 # RideGuard: frontend-to-backend flow
 
-This describes the flows visible in this mobile repository as of 23 October 2026. The checkout contains the Expo/React Native app and its Android phone-capture module, but **does not contain the Azure API, model API, or hardware firmware source**. Backend internals below are limited to the API contracts used by the app and the architecture described in `docs/phone-camera-implementation-plan.md`; deployment behavior should be confirmed against those services.
+This describes the flows visible in this mobile repository as of 29 October 2026. The checkout contains the Expo/React Native app and its Android phone-capture module, but **does not contain the Azure API, model API, or hardware firmware source**. Backend internals below are limited to the API contracts used by the app and the architecture described in `docs/phone-camera-implementation-plan.md`; deployment behavior should be confirmed against those services.
 
 ## System at a glance
 
@@ -49,7 +49,7 @@ flowchart TD
     I --> J[Main app]
 ```
 
-The app saves claimed camera and button IDs in its local device store. Later, it requests `GET /devices/cameras` for the account's camera list, including device ID, source (`esp32` or `phone`), online state, and stream information. Device release uses `DELETE /devices/claim-device/:id`. Emergency contacts can subsequently be listed, created, edited, and deleted through `/profile/emergency-contacts`; create/edit requests use multipart form data so a photo can be included.
+The app saves claimed camera and button IDs in its local device store. Later, it requests `GET /devices/cameras` for the account's camera list, including device ID, source (`esp32` or `phone`), online state, and stream information. Device release uses `DELETE /devices/claim-device/:id`, guarded by a claim lifecycle (`src/modules/devices/services/device-claim-lifecycle.ts`) so a late claim or release cannot affect a different screen or account. Home and Camera Preview share one account-scoped camera list (`camera-status.store.ts`). Emergency contacts can subsequently be listed, created, edited, and deleted through `/profile/emergency-contacts`; create/edit requests use multipart form data so a photo can be included.
 
 Main code: `src/modules/onboarding/`, `src/modules/camera-sensor/services/cameras.api.ts`, `src/modules/devices/`, and `src/modules/emergency-contacts/services/contacts.api.ts`.
 
@@ -70,11 +70,11 @@ Main code: `src/modules/phone-camera/`, `modules/phone-capture/`, `src/modules/c
 | Feature | Current flow |
 | --- | --- |
 | Home ride Start/End | Changes local React state and timer; no ride-start or ride-end API request is made here. |
-| Manual SOS screen | Long press starts a local ten-second countdown, then opens the active screen. The screen explicitly says contact delivery is unconfirmed; its Stop handler still has a backend TODO. Do not present this UI as confirmed SMS or emergency dispatch. |
+| Manual SOS | Connected to the `/sos` backend routes through one shared store: contact loading, a five-second countdown, permission-aware location, request-ID recovery, explicit same-request retry, per-recipient status, and a Stop that waits for backend confirmation (`POST /sos/:id/stop`). Automatic SOS stays disabled. Delivery is only as confirmed as the backend reports; unknown submissions are shown as uncertain. See `docs/MANUAL_SOS.md`. |
 | Quick Button test | Subscribes to Ably `rideguard:buttons:device` / `button.pressed`, filters by claimed button ID, and maps press types into short/long test results. Hardware-to-backend handling is outside this checkout. |
-| Profile and contacts | `GET /profile/me`, `POST /profile/photo`, and emergency-contact CRUD call the API. Personal and vehicle edits currently throw an unavailable error. |
-| Settings | Auto-archive uses the backend. Theme and several notification/location preferences are local; corresponding backend functions are placeholders. |
-| MPIN | The backend adapter is explicitly disabled because no MPIN endpoints are connected in this checkout. |
+| Profile and contacts | `GET /profile/me`, `POST /profile/photo`, and emergency-contact CRUD call the API. Account edits (name, phone, vehicle brand/model/plate) send changed fields only via `PATCH /profile/me`. |
+| Settings | Auto-archive uses the backend, and Settings > Archives reuses the Alerts list with `archivedOnly`. Theme and the notification/location preferences are local; their `settings.api.ts` functions are still placeholders. |
+| MPIN | Setup and unlock are enabled and call `/mpin/*` through `mpin.api.ts`; cold launch and return from background require MPIN for the signed-in account. Email-code recovery needs a working mail sender on the backend. See `docs/MPIN_USER_FLOW.md`. |
 | Demo/preview | Local demo and sample-alert states are UI previews, not backend accounts or alerts. |
 
 ## Key boundaries for backend documentation
