@@ -1,4 +1,3 @@
-import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import MainLogo from "@/assets/icons//logos/main.svg";
 import { Button } from "@/shared/ui/button";
 import { styles } from "./emergency-contact-step-screen.styles";
@@ -13,7 +12,7 @@ import Stepper from "@/shared/ui/stepper";
 import { SweetAlert } from "@/shared/ui/sweet-alert";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { FormFeedback } from "@/shared/ui/form-feedback";
-import { Ionicons } from "@expo/vector-icons";
+import { FormDropdown } from "@/shared/ui/form-dropdown";
 import { useRouter } from "expo-router";
 import { getAuth } from "firebase/auth";
 import { APIError } from "@/shared/api/errors";
@@ -246,77 +245,16 @@ export default function RegisterStepThreeScreen() {
               containerStyle={{ paddingBottom: Spacing.two }}
             />
 
-            <View style={styles.relationshipDropdown}>
-              <View>
-                  <CustomTextInput
-                    onFieldPress={() => setIsRelationshipOpen((prev) => !prev)}
-                    label="Relationship"
-                    required
-                    value={store.relationship}
-                    error={relationshipError}
-                    placeholder="Select relationship"
-                    editable={false}
-                    rightIcon={
-                      <Ionicons
-                        name={isRelationshipOpen ? "caret-up" : "caret-down"}
-                        size={20}
-                        color={theme.textMuted}
-                      />
-                    }
-                    containerStyle={{ paddingBottom: 0 }}
-                  />
-              </View>
-
-              {isRelationshipOpen && (
-                <View
-                  style={[
-                    styles.dropdownMenu,
-                    {
-                      backgroundColor: theme.inputBackground,
-                      borderColor: theme.border,
-                    },
-                  ]}
-                >
-                  {[
-                    { label: "Parent", value: "Parent" },
-                    { label: "Sibling", value: "Sibling" },
-                    { label: "Spouse", value: "Spouse" },
-                    { label: "Partner", value: "Partner" },
-                    { label: "Child", value: "Child" },
-                    { label: "Friend", value: "Friend" },
-                    { label: "Colleague", value: "Colleague" },
-                    { label: "Mentor", value: "Mentor" },
-                    { label: "Student", value: "Student" },
-                    { label: "Other", value: "Other" },
-                  ].map((item) => (
-                    <Pressable
-                      key={item.value}
-                      style={styles.dropdownItem}
-                      feedbackRadius={0}
-                      onPress={() => {
-                        store.updateDraft({
-                          relationship: item.value,
-                        });
-                        if (relationshipError) setRelationshipError(""); // Clear error when selected
-                        setIsRelationshipOpen(false);
-                      }}
-                    >
-                      <Text style={[Typography.input, { color: theme.text }]}>
-                        {item.label}
-                      </Text>
-
-                      {store.relationship === item.value && (
-                        <Ionicons
-                          name="checkmark"
-                          size={20}
-                          color={theme.text}
-                        />
-                      )}
-                    </Pressable>
-                  ))}
-                </View>
-              )}
-            </View>
+            <FormDropdown label="Relationship" required value={store.relationship}
+              error={relationshipError} placeholder="Select relationship" disabled={isLoading}
+              open={isRelationshipOpen} onOpenChange={setIsRelationshipOpen}
+              options={[
+                "Parent", "Sibling", "Spouse", "Partner", "Child", "Friend", "Colleague", "Mentor", "Student", "Other",
+              ].map((value) => ({ label: value, value }))}
+              onChange={(relationship) => {
+                store.updateDraft({ relationship });
+                setRelationshipError("");
+              }} />
 
             <KeyboardHiddenView style={styles.buttonContainer}>
               <Button

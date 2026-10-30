@@ -10,13 +10,17 @@ import { FormFeedback } from "@/shared/ui/form-feedback";
 import { Redirect, Stack, useGlobalSearchParams, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { Platform, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { OnboardingProgressContext } from "@/shared/ui/onboarding-progress-context";
+import Stepper from "@/shared/ui/stepper";
+import { MaxContentWidth, Spacing } from "@/shared/theme";
 
 export default function OnboardingLayout() {
   const theme = useTheme();
   const { user, isCheckingAuth, isOldUser } = useAuthStore();
   const router = useRouter();
   const segments = useSegments();
-  const { source } = useGlobalSearchParams<{ source?: string }>();
+  const { source, camera, test } = useGlobalSearchParams<{ source?: string; camera?: string; test?: string }>();
   const [draftReady, setDraftReady] = useState(false);
   const [restoreFailed, setRestoreFailed] = useState(false);
   const [retryVersion, setRetryVersion] = useState(0);
@@ -57,6 +61,9 @@ export default function OnboardingLayout() {
   }, [user?.uid, source, isOldUser, router, retryVersion]);
   const routeSegments: readonly string[] = segments;
   const step = routeSegments.includes("camera") ? "camera" : routeSegments.includes("button") ? "button" : routeSegments[routeSegments.length - 1];
+  const progressStep = step === "camera" ? (camera === "2" ? 6 : 5)
+    : step === "button" ? (routeSegments.includes("test-page") || test === "long" ? 8 : 7)
+    : ({ profile: 1, vehicle: 2, "emergency-contact": 3, permission: 4, provision: 7, mpin: 9, "complete-setup": 10 } as Record<string, number>)[step] ?? 1;
   useEffect(() => {
     if (source !== "settings" && draftReady && user?.email && step && Object.hasOwn(onboardingPaths, step)) {
       void saveOnboardingStep(user.email, step as OnboardingStep, user,
@@ -95,5 +102,13 @@ export default function OnboardingLayout() {
   </Stack>;
   // Hardware setup reuses these routes from Settings. Returning from another
   // app must enforce the same lock and preserve the same stack as normal pages.
-  return source === "settings" ? <MpinAppGate>{stack}</MpinAppGate> : stack;
+  return source === "settings" ? <MpinAppGate>{stack}</MpinAppGate> :
+    <OnboardingProgressContext.Provider value={true}>
+      <SafeAreaView edges={["top"]} style={{ flex: 1, backgroundColor: theme.background }}>
+        <View style={{ width: "100%", maxWidth: MaxContentWidth, alignSelf: "center", paddingHorizontal: Spacing.five, paddingTop: Spacing.four }}>
+          <Stepper standalone currentStep={progressStep} steps={10} size={4} />
+        </View>
+        <View style={{ flex: 1 }}>{stack}</View>
+      </SafeAreaView>
+    </OnboardingProgressContext.Provider>;
 }

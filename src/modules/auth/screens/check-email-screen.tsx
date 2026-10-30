@@ -12,6 +12,7 @@ import { postAuthDestination } from "../services/registration-progress";
 import { sendVerificationForUser, verificationEmailMessage } from "../services/verification-email";
 import { useAuthStore } from "../store/auth.store";
 import { useRegistrationDraft } from "../store/registration-draft.store";
+import { beginVerifiedSuccess } from "../services/verified-success";
 
 export default function CheckEmailScreen() {
   const router = useRouter();
@@ -62,7 +63,11 @@ export default function CheckEmailScreen() {
       useRegistrationDraft.getState().clear();
       useAuthStore.getState().setIsOldUser(hasProfile);
       useAuthStore.getState().setUser(user);
-      router.replace(destination);
+      if (!hasProfile) {
+        beginVerifiedSuccess(user.uid, destination);
+        if (router.canDismiss()) router.dismissAll();
+        router.replace("/(public)/account-verified");
+      } else router.replace(destination);
     } catch {
       if (stillCurrent()) setStatusError(true);
     } finally {

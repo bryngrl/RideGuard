@@ -44,6 +44,7 @@ export default function CreateAccountScreen() {
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<Partial<Record<Field, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const submitting = useRef(false);
 
   const usernameError = !username.trim()
@@ -83,6 +84,7 @@ export default function CreateAccountScreen() {
         return;
       }
       if (!created) {
+        setLoadingMessage("Creating your account...");
         await registerAccount({ username: registrationUsername, email: registrationEmail, password });
         update({ created: { username: registrationUsername, email: registrationEmail } });
         await markRegistrationOnboardingPending(registrationEmail);
@@ -90,9 +92,11 @@ export default function CreateAccountScreen() {
       // The current backend creates the Firebase user but does not send the link.
       // Retain its authenticated session for verification polling and resend.
       try {
+        setLoadingMessage("Preparing account verification...");
         const { user } = await signInWithEmailAndPassword(auth, registrationEmail, password);
         if (!created && !user.emailVerified) {
           try {
+            setLoadingMessage("Sending your verification email...");
             await sendVerificationForUser(user);
             update({ resendAt: Date.now() + 60_000 });
           } catch {
@@ -135,6 +139,7 @@ export default function CreateAccountScreen() {
       <Text style={[styles.description, { color: theme.textMuted }]}>Enter your details to create an account.</Text>
       {formMessage ? <View style={styles.feedback}><FormFeedback message={formMessage} /></View> : null}
 
+      {isLoading && <Text accessibilityLiveRegion="polite" style={{ color: theme.textMuted, marginBottom: Spacing.two }}>{loadingMessage || "Connecting..."}</Text>}
       <View style={styles.fields}>
         <CustomTextInput
           ref={usernameRef}

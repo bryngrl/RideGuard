@@ -10,7 +10,7 @@ export type OnboardingProgress = {
   data?: Record<string, unknown>;
 };
 type Envelope<T> = { success: boolean; data: T };
-const draftFields = ["firstName", "lastName", "phone", "vehicleBrand", "vehicleModel", "plateNumber", "color", "contactName", "emergencyPhone", "relationship", "savedProfile"] as const;
+const draftFields = ["firstName", "lastName", "phone", "vehicleBrand", "vehicleModel", "plateNumber", "color", "contactName", "emergencyPhone", "relationship", "savedProfile", "hardwareSetup"] as const;
 
 /** Only registration fields; never credentials, MPINs, grants or image blobs. */
 export function onboardingDraft(data: Record<string, unknown>): Record<string, string> {

@@ -27,6 +27,7 @@ import { useAuthStore } from "../store/auth.store";
 import { isTemporarySessionFailure } from "../utils/session-errors";
 
 import { styles } from "./login-screen.styles";
+import { beginVerifiedSuccess, getVerifiedSuccess } from "../services/verified-success";
 
 
 export default function LoginScreen() {
@@ -34,7 +35,7 @@ export default function LoginScreen() {
   const { registrationEmail } = useLocalSearchParams<{ registrationEmail?: string }>();
   const theme = useTheme();
 
-  const { signIn } = useGoogleSignin();
+  const { signIn, isNewAccount } = useGoogleSignin();
 
   const passwordRef = useRef<TextInput>(null);
   const [username, setUsername] = useState(registrationEmail ?? "");
@@ -47,6 +48,7 @@ export default function LoginScreen() {
   const [isCredentialLoading, setIsCredentialLoading] = useState(false);
   const credentialPending = useRef(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googlePending = useRef(false);
 
   const usernameError =
     (submitted || usernameTouched) && !username.trim()
@@ -58,7 +60,7 @@ export default function LoginScreen() {
       : undefined;
 
   const handleCredentialSignIn = async () => {
-    if (credentialPending.current) return;
+    if (credentialPending.current || googlePending.current) return;
     setSubmitted(true);
     setCredentialError(null);
     setVerificationEmail(null);
@@ -85,7 +87,8 @@ export default function LoginScreen() {
       const destination = await postAuthDestination(credential.user, hasProfile);
       useAuthStore.getState().setUser(credential.user);
       useAuthStore.getState().setIsOldUser(hasProfile);
-      router.replace(destination);
+      router.replace(getVerifiedSuccess()?.uid === credential.user.uid
+        ? "/(public)/account-verified" : destination);
     } catch (error) {
       if (signedInWithPassword && !isTemporarySessionFailure(error)) await signOut(auth).catch(() => undefined);
       if (isUnverifiedAccount(error)) setVerificationEmail(unverifiedAccountEmail(error, username));
@@ -97,6 +100,10 @@ export default function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (googlePending.current || credentialPending.current) return;
+    googlePending.current = true;
+    setCredentialError(null);
+    setVerificationEmail(null);
     try {
       setIsGoogleLoading(true);
 
@@ -106,11 +113,17 @@ export default function LoginScreen() {
         const firebaseToken = await user.getIdToken();
         const isOldUser = await checkIsOldUser(firebaseToken);
 
-        router.replace(await postAuthDestination(user, isOldUser));
+        const destination = await postAuthDestination(user, isOldUser);
+        if (auth.currentUser?.uid !== user.uid) return;
+        if (isNewAccount() && !isOldUser && user.emailVerified) {
+          beginVerifiedSuccess(user.uid, destination);
+          router.replace("/(public)/account-verified");
+        } else router.replace(destination);
       }
     } catch (error) {
       setCredentialError(authErrorMessage(error, "login"));
     } finally {
+      googlePending.current = false;
       setIsGoogleLoading(false);
     }
   };

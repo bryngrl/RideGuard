@@ -88,6 +88,8 @@ test("actual alert rows keep time, false-alarm labels and manual tags readable i
 test("onboarding progress uses the active palette for completed and remaining steps", () => {
   for (const theme of [palette.Colors.light, palette.Colors.dark]) {
     const { default: Stepper } = load("src/shared/ui/stepper.tsx", {
+      react: { useContext: () => false },
+      "./onboarding-progress-context": { OnboardingProgressContext: {} },
       "react/jsx-runtime": require("react/jsx-runtime"), "react-native": { View: "View", StyleSheet: { create: (styles) => styles } },
       "react-native-reanimated": { __esModule: true, default: { View: "AnimatedView" }, useAnimatedStyle: (work) => work(), withTiming: (value) => value },
       "@/shared/hooks/use-theme": { useTheme: () => theme }, "@/shared/theme": { Spacing: {} },

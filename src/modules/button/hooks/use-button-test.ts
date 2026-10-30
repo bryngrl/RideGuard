@@ -24,6 +24,8 @@ export function useButtonTest(
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const active = useRef(false);
+  const stopped = useRef(false);
+  const [enabled, setEnabled] = useState(true);
   const phase = useRef<TestState>("waiting");
   const recognized = useRef({ white: false, red: false });
   const complete = useRef(onShortPressComplete);
@@ -55,6 +57,7 @@ export function useButtonTest(
 
   useFocusEffect(useCallback(() => {
     const resume = () => {
+      if (stopped.current) return;
       active.current = true;
       phase.current = "waiting";
       recognized.current = { white: false, red: false };
@@ -109,7 +112,15 @@ export function useButtonTest(
     }
   };
 
-  const { connectionState, retryConnect } = useButtonRealtime(handleButtonEvent);
+  const { connectionState, retryConnect, stopListening } = useButtonRealtime(handleButtonEvent, enabled);
+
+  const stop = () => {
+    stopped.current = true;
+    active.current = false;
+    clearTimers();
+    stopListening();
+    setEnabled(false);
+  };
 
   const handleRetry = () => {
     if (!active.current) return;
@@ -129,5 +140,6 @@ export function useButtonTest(
     pressedButtons,
     connectionState,
     handleRetry,
+    stop,
   };
 }

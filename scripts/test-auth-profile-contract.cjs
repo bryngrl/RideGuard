@@ -14,6 +14,7 @@ class APIError extends Error {
 
 function loadAuthApi(reply) {
   const calls = [];
+  const successes = [];
   const source = readFileSync(path.join(__dirname, "../src/modules/auth/services/auth.api.ts"), "utf8");
   const compiled = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS },
@@ -33,12 +34,29 @@ function loadAuthApi(reply) {
     require(name) {
       if (name === "@/shared/api") return { apiClient };
       if (name === "@/shared/api/errors") return { APIError };
+      if (name === "./verified-success") return { beginVerifiedSuccess: (...args) => successes.push(args) };
       throw new Error(`Unexpected import: ${name}`);
     },
   };
   vm.runInNewContext(compiled, context);
-  return { api: context.exports, calls };
+  return { api: context.exports, calls, successes };
 }
+
+test("startup verification arms the success handoff only after registration is confirmed", async () => {
+  for (const confirmed of [true, false]) {
+    const app = loadAuthApi((_method, route) => {
+      if (route === "/profile/me") return envelope(null);
+      if (route === "/auth/is-old-user") return envelope(false);
+      if (!confirmed) throw Error("Verification failed");
+      return envelope({ uid: "driver", email: "driver@gmail.com" });
+    });
+    const result = app.api.ensureEmailPasswordProfile({ uid: "driver", getIdToken: async () => "verified-token" });
+    if (confirmed) {
+      assert.equal(await result, false);
+      assert.deepEqual(app.successes, [["driver", "/(onboarding)/register/profile"]]);
+    } else { await assert.rejects(result); assert.equal(app.successes.length, 0); }
+  }
+});
 
 const envelope = (data) => ({ success: true, message: "OK", data, timestamp: "2026-10-22T00:00:00Z" });
 

@@ -50,7 +50,7 @@ export default function RegisterScreen() {
       isValid = false;
     }
     if (!isValid) {
-      (!lastName.trim() ? lastNameRef : !firstName.trim() ? firstNameRef : phoneRef).current?.focus();
+      (!firstName.trim() ? firstNameRef : !lastName.trim() ? lastNameRef : phoneRef).current?.focus();
       return;
     }
     router.push("/(onboarding)/register/vehicle");
@@ -83,30 +83,11 @@ export default function RegisterScreen() {
 
         <View style={styles.formContainer}>
           <CustomTextInput
-            ref={lastNameRef}
-            autoComplete="family-name"
-            autoCapitalize="words"
-            returnKeyType="next"
-            onSubmitEditing={() => firstNameRef.current?.focus()}
-            label="Last Name"
-            required
-            labelStyle={{ color: theme.text }}
-            value={lastName}
-            error={lastNameError}
-            onBlur={() => { if (!lastName.trim()) setLastNameError("Enter your last name."); }}
-            onChangeText={(text) => {
-              updateDraft({ lastName: text });
-              if (lastNameError) setLastNameError("");
-            }}
-            containerStyle={{ paddingBottom: Spacing.two }}
-          />
-
-          <CustomTextInput
             ref={firstNameRef}
             autoComplete="given-name"
             autoCapitalize="words"
             returnKeyType="next"
-            onSubmitEditing={() => phoneRef.current?.focus()}
+            onSubmitEditing={() => lastNameRef.current?.focus()}
             label="First Name"
             required
             labelStyle={{ color: theme.text }}
@@ -116,6 +97,25 @@ export default function RegisterScreen() {
             onChangeText={(text) => {
               updateDraft({ firstName: text });
               if (firstNameError) setFirstNameError("");
+            }}
+            containerStyle={{ paddingBottom: Spacing.two }}
+          />
+
+          <CustomTextInput
+            ref={lastNameRef}
+            autoComplete="family-name"
+            autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => phoneRef.current?.focus()}
+            label="Last Name"
+            required
+            labelStyle={{ color: theme.text }}
+            value={lastName}
+            error={lastNameError}
+            onBlur={() => { if (!lastName.trim()) setLastNameError("Enter your last name."); }}
+            onChangeText={(text) => {
+              updateDraft({ lastName: text });
+              if (lastNameError) setLastNameError("");
             }}
             containerStyle={{ paddingBottom: Spacing.two }}
           />

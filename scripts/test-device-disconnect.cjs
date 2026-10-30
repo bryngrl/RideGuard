@@ -176,6 +176,19 @@ test("failed requests retain the device and show a sanitized error", async () =>
   assert.equal(notice.type, "error"); assert.equal(notice.message.includes("private"), false);
 });
 
+test("a stalled release exits after its deadline without success, and late completion cannot clear the device", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let resolve;
+  const app = screen(() => new Promise((done) => { resolve = done; }));
+  confirm(app)(); await settle();
+  assert.equal(app.calls.length, 1);
+  t.mock.timers.tick(20_000); await settle();
+  assert.equal(app.render().props.overlay.props.type, "error");
+  assert.match(app.render().props.overlay.props.message, /timed out/);
+  assert.equal(app.cleared.length, 0);
+  resolve(); await settle(); assert.equal(app.cleared.length, 0);
+});
+
 test("late success after an account switch or leaving the screen cannot clear hardware", async () => {
   for (const change of [(app) => { app.auth.currentUser = { uid: "other" }; }, (app) => app.life.cancel()]) {
     let resolve;

@@ -14,6 +14,7 @@ import { KeyboardHiddenView } from "@/shared/ui/keyboard-hidden-view";
 import { LoadingModal } from "@/shared/ui/modal";
 import Stepper from "@/shared/ui/stepper";
 import { CustomTextInput } from "@/shared/ui/text-input";
+import { skipHardware } from "../services/skip-hardware";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState } from "react";
 import { Keyboard, Text, View } from "react-native";
@@ -141,6 +142,23 @@ export default function ButtonProvisionScreen({ source: entrySource }: { source?
     }
   };
 
+  const handleSkip = async () => {
+    if (isLoading || alertState.visible) return;
+    const attempt = claim.begin(auth.currentUser?.uid ?? null);
+    if (!attempt) return;
+    Keyboard.dismiss();
+    setIsLoading(true);
+    try {
+      await skipHardware("connection-skipped");
+      if (claim.isCurrent(attempt)) router.replace("/(onboarding)/register/mpin");
+    } catch {
+      if (claim.isCurrent(attempt)) setButtonIdError("Couldn't save setup progress. Try again.");
+    } finally {
+      if (claim.isCurrent(attempt)) setIsLoading(false);
+      claim.finish(attempt);
+    }
+  };
+
   return (
     <KeyboardAvoidingWrapper>
       <View style={styles.container}>
@@ -241,6 +259,8 @@ export default function ButtonProvisionScreen({ source: entrySource }: { source?
               onPress={handleConnect}
               isLoading={isLoading}
             />
+            {!fromSettings && <Button title="Skip for now" variant="ghost" onPress={handleSkip}
+              disabled={isLoading || alertState.visible} style={{ marginTop: Spacing.two }} />}
           </View>
         </KeyboardHiddenView>
 

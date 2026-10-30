@@ -4,7 +4,8 @@ import { Spacing, Typography } from "@/shared/theme";
 import { Button } from "@/shared/ui/button";
 import { useOnboardingStore } from "../store/onboarding.store";
 import { useRouter } from "expo-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { OnboardingProgressContext } from "@/shared/ui/onboarding-progress-context";
 import { ActivityIndicator, Image, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
@@ -18,6 +19,7 @@ import { completeOnboarding } from "@/modules/auth/services/onboarding-progress.
 export default function CompleteSetupScreen() {
   const router = useRouter();
   const theme = useTheme();
+  const managedProgress = useContext(OnboardingProgressContext);
 
   const firstName = useOnboardingStore((state) => state.firstName);
 
@@ -85,6 +87,7 @@ export default function CompleteSetupScreen() {
 
   return (
     <SafeAreaView
+      edges={managedProgress ? ["left", "right", "bottom"] : undefined}
       style={[
         styles.safeArea,
         {

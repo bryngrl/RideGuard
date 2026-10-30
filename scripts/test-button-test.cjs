@@ -17,7 +17,7 @@ function setup(type = "short") {
       }]; },
     },
     "expo-router": { useFocusEffect: (callback) => { focus = callback; cleanup = callback(); } },
-    "./use-button-realtime": { useButtonRealtime: (callback) => { receive = callback; return { connectionState: "ready", retryConnect() {} }; } },
+    "./use-button-realtime": { useButtonRealtime: (callback) => { receive = callback; return { connectionState: "ready", retryConnect() {}, stopListening() {} }; } },
     "react-native": { AppState: appState },
   };
   const compiled = ts.transpileModule(readFileSync(path.join(__dirname,
@@ -92,4 +92,12 @@ test("hardware hold events animate the red button but only the SOS action comple
   app.event("red", "hold-end"); assert.equal(app.values[2].red, false);
   assert.equal(app.values[0], "waiting");
   app.event("red", "long-press"); assert.equal(app.values[0], "success");
+});
+
+ test("skipping cancels a queued completion immediately and ignores later events and resume", () => {
+  const app = setup(); app.event("white"); app.event("red");
+  app.hook.stop(); assert.equal(app.timers.size, 0);
+  app.run(700); app.event("red"); app.appState("background"); app.appState("active");
+  app.event("white"); app.event("red"); app.run(700);
+  assert.equal(app.completed(), 0); assert.equal(app.timers.size, 0);
 });

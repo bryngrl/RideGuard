@@ -16,6 +16,8 @@ import { useDeviceStore } from "@/modules/devices/store/devices.store";
 import { useButtons } from "@/modules/devices/hooks/use-buttons";
 import { useButtonTest } from "../hooks/use-button-test";
 import type { ButtonColor, ButtonTestType } from "../types/button-test";
+import { useRef, useState } from "react";
+import { skipHardware } from "@/modules/onboarding/services/skip-hardware";
 
 export function ButtonTestScreen({
   test = "short",
@@ -30,6 +32,8 @@ export function ButtonTestScreen({
     params.test === "long" || test === "long" ? "long" : "short";
   const theme = useTheme();
   const fromSettings = source === "settings" || params.source === "settings";
+  const leaving = useRef(false);
+  const [skipError, setSkipError] = useState("");
   const buttonDeviceId = useDeviceStore((state) => state.buttonDeviceId);
   useButtons(); // Restore this account's assigned ID before receiving hardware events.
   const {
@@ -38,14 +42,25 @@ export function ButtonTestScreen({
     pressedButtons,
     connectionState,
     handleRetry,
+    stop,
   } = useButtonTest(testType, () => {
+    if (leaving.current) return;
     if (fromSettings) router.dismissTo("/devices");
     else router.replace("/(onboarding)/devices/button/test-page");
   });
 
-  const handleSkip = () => {
-    if (fromSettings) router.dismissTo("/devices");
-    else router.replace("/(onboarding)/register/mpin");
+  const handleSkip = async () => {
+    if (leaving.current) return;
+    leaving.current = true;
+    stop();
+    if (fromSettings) { router.dismissTo("/devices"); return; }
+    try {
+      await skipHardware("tests-skipped");
+      router.replace("/(onboarding)/register/mpin");
+    } catch {
+      leaving.current = false;
+      setSkipError("Couldn't save setup progress. Tap Skip to try again.");
+    }
   };
 
   const renderButton = (color: ButtonColor) => (
@@ -131,6 +146,10 @@ export function ButtonTestScreen({
   const content = (
     <View style={styles.container}>
       <View>
+        {!fromSettings && <Pressable onPress={handleSkip} accessibilityRole="button" accessibilityLabel="Skip remaining button tests"
+          style={styles.skip}>
+          <Text style={[Typography.medium, { color: theme.accent }]}>Skip</Text>
+        </Pressable>}
         {fromSettings && (
           <Pressable onPress={handleSkip} style={styles.backButton} feedbackRadius={16} feedbackInsets={Spacing.two} feedbackBehindContent accessibilityRole="button" accessibilityLabel="Go back">
             <BackArrowIcon color={theme.text} />
@@ -180,6 +199,7 @@ export function ButtonTestScreen({
       )}
 
       <View style={styles.footer}>
+        {!!skipError && <Text accessibilityRole="alert" style={[Typography.bodySmall, { color: theme.error }]}>{skipError}</Text>}
         {!buttonDeviceId ? (
           <>
             <ButtonTestStatus
@@ -230,6 +250,7 @@ export function ButtonTestScreen({
 }
 
 const styles = StyleSheet.create({
+  skip: { alignSelf: "flex-end", minHeight: 44, minWidth: 48, alignItems: "center", justifyContent: "center", paddingHorizontal: Spacing.two, marginBottom: Spacing.two },
   container: {
     flex: 1,
     justifyContent: "space-between",
