@@ -1,4 +1,4 @@
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
@@ -29,7 +29,6 @@ type DeviceStatus = {
 export function DeviceStatusScreen() {
   const theme = useTheme();
   const router = useRouter();
-  const { focus } = useLocalSearchParams<{ focus?: string }>();
   const savedDevices = useDeviceStore();
   const cameraStatus = useCameras();
   const buttonStatus = useButtons();
@@ -68,8 +67,6 @@ export function DeviceStatusScreen() {
       type: "button",
     },
   ];
-  const focusedName = focus === "camera1" ? "Camera 1" : focus === "camera2" ? "Camera 2" : focus === "button" ? "Quick Button" : null;
-  if (focusedName) devices.sort((a, b) => Number(b.name === focusedName) - Number(a.name === focusedName));
 
   const handleDeviceAction = (device: DeviceStatus) => {
     if (device.type === "button") {
@@ -214,8 +211,6 @@ export function DeviceStatusScreen() {
             </View>
           );
         })}
-        <Button title="Refresh status" variant="ghost" isLoading={cameraStatus.isLoading || buttonStatus.buttonsLoading}
-          onPress={() => { void cameraStatus.refresh(); void buttonStatus.refresh(); }} />
       </View>
       <ConfirmationModal
         visible={deviceToDisconnect !== null}
