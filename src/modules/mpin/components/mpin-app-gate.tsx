@@ -27,6 +27,7 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
   const foreground = useMpinForeground();
   const theme = useTheme();
   const redirecting = useRef(false);
+  const resuming = useRef(AppState.currentState !== "active");
   const mountedOwner = useRef<string | null>(null);
   const [completedOwner, setCompletedOwner] = useState<string | null>(null);
   const [progressError, setProgressError] = useState(false);
@@ -38,7 +39,10 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
   const permitted = auth.isAuthenticated && auth.isOldUser === true &&
     (emergency || (completedOwner === owner && !mpin.checkingStatus && access === "allowed"));
 
-  useFocusEffect(useCallback(() => { redirecting.current = false; }, [foreground]));
+  useFocusEffect(useCallback(() => {
+    redirecting.current = false;
+    if (!foreground) resuming.current = true;
+  }, [foreground]));
 
   useFocusEffect(useCallback(() => {
     if (!foreground || AppState.currentState !== "active" || !auth.user || auth.isCheckingAuth || auth.isOldUser !== true || emergency) return;
@@ -76,6 +80,7 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
   }, [foreground, auth.isCheckingAuth, auth.isAuthenticated, auth.isOldUser, mpin.checkingStatus, permitted, access, returnPath, router, completedOwner, owner, emergency]));
 
   const visible = foreground && permitted && (!auth.isCheckingAuth || emergency);
+  if (visible) resuming.current = false;
   if (visible) mountedOwner.current = owner;
   // Preserve already-mounted monitoring during a recheck. Never mount protected
   // content for a new/unknown account, and hide both touch and accessibility access.
@@ -89,7 +94,8 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
       accessibilityElementsHidden={visible} importantForAccessibility={visible ? "no-hide-descendants" : "auto"}
       style={[StyleSheet.absoluteFill, { backgroundColor: theme.background, alignItems: "center", justifyContent: "center", opacity: visible ? 0 : 1 }]}
       accessibilityLabel={progressError ? "Unable to restore screen" : "Checking account security"}>
-      <BrandLoading active={foreground && !visible && !progressError} label="Checking account security" />
+      {resuming.current && foreground && !visible && !progressError
+        ? <BrandLoading label="Checking account security" /> : null}
       <View collapsable={false} style={{ padding: Spacing.four, display: progressError ? "flex" : "none" }}>
         <FormFeedback message="Couldn't restore your screen. Try again." />
         <Button title="Try again" onPress={() => setProgressRetry((value) => value + 1)} />

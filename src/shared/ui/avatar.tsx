@@ -1,8 +1,9 @@
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import { useFocusEffect } from "expo-router";
+import { CachedPhoto } from "./cached-photo";
 import {
-  Image,
   StyleProp,
   StyleSheet,
   Text,
@@ -30,23 +31,14 @@ export function ProfileAvatar({
   photoUrl,
 }: ProfileAvatarProps) {
   const colors = useTheme();
-  const [failedToLoad, setFailedToLoad] = useState(false);
-  useEffect(() => setFailedToLoad(false), [photoUrl]);
+  const [attempt, setAttempt] = useState(0);
+  // Retry the same URL on returning to the screen after a transient failure.
+  useFocusEffect(useCallback(() => { setAttempt((value) => value + 1); }, [photoUrl]));
   const dimensionStyle = size
     ? { width: size, height: size, borderRadius: size / 2 }
     : undefined;
 
-  if (photoUrl && !failedToLoad) {
-    return (
-      <Image
-        source={{ uri: photoUrl }}
-        style={[styles.avatar, dimensionStyle]}
-        onError={() => setFailedToLoad(true)}
-      />
-    );
-  }
-
-  return (
+  const placeholder = (
     <View
       style={[
         styles.avatar,
@@ -59,6 +51,10 @@ export function ProfileAvatar({
       </Text>
     </View>
   );
+  return photoUrl?.trim()
+    ? <CachedPhoto key={`${photoUrl}/${attempt}`} uri={photoUrl.trim()} style={[styles.avatar, dimensionStyle]}
+        placeholder={placeholder} label="Loading profile photo" />
+    : placeholder;
 }
 
 const styles = StyleSheet.create({

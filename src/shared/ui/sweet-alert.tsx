@@ -2,7 +2,8 @@ import WarningIcon from "@/assets/icons/alerts/primary-warning.svg";
 import { useEffect, useState } from "react";
 import { subscribeMpinLock } from "@/modules/mpin/services/mpin-activity";
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { AppModal as Modal } from "./app-modal";
 
 import { useTheme } from "@/shared/hooks";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
@@ -120,7 +121,7 @@ export function SweetAlert({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={handleBackdropPress}>
+      <Pressable style={[styles.backdrop, { backgroundColor: theme.overlay }]} onPress={handleBackdropPress}>
         <Pressable
           style={[
             styles.alertContainer,
@@ -213,7 +214,6 @@ export function SweetAlert({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
     justifyContent: "center",
     paddingHorizontal: Spacing.four,
   },

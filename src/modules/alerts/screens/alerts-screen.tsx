@@ -27,6 +27,7 @@ import { END_REACHED_THRESHOLD } from "../constants";
 import { useAlertsList, type AlertListStatus } from "../hooks/use-alerts";
 import { AlertItem } from "../components/alert-item";
 import { AlertsSkeleton } from "../components/alerts-skeleton";
+import { ArchivesEmptyState } from "../components/archives-empty-state";
 import { mapAlertFieldsToItem, alertTimeValue } from "../services/alerts.mapper";
 import type { AlertFields, AlertItem as AlertItemType } from "../types/alert.types";
 import { styles } from "./alerts-screen.styles";
@@ -200,7 +201,8 @@ export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean 
         keyExtractor={(item) => item.alertId}
         stickySectionHeadersEnabled={false}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, archivedOnly && { paddingTop: Spacing.three, paddingBottom: bottom + Spacing.four }]}
+        contentContainerStyle={[styles.listContent, archivedOnly && { paddingTop: Spacing.three, paddingBottom: bottom + Spacing.four },
+          filter === "archived" && sections.length === 0 && !showSkeleton && { flexGrow: 1 }]}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing && !showSkeleton}
@@ -240,11 +242,12 @@ export function AlertsScreen({ archivedOnly = false }: { archivedOnly?: boolean 
         }
         ListEmptyComponent={showSkeleton ? (
           <AlertsSkeleton viewportHeight={listHeight} count={loadingCount} />
+        ) : filter === "archived" ? (
+          <ArchivesEmptyState error={loadError} refreshing={isRefreshing} onRetry={refresh} onViewAlerts={() => router.push("/alerts")} />
         ) : (
           <View style={styles.emptyState}>
             <Text style={[Typography.medium, { color: theme.textMuted }]}>
               {filter === "unread" ? "No unread alerts."
-                : filter === "archived" ? "No archived alerts."
                 : "No active alerts yet."}
             </Text>
           </View>

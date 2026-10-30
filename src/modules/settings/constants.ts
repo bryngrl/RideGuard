@@ -12,7 +12,6 @@ export const SETTINGS_SECTIONS = [
   {
     title: "Safety & Monitoring",
     rows: [
-      { title: "SOS Preferences", icon: "sos", route: "/settings/sos-preferences" },
       { title: "Emergency contacts", icon: "contact", route: "/contact" },
       { title: "Camera and quick button", icon: "camera", route: "/devices" },
       {

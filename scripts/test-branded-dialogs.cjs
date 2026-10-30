@@ -77,6 +77,7 @@ function modal(width, fontScale, theme) {
     "@/shared/hooks/use-theme": { useTheme: () => theme },
     "@/shared/theme": { BorderRadius: { lg: 20 }, Spacing: { two: 8, three: 16, four: 24 }, Typography: {} },
     "./button": { Button: "Button" },
+    "./app-modal": { AppModal: "Modal" },
     "@/modules/mpin/services/mpin-activity": { subscribeMpinLock: (work) => { lockListener = work; return () => {}; } },
   });
   const tree = ConfirmationModal({ visible: true, title: "Discard changes?", description: "Unsaved changes", primaryButtonText: "Discard",
@@ -141,6 +142,7 @@ test("ride and onboarding SweetAlert dialogs use the same vertical button order"
     "@/shared/hooks": { useTheme: () => ({}) },
     "@/shared/theme": { BorderRadius: {}, Spacing: {}, Typography: {} },
     "@/shared/ui/button": { Button: "Button" },
+    "./app-modal": { AppModal: "Modal" },
   });
   const tree = SweetAlert({ visible: true, title: "End this ride?", primaryButtonText: "End Ride", secondaryButtonText: "Keep Monitoring" });
   const actions = tree.props.children.props.children.props.children[1];

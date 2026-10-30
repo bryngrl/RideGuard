@@ -1,6 +1,7 @@
 import { useAuth } from "@/modules/auth";
 import { usePushRegistration } from "@/modules/notifications";
 import { useAbly } from "@/shared/hooks/use-ably";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFonts } from "expo-font";
 import * as Notifications from "expo-notifications";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -38,6 +39,8 @@ export default function RootLayout() {
   const settingsHydrated = useSettingsStore((state) => state.isHydrated);
 
   const [fontsLoaded, fontError] = useFonts({
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
     "EloquiaDisplay-ExtraBold": require("../../assets/fonts/EloquiaDisplay-ExtraBold.otf"),
     "EloquiaText-ExtraLight": require("../../assets/fonts/EloquiaText-ExtraLight.otf"),
     "Geist-Regular": require("../../assets/fonts/Geist-Regular.ttf"),

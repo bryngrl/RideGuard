@@ -15,7 +15,8 @@ import {
 
 import { LinearGradient } from "expo-linear-gradient";
 
-import { Modal, StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { StyleProp, StyleSheet, Text, View, ViewStyle } from "react-native";
+import { AppModal as Modal } from "./app-modal";
 
 import Animated, {
   FadeIn,
@@ -108,7 +109,7 @@ export function RideDetailsSheet({
     >
       {/*   BACKDROP   */}
 
-      <Animated.View entering={FadeIn.duration(200)} style={styles.backdrop}>
+      <Animated.View entering={FadeIn.duration(200)} style={[styles.backdrop, { backgroundColor: theme.overlay }]}>
         {/*   SHEET   */}
 
         <Animated.View
@@ -346,7 +347,6 @@ export function RideDetailsSheet({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.35)",
     justifyContent: "flex-end",
   },
 
