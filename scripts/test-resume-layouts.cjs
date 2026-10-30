@@ -21,6 +21,7 @@ test("reused hardware layouts apply the app lock for Settings and preserve onboa
     const Stack = Object.assign(() => {}, { Screen: "StackScreen" });
     const { default: Layout } = load("src/app/(onboarding)/_layout.tsx", {
       react: { ...react, useState: (initial) => [stateIndex++ === 0 ? true : initial, () => {}] }, "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
       "react-native": { View: "View", ActivityIndicator: "Spinner", Platform: { OS: "android" } },
       "expo-router": { Stack, Redirect: "Redirect", useRouter: () => ({}), useSegments: () => ["(onboarding)", "devices", "camera"], useGlobalSearchParams: () => ({ source }) },
       "@/shared/ui/button": {}, "@/shared/ui/form-feedback": {},

@@ -5,10 +5,11 @@ import { useOnboardingStore } from "@/modules/onboarding/store/onboarding.store"
 import { getOnboardingProgress, onboardingDraft } from "@/modules/auth/services/onboarding-progress.api";
 import { MpinAppGate } from "@/modules/mpin/components/mpin-app-gate";
 import { Button } from "@/shared/ui/button";
+import { BrandLoading } from "@/shared/ui/brand-loading";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { Redirect, Stack, useGlobalSearchParams, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { Platform, View } from "react-native";
 
 export default function OnboardingLayout() {
   const { user, isCheckingAuth, isOldUser } = useAuthStore();
@@ -75,7 +76,7 @@ export default function OnboardingLayout() {
     return () => { clearTimeout(timer); unsubscribe(); };
   }, [draftReady, user?.uid, user?.email, step, source]);
 
-  if (isCheckingAuth) return <View style={{ flex: 1, justifyContent: "center" }}><ActivityIndicator /></View>;
+  if (isCheckingAuth) return <BrandLoading fullScreen />;
   if (!user) return <Redirect href={auth.currentUser?.email
     ? { pathname: "/(public)/check-email", params: { email: auth.currentUser.email } }
     : "/(public)/sign-in"} />;
@@ -86,7 +87,7 @@ export default function OnboardingLayout() {
     <FormFeedback message="Couldn't restore setup. Try again." />
     <Button title="Retry" onPress={() => setRetryVersion((value) => value + 1)} />
   </View>;
-  if (!draftReady) return <View style={{ flex: 1, justifyContent: "center" }}><ActivityIndicator /></View>;
+  if (!draftReady) return <BrandLoading fullScreen />;
   const stack = <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
     <Stack.Screen name="register" options={{ animation: Platform.OS === "android" ? "none" : "fade" }} />
   </Stack>;

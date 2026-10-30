@@ -1,6 +1,6 @@
 import { useFocusEffect, useGlobalSearchParams, usePathname, useRouter, useSegments } from "expo-router";
 import { useCallback, useRef, useState, type ReactNode } from "react";
-import { ActivityIndicator, AppState, StyleSheet, View } from "react-native";
+import { AppState, StyleSheet, View } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { postAuthDestination } from "@/modules/auth/services/registration-progress";
@@ -12,6 +12,7 @@ import { useTheme } from "@/shared/hooks/use-theme";
 import { Button } from "@/shared/ui/button";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { Spacing } from "@/shared/theme";
+import { BrandLoading } from "@/shared/ui/brand-loading";
 
 /** Guard every normal app route, including deep links; authenticated SOS stays available. */
 export function MpinAppGate({ children }: { children: ReactNode }) {
@@ -88,7 +89,7 @@ export function MpinAppGate({ children }: { children: ReactNode }) {
       accessibilityElementsHidden={visible} importantForAccessibility={visible ? "no-hide-descendants" : "auto"}
       style={[StyleSheet.absoluteFill, { backgroundColor: theme.background, alignItems: "center", justifyContent: "center", opacity: visible ? 0 : 1 }]}
       accessibilityLabel={progressError ? "Unable to restore screen" : "Checking account security"}>
-      <ActivityIndicator animating={!visible && !progressError} style={{ opacity: progressError ? 0 : 1 }} />
+      <BrandLoading active={foreground && !visible && !progressError} label="Checking account security" />
       <View collapsable={false} style={{ padding: Spacing.four, display: progressError ? "flex" : "none" }}>
         <FormFeedback message="Couldn't restore your screen. Try again." />
         <Button title="Try again" onPress={() => setProgressRetry((value) => value + 1)} />

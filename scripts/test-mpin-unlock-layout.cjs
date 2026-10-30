@@ -9,6 +9,7 @@ function render(height, props = {}) {
   const modules = {
     react: { useState: (value) => [value, () => {}], useEffect: () => {}, useCallback: (work) => work },
     "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
     "react-native": { View: "View", Text: "Text", ActivityIndicator: "Spinner", StyleSheet: { create: (value) => value },
       useWindowDimensions: () => ({ height }) },
     "react-native-safe-area-context": { SafeAreaView: "SafeArea", useSafeAreaInsets: () => ({ top: 24, bottom: 24 }) },

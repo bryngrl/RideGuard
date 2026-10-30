@@ -35,6 +35,9 @@ function harness(pathname = "/settings", params = {}) {
   const useMpinStore = Object.assign(() => mpin, { getState: () => ({ ...mpin, setReturnTo: (value) => { mpin.returnTo = value; } }) });
   const modules = {
     react, "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
+    "@/assets/icons/logos/main.svg": { default: "Logo" },
+    "@/shared/ui/skeleton-pulse": { SkeletonPulse: "Pulse" },
     "react-native": { AppState: appState, View: "View", ActivityIndicator: "Spinner", StyleSheet: { absoluteFill: {} } },
     "expo-router": { useRouter: () => router, usePathname: () => pathname, useSegments: () => ["(app)", "settings"], useGlobalSearchParams: () => params,
       useFocusEffect: (work) => { const index = effectCursor++; if (effects[index]?.work !== work) pending.push(() => {
