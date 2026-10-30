@@ -56,6 +56,14 @@ The APK is written to:
 android/app/build/outputs/apk/release/app-release.apk
 ```
 
+Before sharing it, run `./scripts/verify-release-hardware.ps1` from the repository
+root. This checks the button states, completion badge and dark contact background
+in both the Android resources and embedded Expo asset manifest, including source
+hashes and image dimensions. Checking only that PNG files exist in the APK is
+insufficient: a stale manifest can leave newly added images invisible at runtime.
+The app Gradle configuration tracks bundle outputs as inputs to the release
+updates-resource task so incremental builds regenerate that manifest when needed.
+
 Copy it to your phone and install it. Or, with USB debugging enabled and the phone authorized, run from `android/`:
 
 ```powershell

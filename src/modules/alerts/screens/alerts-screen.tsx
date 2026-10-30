@@ -92,8 +92,9 @@ function groupAlertsByDate(alerts: AlertFields[]): AlertSection[] {
 
     if (!mappedItem) continue; // Skip invalid alerts
 
-    const existing = map.get(dateStr) ?? [];
-    map.set(dateStr, [...existing, mappedItem]);
+    const existing = map.get(dateStr);
+    if (existing) existing.push(mappedItem);
+    else map.set(dateStr, [mappedItem]);
   }
 
   return Array.from(map.entries()).map(([date, data]) => ({

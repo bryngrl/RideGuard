@@ -7,7 +7,6 @@ import { Spacing, Typography } from "@/shared/theme";
 import { AuthFormLayout } from "@/shared/ui/auth-form-layout";
 import { Button } from "@/shared/ui/button";
 import { FormFeedback } from "@/shared/ui/form-feedback";
-import { CustomTextInput } from "@/shared/ui/text-input";
 import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
 import { APIError } from "@/shared/api/errors";
 import { useAuthStore } from "../store/auth.store";
@@ -73,7 +72,15 @@ export default function EmailCodeScreen() {
         if (!current()) return;
         setVerified(identity); setCode("");
       }
-      if (!password) { setNotice("Email verified. Enter your password to continue."); return; }
+      if (!password) {
+        // A restarted app no longer holds the memory-only registration password.
+        // The code still verified the email, but cannot create a Firebase session.
+        completed.current = true;
+        beginVerifiedSuccess(identity.uid, "/(public)/sign-in");
+        useRegistrationDraft.getState().clear();
+        router.replace("/(public)/account-verified");
+        return;
+      }
       const result = await completeEmailVerification(identity, password);
       if (!current() || auth.currentUser?.uid !== result.user.uid) return;
       completed.current = true;
@@ -115,8 +122,6 @@ export default function EmailCodeScreen() {
     description={<>Enter the six-digit code sent to{"\n"}<Text style={{ color: theme.accent }}>{email}</Text></>}>
     <View style={{ gap: Spacing.three }}>
       {!verified && <VerificationCodeInput value={code} onChange={(value) => { setCode(value); setError(null); }} disabled={busy || sending} error={!!error} />}
-      {verified && <CustomTextInput label="Password" required isPassword value={password} onChangeText={setPassword}
-        autoComplete="current-password" textContentType="password" editable={!busy} onSubmitEditing={submit} />}
       {notice && <FormFeedback tone="info" message={notice} />}
       {error && <FormFeedback message={error} />}
       {alreadyVerified ? <Button title="Go to login" onPress={() => {

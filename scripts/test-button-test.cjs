@@ -59,6 +59,17 @@ test("the same button twice cannot complete the two-button test", () => {
   assert.equal(app.values[0], "waiting"); assert.equal(app.completed(), 0);
 });
 
+test("a physical white press holds the visual down briefly, then returns without losing recognition", () => {
+  const app = setup(); app.event("white");
+  assert.equal(app.values[2].white, true); assert.equal(app.values[1].white, true);
+  app.run(180);
+  assert.equal(app.values[2].white, false); assert.equal(app.values[1].white, true);
+  assert.equal(app.completed(), 0);
+  app.event("red"); assert.equal(app.values[2].red, true);
+  app.run(180); assert.equal(app.values[2].red, false);
+  app.run(700); assert.equal(app.completed(), 1);
+});
+
 test("leaving the test cancels pending navigation, pulses and timeout", () => {
   const app = setup(); app.event("white"); app.event("red"); app.blur();
   assert.equal(app.timers.size, 0);

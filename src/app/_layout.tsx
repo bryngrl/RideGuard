@@ -7,7 +7,7 @@ import * as Notifications from "expo-notifications";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Platform } from "react-native";
 import { useReducedMotion } from "react-native-reanimated";
 import { useColorScheme } from "@/shared/hooks/use-color-scheme";
@@ -33,6 +33,15 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Live alerts and device discovery update their own component, without
+// rerendering the entire navigator and every theme consumer on each message.
+function BackgroundServices() {
+  useAbly();
+  usePushRegistration();
+  useMpinLifecycle();
+  return null;
+}
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const reduceMotion = useReducedMotion();
@@ -49,9 +58,13 @@ export default function RootLayout() {
     "Geist-Thin": require("../../assets/fonts/Geist-Thin.ttf"),
   });
   const { sessionError, retrySession, isCheckingAuth } = useAuth();
-  useAbly();
-  usePushRegistration();
-  useMpinLifecycle();
+  const navigationTheme = useMemo(() => ({
+    ...(colorScheme === "dark" ? DarkTheme : DefaultTheme),
+    colors: { ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors),
+      background: Colors[colorScheme].background, card: Colors[colorScheme].card,
+      text: Colors[colorScheme].text, border: Colors[colorScheme].border,
+      primary: Colors[colorScheme].accent, notification: Colors[colorScheme].error },
+  }), [colorScheme]);
 
   useEffect(() => {
     if ((fontsLoaded || fontError) && settingsHydrated) {
@@ -59,15 +72,14 @@ export default function RootLayout() {
     }
   }, [fontsLoaded, fontError, settingsHydrated]);
 
-  if ((!fontsLoaded && !fontError) || !settingsHydrated) {
-    return null;
-  }
-
   return (
+    <>
+    <BackgroundServices />
+    {(fontsLoaded || fontError) && settingsHydrated ?
     <GestureHandlerRootView style={{ flex: 1 }}
       onStartShouldSetResponderCapture={() => { recordMpinActivity(); return false; }}
       onMoveShouldSetResponderCapture={() => { recordMpinActivity(); return false; }}>
-      <ThemeProvider value={{ ...(colorScheme === "dark" ? DarkTheme : DefaultTheme), colors: { ...(colorScheme === "dark" ? DarkTheme.colors : DefaultTheme.colors), background: Colors[colorScheme].background, card: Colors[colorScheme].card, text: Colors[colorScheme].text, border: Colors[colorScheme].border, primary: Colors[colorScheme].accent, notification: Colors[colorScheme].error } }}>
+      <ThemeProvider value={navigationTheme}>
         <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(public)/welcome" options={{ animation: "fade" }} />
@@ -112,6 +124,7 @@ export default function RootLayout() {
         <BrandedAlertHost />
         <LocationServicesPrompt />
       </ThemeProvider>
-    </GestureHandlerRootView>
+    </GestureHandlerRootView> : null}
+    </>
   );
 }

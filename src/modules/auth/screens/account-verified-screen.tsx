@@ -20,7 +20,10 @@ export default function AccountVerifiedScreen() {
   const [handoff] = useState(getVerifiedSuccess);
   const [progress] = useState(() => new Animated.Value(0));
   const [entrance] = useState(() => new Animated.Value(0));
-  const valid = !!handoff && auth.currentUser?.uid === handoff.uid && auth.currentUser.emailVerified;
+  // The public success screen may also follow a server-confirmed code after a
+  // restart. That handoff goes only to Login and grants no protected access.
+  const loginRequired = handoff?.destination === "/(public)/sign-in";
+  const valid = !!handoff && (loginRequired || auth.currentUser?.uid === handoff.uid && auth.currentUser.emailVerified);
 
   useEffect(() => {
     if (!valid || !handoff) return;
@@ -30,13 +33,13 @@ export default function AccountVerifiedScreen() {
     const countdown = Animated.timing(progress, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: false });
     appear.start();
     countdown.start(({ finished }) => {
-      if (!finished || navigated || auth.currentUser?.uid !== handoff.uid) return;
+      if (!finished || navigated || (!loginRequired && auth.currentUser?.uid !== handoff.uid)) return;
       navigated = true;
       clearVerifiedSuccess();
       router.replace(handoff.destination);
     });
     return () => { navigated = true; appear.stop(); countdown.stop(); back.remove(); };
-  }, [valid, handoff, entrance, progress, reducedMotion, router]);
+  }, [valid, handoff, loginRequired, entrance, progress, reducedMotion, router]);
 
   if (!valid) return <Redirect href="/" />;
   return <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
@@ -52,9 +55,9 @@ export default function AccountVerifiedScreen() {
     </View>
     <Text style={[Typography.largeTitle, styles.center, { color: theme.text }]}>Account Verified!</Text>
     <Text style={[Typography.body, styles.description, { color: theme.textMuted }]}>
-      Your account has been successfully verified. Let's get you started.
+      {loginRequired ? "Your account has been successfully verified. Log in to continue." : "Your account has been successfully verified. Let's get you started."}
     </Text>
-    <View accessible accessibilityLabel="Continuing to setup automatically in three seconds" style={styles.countdown}>
+    <View accessible accessibilityLabel={loginRequired ? "Continuing to login automatically in three seconds" : "Continuing to setup automatically in three seconds"} style={styles.countdown}>
       <Svg width={60} height={60} viewBox="0 0 60 60">
         <Circle cx={30} cy={30} r={25} fill="none" stroke={theme.border} strokeWidth={3} />
         <AnimatedCircle cx={30} cy={30} r={25} fill="none" stroke={theme.accent} strokeWidth={3}

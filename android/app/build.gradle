@@ -63,6 +63,15 @@ react {
     autolinkLibrariesWithApp()
 }
 
+// Expo SDK 57's updates task tracks entry/config paths but not the bundled JS
+// or asset outputs. Without these inputs, an incremental release can reuse an
+// old app.manifest even when new PNGs are packaged, leaving them unresolvable.
+tasks.matching { it.name == 'createReleaseUpdatesResources' }.configureEach {
+    inputs.files(tasks.named('createBundleReleaseJsAndAssets'))
+        .withPropertyName('bundledJavaScriptAndAssets')
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 /**
  * Set this to true in release builds to optimize the app using [R8](https://developer.android.com/topic/performance/app-optimization/enable-app-optimization).
  */

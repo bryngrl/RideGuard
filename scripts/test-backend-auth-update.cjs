@@ -164,13 +164,26 @@ test("a failed session initialization retries without resubmitting the consumed 
   assert.deepEqual(app.routes, ["/(public)/account-verified"]);
 });
 
-test("verification after an app restart asks for the password before establishing a session", async () => {
+test("verification after an app restart shows success without exposing a password field or granting a session", async () => {
   const app = codeScreen({ password: "" }); enterCode(app);
   await button(app.render(), "Verify email").props.onPress(); assert.equal(app.finishes(), 0);
   const input = find(app.render(), (node) => node.type === "Input" && node.props.label === "Password");
-  assert.ok(input); input.props.onChangeText("Password1");
-  await button(app.render(), "Continue").props.onPress();
+  assert.equal(input, null);
+  assert.deepEqual(app.routes, ["/(public)/account-verified"]);
+  assert.equal(app.verifies(), 1); assert.equal(app.finishes(), 0);
+});
+
+test("accepted registration codes never flash a password while sign-in finishes", async () => {
+  let finish;
+  const app = codeScreen({ finish: () => new Promise((resolve) => { finish = resolve; }) });
+  enterCode(app);
+  const pending = button(app.render(), "Verify email").props.onPress();
+  await new Promise((resolve) => setImmediate(resolve));
   assert.equal(app.verifies(), 1); assert.equal(app.finishes(), 1);
+  assert.equal(find(app.render(), (node) => node.type === "Input"), null);
+  assert.equal(app.routes.length, 0);
+  finish(); await pending;
+  assert.deepEqual(app.routes, ["/(public)/account-verified"]);
 });
 
 test("double tapping code verification sends one request and leaving rejects late navigation", async () => {
