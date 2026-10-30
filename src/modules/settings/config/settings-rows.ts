@@ -2,6 +2,14 @@ import type { SettingsRowDefinition } from "../types/settings.types";
 
 export const settingsRows: SettingsRowDefinition[] = [
   {
+    id: "change-password",
+    title: "Change password",
+    section: "App & Account",
+    iconKey: "lock",
+    route: "/settings/change-password",
+    searchKeywords: ["password", "change password", "account", "security", "credentials"],
+  },
+  {
     id: "mpin",
     title: "MPIN",
     section: "App & Account",

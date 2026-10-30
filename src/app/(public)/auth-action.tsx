@@ -38,7 +38,7 @@ export default function AuthActionScreen() {
           if (auth.currentUser) {
             await auth.currentUser.reload();
             if (active && auth.currentUser.emailVerified && auth.currentUser.email) {
-              router.replace({ pathname: "/(public)/check-email", params: { email: auth.currentUser.email } });
+              router.replace({ pathname: "/(public)/sign-in", params: { registrationEmail: auth.currentUser.email } });
               return;
             }
           }
@@ -54,7 +54,7 @@ export default function AuthActionScreen() {
         if (mode === "verifyEmail" && auth.currentUser) {
           await auth.currentUser.reload().catch(() => undefined);
           if (active && auth.currentUser.emailVerified && auth.currentUser.email) {
-            router.replace({ pathname: "/(public)/check-email", params: { email: auth.currentUser.email } });
+            router.replace({ pathname: "/(public)/sign-in", params: { registrationEmail: auth.currentUser.email } });
             return;
           }
         }

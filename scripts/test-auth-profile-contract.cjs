@@ -42,38 +42,20 @@ function loadAuthApi(reply) {
   return { api: context.exports, calls, successes };
 }
 
-test("startup verification arms the success handoff only after registration is confirmed", async () => {
-  for (const confirmed of [true, false]) {
-    const app = loadAuthApi((_method, route) => {
-      if (route === "/profile/me") return envelope(null);
-      if (route === "/auth/is-old-user") return envelope(false);
-      if (!confirmed) throw Error("Verification failed");
-      return envelope({ uid: "driver", email: "driver@gmail.com" });
-    });
-    const result = app.api.ensureEmailPasswordProfile({ uid: "driver", getIdToken: async () => "verified-token" });
-    if (confirmed) {
-      assert.equal(await result, false);
-      assert.deepEqual(app.successes, [["driver", "/(onboarding)/register/profile"]]);
-    } else { await assert.rejects(result); assert.equal(app.successes.length, 0); }
-  }
-});
-
 const envelope = (data) => ({ success: true, message: "OK", data, timestamp: "2026-10-22T00:00:00Z" });
 
 test("credential routes use documented paths, bodies, and verified token", async () => {
   const { api, calls } = loadAuthApi((_method, route) => envelope(
     route === "/auth/register" ? { email: "jane@gmail.com" }
-      : route === "/auth/login" || route === "/auth/register/verify" ? { uid: "uid", email: "jane@gmail.com" }
+      : route === "/auth/login" ? { uid: "uid", email: "jane@gmail.com" }
         : {},
   ));
   await api.registerAccount({ username: "jane.driver", email: "jane@gmail.com", password: "Password1" });
   await api.loginAccount("jane.driver", "Password1");
-  await api.verifyRegisteredAccount("verified-id-token");
   await api.requestPasswordReset("jane@gmail.com");
   assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
     { method: "POST", path: "/auth/register", body: { username: "jane.driver", email: "jane@gmail.com", password: "Password1" } },
     { method: "POST", path: "/auth/login", body: { identifier: "jane.driver", password: "Password1" } },
-    { method: "POST", path: "/auth/register/verify", token: "verified-id-token" },
     { method: "POST", path: "/auth/forgot-password", body: { email: "jane@gmail.com" } },
   ]);
 });
@@ -101,56 +83,19 @@ test("backend username validation points to the field while duplicate conflicts 
     "The username or email already has an account.");
 });
 
-test("profile verification is shared across simultaneous auth callbacks", async () => {
-  const { api, calls } = loadAuthApi((_method, route) => envelope(
-    route === "/auth/is-old-user" ? false : route === "/profile/me" ? null : { uid: "uid", email: "jane@gmail.com" },
-  ));
+test("profile validation is shared across concurrent callbacks without legacy verification mutations", async () => {
+  const { api, calls } = loadAuthApi((_method, route) => envelope(route === "/auth/is-old-user" ? false : { uid: "uid" }));
   const user = { uid: "uid", getIdToken: async () => "fresh-token" };
-  const results = await Promise.all([
-    api.ensureEmailPasswordProfile(user),
-    api.ensureEmailPasswordProfile(user),
-  ]);
+  const results = await Promise.all([api.ensureEmailPasswordProfile(user), api.ensureEmailPasswordProfile(user)]);
   assert.deepEqual(results, [false, false]);
-  assert.equal(calls.filter((call) => call.path === "/auth/register/verify").length, 1);
-  assert.deepEqual(JSON.parse(JSON.stringify(calls)), [
-    { method: "GET", path: "/auth/is-old-user", token: "fresh-token" },
-    { method: "GET", path: "/profile/me", token: "fresh-token" },
-    { method: "POST", path: "/auth/register/verify", token: "fresh-token" },
-    { method: "GET", path: "/auth/is-old-user", token: "fresh-token" },
-  ]);
+  assert.deepEqual(calls.map((call) => call.path), ["/auth/is-old-user", "/profile/me"]);
+  assert.equal(calls.some((call) => call.method === "POST"), false);
 });
 
-test("a consumed registration is accepted only when a profile now exists", async () => {
-  let statusChecks = 0;
-  let profileChecks = 0;
-  const { api, calls } = loadAuthApi((method, route) => {
-    if (route === "/auth/is-old-user") return envelope(++statusChecks > 1);
-    if (route === "/profile/me") return envelope(++profileChecks > 1 ? { uid: "uid" } : null);
-    if (method === "POST" && route === "/auth/register/verify") {
-      throw new APIError("Registration is no longer pending", 409);
-    }
-    throw new Error(`Unexpected route: ${route}`);
-  });
-  const user = { uid: "uid", getIdToken: async () => "fresh-token" };
-  assert.equal(await api.ensureEmailPasswordProfile(user), true);
-  assert.deepEqual(calls.map((call) => call.path), [
-    "/auth/is-old-user", "/profile/me", "/auth/register/verify", "/profile/me", "/auth/is-old-user",
-  ]);
-});
-
-test("a consumed registration without a profile stays blocked", async () => {
-  const { api, calls } = loadAuthApi((_method, route) => {
-    if (route === "/auth/is-old-user") return envelope(false);
-    if (route === "/profile/me") return envelope(null);
-    if (route === "/auth/register/verify") throw new APIError("Registration is no longer pending", 409);
-    throw new Error(`Unexpected route: ${route}`);
-  });
-  const user = { uid: "uid", getIdToken: async () => "fresh-token" };
-  await assert.rejects(
-    api.ensureEmailPasswordProfile(user),
-    /email is verified, but your RideGuard profile could not be found/i,
-  );
-  assert.equal(calls.filter((call) => call.path === "/profile/me").length, 2);
+test("a verified Firebase user without a backend identity stub stays blocked", async () => {
+  const { api, calls } = loadAuthApi((_method, route) => envelope(route === "/auth/is-old-user" ? false : null));
+  await assert.rejects(api.ensureEmailPasswordProfile({ uid: "uid", getIdToken: async () => "token" }), /profile could not be found/i);
+  assert.deepEqual(calls.map((call) => call.path), ["/auth/is-old-user", "/profile/me"]);
 });
 
 test("a verified registration stub resumes onboarding without verifying again", async () => {

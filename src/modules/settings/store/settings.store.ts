@@ -6,7 +6,7 @@ import { useAuthStore } from "@/modules/auth/store/auth.store";
 
 import { mockSettings } from "../config/mock-data";
 import { settingsRows } from "../config/settings-rows";
-import { getAutoArchive, updateAutoArchive } from "../services/settings.api";
+import { getAutoArchive, hasSavedAutoArchive, updateAutoArchive } from "../services/settings.api";
 import type { AutoArchiveHours, ThemePreference } from "../types/settings.types";
 
 // Tracks the auto-archive request lifecycle so the screen can show saving /
@@ -60,7 +60,17 @@ export const useSettingsStore = create<SettingsState>()(
         try {
           const token = await user.getIdToken();
           if (!current()) return;
-          const hours = await getAutoArchive(token);
+          let hours = await getAutoArchive(token);
+          if (!current()) return;
+          // Missing means no choice yet; explicit null means the user chose Never.
+          if (hours === null) {
+            const hasSaved = await hasSavedAutoArchive(token);
+            if (!current()) return;
+            if (!hasSaved) {
+              set({ autoArchiveStatus: "saving" });
+              hours = await updateAutoArchive(24, token);
+            }
+          }
           if (current()) set({ autoArchiveHours: hours, autoArchiveStatus: "idle" });
         } catch (error) {
           if (current()) {

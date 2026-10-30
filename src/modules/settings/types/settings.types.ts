@@ -28,6 +28,7 @@ export interface SettingsSnapshot {
 }
 
 export type SettingsRoute =
+  | "/settings/change-password"
   | "/mpin/manage"
   | "/devices"
   | "/settings/location"

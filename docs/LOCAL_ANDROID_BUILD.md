@@ -25,7 +25,7 @@ Use Android Studio's SDK Manager to install missing SDK components and accept th
 ## 2. Check settings and signing
 
 1. Populate your local `.env` with the team's mobile configuration. Confirm `EXPO_PUBLIC_API_BASE_URL` points to a backend your phone can reach. `localhost` on a phone means the phone itself.
-2. Local Gradle builds do not load EAS environment variables or the `preview` settings from `eas.json`. Set any required values locally, including `EXPO_PUBLIC_PHONE_CAPTURE_ENABLED=true` if phone capture is needed. Never commit credentials or environment files.
+2. Local Gradle builds do not load EAS environment variables or the `preview` settings from `eas.json`. Phone capture is enabled by default in Android builds; `EXPO_PUBLIC_PHONE_CAPTURE_ENABLED=false` explicitly hides it. Expo Go cannot provide the custom native capture service. Never commit credentials or environment files.
 3. Confirm the native Firebase configuration (`android/app/google-services.json`) is present and correct.
 4. To update an existing installation, use the same signing key. The existing Gradle configuration reads `RIDEGUARD_RELEASE_STORE_FILE`, `RIDEGUARD_RELEASE_STORE_PASSWORD`, `RIDEGUARD_RELEASE_KEY_ALIAS`, and `RIDEGUARD_RELEASE_KEY_PASSWORD` from Gradle properties. Keep their values in your private user Gradle properties file, not the repository.
 

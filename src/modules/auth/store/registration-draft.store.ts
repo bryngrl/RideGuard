@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 type RegistrationDraft = {
   username: string;
@@ -8,15 +10,21 @@ type RegistrationDraft = {
   created: { username: string; email: string } | null;
   resendAt: number;
   deliveryFailed: boolean;
+  verificationEmail: string | null;
   update: (draft: Partial<Omit<RegistrationDraft, "update" | "clear">>) => void;
   clear: () => void;
 };
 
-const empty = { username: "", email: "", password: "", confirmPassword: "", created: null, resendAt: 0, deliveryFailed: false };
+const empty = { username: "", email: "", password: "", confirmPassword: "", created: null, resendAt: 0, deliveryFailed: false, verificationEmail: null };
 
-// Memory only: passwords must never enter route parameters or device storage.
-export const useRegistrationDraft = create<RegistrationDraft>((set) => ({
+// Persist only the public checkpoint. Passwords remain memory-only.
+export const useRegistrationDraft = create<RegistrationDraft>()(persist((set) => ({
   ...empty,
   update: (draft) => set(draft),
   clear: () => set(empty),
+}), {
+  name: "rideguard-email-verification",
+  storage: createJSONStorage(() => AsyncStorage),
+  partialize: (state) => ({ username: state.username, email: state.email, created: state.created,
+    resendAt: state.resendAt, deliveryFailed: state.deliveryFailed, verificationEmail: state.verificationEmail }),
 }));
