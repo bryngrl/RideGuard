@@ -9,17 +9,16 @@ export interface DevicePresenceSnapshot {
 
 export function devicePresence(device: { type: "camera" | "button"; deviceId: string },
   status: DevicePresenceSnapshot) {
+  if (!device.deviceId) return { online: false, label: "Not connected", canConnect: true };
   if (device.type === "button") {
     if (status.buttonsLoading) return { online: false, label: "Checking…", canConnect: !device.deviceId };
     if (status.buttonsError) return { online: false, label: "Unavailable", canConnect: !device.deviceId };
-    if (!device.deviceId) return { online: false, label: "Not paired", canConnect: true };
     if (status.buttonsSupported !== true) return { online: false, label: "Status unavailable", canConnect: false };
     const online = status.buttons?.some((button) => button.deviceId === device.deviceId && button.online) === true;
     return { online, label: online ? "Online" : "Offline", canConnect: false };
   }
-  if (!device.deviceId) return { online: false, label: "Offline", canConnect: true };
   if (status.isLoading) return { online: false, label: "Checking…", canConnect: false };
   if (status.error) return { online: false, label: "Unavailable", canConnect: false };
   const online = status.cameras.some((camera) => camera.source !== "phone" && camera.deviceId === device.deviceId && camera.online);
-  return { online, label: online ? "Online" : "Offline", canConnect: !online };
+  return { online, label: online ? "Online" : "Offline", canConnect: false };
 }
