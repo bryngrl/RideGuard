@@ -1,0 +1,5 @@
+simulation: devices-mobile
+routing: path
+mocks:
+  - routeKey: rideguard
+    path: ../mocks/rideguard-devices/config.yaml

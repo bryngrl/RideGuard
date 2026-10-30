@@ -39,7 +39,9 @@ test("both setup slots use the exact paired camera with no sources and preserve 
         useRouter: () => ({ replace: (href) => actions.push(href), dismissTo: (href) => actions.push(href) }) },
       "@/shared/ui": { Stepper: "Stepper" }, "@/shared/ui/button": { Button: "Button" },
       "@/shared/ui/keyboard-avoiding-wrapper": { KeyboardAvoidingWrapper: "Layout" },
-      "@/modules/devices/store/devices.store": { useDeviceStore: (select) => select({ camera1DeviceId: camera.deviceId, camera2DeviceId: records[1].deviceId }) },
+      "@/modules/devices/store/devices.store": { useDeviceStore: (select) => select(source === "settings"
+        ? { camera1DeviceId: "", camera2DeviceId: "CAM-STALE-AAA" }
+        : { camera1DeviceId: camera.deviceId, camera2DeviceId: records[1].deviceId }) },
       "../hooks/use-cameras": { useCameras: () => ({ cameras: records, isLoading: false, error: null }) },
       "../components/camera-preview-frame": { CameraPreviewFrame: "Frame", HardwareCameraPreview: "Preview" },
     });

@@ -41,7 +41,7 @@ export function useProfile() {
             vehicleBrand: serverProfile?.vehicle?.brand || "",
             vehicleModel: serverProfile?.vehicle?.model || "",
             plateNumber: serverProfile?.vehicle?.plateNumber || "",
-            photoUrl: serverProfile?.photo_url || serverProfile?.personalInfo?.profileImageUrl || authUser?.photoURL || null,
+            photoUrl: serverProfile?.photo_url?.trim() || authUser?.photoURL?.trim() || serverProfile?.personalInfo?.profileImageUrl?.trim() || null,
           },
     [authUser?.displayName, authUser?.email, authUser?.photoURL, isDemo, serverProfile],
   );

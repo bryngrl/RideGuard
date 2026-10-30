@@ -9,6 +9,7 @@ export const BrandColors = {
 
 export const Colors = {
   light: {
+    overlay: "rgba(0, 0, 0, 0.48)",
     sosReadyButton: "#1A2B4C",
     sosReadyRing: "#D9E6FF",
     sosSurface: "#DF1014",
@@ -96,6 +97,7 @@ export const Colors = {
   },
 
   dark: {
+    overlay: "rgba(0, 0, 0, 0.64)",
     sosReadyButton: "#1A2B4C",
     sosReadyRing: "#142039",
     sosSurface: "#DF1014",

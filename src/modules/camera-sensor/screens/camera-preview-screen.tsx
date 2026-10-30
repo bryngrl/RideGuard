@@ -20,7 +20,9 @@ export function CameraPreviewScreen() {
   const isSecondCamera = camera === "2";
   const deviceId = useDeviceStore((state) => isSecondCamera ? state.camera2DeviceId : state.camera1DeviceId);
   const { cameras, isLoading, error } = useCameras();
-  const selectedCamera = cameras.find((item) => item.source !== "phone" && item.deviceId === deviceId);
+  const hardware = cameras.filter((item) => item.source !== "phone");
+  const selectedCamera = fromSettings ? hardware[isSecondCamera ? 1 : 0]
+    : hardware.find((item) => item.deviceId === deviceId);
   const cameraLabel = isSecondCamera ? "Camera 2" : "Camera 1";
   useFocusEffect(useCallback(() => { navigating.current = false; }, []));
 

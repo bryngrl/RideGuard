@@ -1,6 +1,6 @@
 import { Redirect, Stack } from "expo-router";
 import { useReducedMotion } from "react-native-reanimated";
-import { ActivityIndicator, Platform, View } from "react-native";
+import { Platform, View } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useTheme } from "@/shared/hooks/use-theme";
@@ -11,8 +11,7 @@ export default function MpinLayout() {
   const onboarded = useAuthStore((state) => state.isOldUser);
   const reducedMotion = useReducedMotion();
   const theme = useTheme();
-  const loading = <View style={{ flex: 1, backgroundColor: theme.background, alignItems: "center", justifyContent: "center" }}
-    accessible accessibilityLabel="Checking account security"><ActivityIndicator color={theme.text} /></View>;
+  const loading = <View style={{ flex: 1, backgroundColor: theme.background }} accessibilityState={{ busy: true }} />;
   if (checking) return loading;
   if (!authenticated) return <Redirect href="/(public)/welcome" />;
   if (onboarded === false) return <Redirect href="/(onboarding)/register/profile" />;

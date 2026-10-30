@@ -11,7 +11,8 @@ const native = { View: "View", Text: "Text", Pressable: "NativePressable", Activ
   StyleSheet: { create: (styles) => styles, absoluteFill: {}, flatten } };
 const base = {
   "@/modules/mpin/services/mpin-activity": { recordMpinActivity() {} },
-  react: require("react"), "react/jsx-runtime": require("react/jsx-runtime"), "react-native": native,
+  react: require("react"), "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" }, "react-native": native,
   "@/shared/hooks": { useTheme: () => theme }, "@/shared/hooks/use-theme": { useTheme: () => theme },
   "@/shared/theme": { BorderRadius: {}, BrandColors: {}, Spacing: {}, Typography: {} },
   "@/shared/ui/feedback-pressable": { FeedbackPressable: "Pressable" },
@@ -74,6 +75,7 @@ test("Android MPIN navigation has no native transition while iOS retains its ani
 });
 
 test("the app-switcher privacy cover keeps one native view across background and resume", () => {
+  const modalVisibility = load("src/shared/lib/app-modal-visibility.ts");
   let hidden = false, mounted = false, frameId = 0;
   const listeners = new Map(), frames = new Map();
   const appState = { currentState: "active", addEventListener: (event, callback) => {
@@ -85,6 +87,7 @@ test("the app-switcher privacy cover keeps one native view across background and
     react: { useState: () => [hidden, (value) => { hidden = value; }], useEffect: (effect) => { if (!mounted) { mounted = true; effect(); } } },
     "react-native": { ...native, Platform: { OS: "android" }, AppState: appState },
     "@/modules/auth/store/auth.store": { useAuthStore: (select) => select({ isAuthenticated: true }) },
+    "@/shared/lib/app-modal-visibility": modalVisibility,
   }, { requestAnimationFrame: (work) => { frames.set(++frameId, work); return frameId; },
     cancelAnimationFrame: (id) => frames.delete(id) });
   const active = MpinPrivacyCover(); emit("background");
@@ -99,8 +102,33 @@ test("the app-switcher privacy cover keeps one native view across background and
   assert.equal(background.props.pointerEvents, "auto");
   assert.equal(resumed.props.pointerEvents, "none");
   assert.equal(resumed.props.accessibilityElementsHidden, true);
+  const closeModal = modalVisibility.registerAppModal();
+  listeners.get("blur")(); nextFrame(); nextFrame();
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "none", "an app dialog must preserve the page behind its backdrop");
+  emit("background");
+  assert.equal(MpinPrivacyCover().props.pointerEvents, "auto", "a visible dialog must never bypass actual background privacy");
+  closeModal(); emit("active"); nextFrame(); nextFrame();
   listeners.get("blur")();
   assert.equal(MpinPrivacyCover().props.pointerEvents, "auto");
   listeners.get("focus")(); emit("background"); nextFrame(); nextFrame();
   assert.equal(MpinPrivacyCover().props.pointerEvents, "auto", "a stale reveal cannot uncover a backgrounded app");
+});
+
+test("app modals register before their native window opens and release on dismissal", () => {
+  const visibility = load("src/shared/lib/app-modal-visibility.ts");
+  let ready = false, effect, cleanup;
+  const { AppModal } = load("src/shared/ui/app-modal.tsx", {
+    react: { useState: () => [ready, (value) => { ready = value; }], useLayoutEffect: (work) => { effect = work; } },
+    "react-native": { Modal: "Modal" },
+    "@/shared/lib/app-modal-visibility": visibility,
+  });
+  assert.equal(AppModal({ visible: true, transparent: true }).props.visible, false);
+  cleanup = effect();
+  assert.equal(visibility.hasVisibleAppModal(), true);
+  assert.equal(AppModal({ visible: true, transparent: true }).props.visible, true);
+  const releaseNested = visibility.registerAppModal();
+  cleanup();
+  assert.equal(visibility.hasVisibleAppModal(), true, "a nested dialog still owns focus");
+  releaseNested();
+  assert.equal(visibility.hasVisibleAppModal(), false);
 });

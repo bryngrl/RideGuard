@@ -2,7 +2,7 @@ import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect } from "expo-router";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ActivityIndicator, AppState, BackHandler, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import { AppState, BackHandler, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 import Animated, { Easing, cancelAnimation, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -68,10 +68,10 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
   useEffect(() => {
     // Feedback grows upwards; only the brand makes room. PIN/keypad/actions
     // keep their bottom anchor and never acquire a scroll offset.
-    const lift = error || busy ? Math.min(feedbackHeight, Math.max(0, logoTop - Spacing.three)) : 0;
+    const lift = error ? Math.min(feedbackHeight, Math.max(0, logoTop - Spacing.three)) : 0;
     feedbackLift.value = withTiming(lift, { duration: reducedMotion ? 0 : 180 });
     return () => cancelAnimation(feedbackLift);
-  }, [error, busy, feedbackHeight, logoTop, reducedMotion, feedbackLift]);
+  }, [error, feedbackHeight, logoTop, reducedMotion, feedbackLift]);
 
   // Return to the first mockup after a real background visit, without replaying
   // the letter reveal or retaining a partially entered PIN.
@@ -103,8 +103,10 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
   const panelMotion = useAnimatedStyle(() => ({ opacity: progress.value, transform: [{ translateY: 16 * (1 - progress.value) }] }));
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}>
-      <View collapsable={false} style={styles.content}>
+    <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}
+      pointerEvents={busy ? "none" : "auto"} accessibilityState={{ busy, disabled: busy }}>
+      <View collapsable={false} style={styles.content}
+        accessibilityElementsHidden={busy} importantForAccessibility={busy ? "no-hide-descendants" : "auto"}>
         <View collapsable={false} style={[styles.lock, compact && styles.compactLock]} accessible accessibilityLabel="App locked">
           <Ionicons name="lock-closed" size={26} color={theme.switchOff} />
         </View>
@@ -113,7 +115,7 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
           importantForAccessibility={entry ? "no-hide-descendants" : "auto"}
           style={[styles.cardPosition, { top: cardTop }, cardMotion]}>
           <Pressable accessibilityRole="button" accessibilityLabel="Unlock RideGuard" accessibilityHint="Opens the four-digit MPIN keypad"
-            onPress={() => { if (!entry) setEntry(true); }}
+            disabled={busy} onPress={() => { if (!entry && !isPending()) setEntry(true); }}
             feedbackRadius={BorderRadius.lg}
             style={[styles.card, { borderColor: theme.border, backgroundColor: theme.background }]}>
             <View style={styles.grid} importantForAccessibility="no-hide-descendants">
@@ -136,9 +138,6 @@ export function MpinUnlockExperience({ value, onChange, onComplete, onForgot, on
           <View collapsable={false} style={styles.feedback}
             onLayout={(event) => setFeedbackHeight(event.nativeEvent.layout.height)}>
             {error && <FormFeedback message={error} />}
-            {busy && <View style={styles.busy} accessibilityLiveRegion="polite" accessible accessibilityLabel="Verifying MPIN">
-              <ActivityIndicator color={theme.text} />
-            </View>}
           </View>
           <PinPad value={value} onChange={onChange} onComplete={onComplete} disabled={disabled || busy || !entry}
             error={!!error} errorVersion={errorVersion} indicatorStyle={{ height: indicatorHeight }}
@@ -165,7 +164,6 @@ const styles = StyleSheet.create({
   gridDot: { width: 9, height: 9, borderWidth: 2, borderRadius: BorderRadius.full },
   panel: { position: "absolute", left: Spacing.five, right: Spacing.five },
   accessibleHeading: { position: "absolute", width: 1, height: 1, overflow: "hidden", opacity: 0 },
-  busy: { alignItems: "center" },
   feedback: { position: "absolute", bottom: "100%", left: 0, right: 0, paddingBottom: Spacing.two },
   forgot: { marginTop: PinLayout.actionGap },
   preview: { ...Typography.caption, textAlign: "center", marginTop: Spacing.three },

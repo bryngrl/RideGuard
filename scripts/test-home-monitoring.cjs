@@ -92,3 +92,19 @@ test("Home observes canonical archive updates and reuses the active Alerts refre
   assert.equal(useMonitoringStatus(options).monitoringCardState, "monitoring");
   assert.deepEqual(refreshes, [["active"], ["active"]]);
 });
+
+
+test("unpaired Home hardware says Not connected during loading and errors too", () => {
+  const empty = { camera1DeviceId: "", camera2DeviceId: "", buttonDeviceId: "" };
+  for (const snapshot of [
+    { cameras: [], isLoading: false, error: null },
+    { cameras: [], isLoading: true, error: null, buttonsLoading: true },
+    { cameras: [], isLoading: false, error: "Offline", buttonsError: "Offline" },
+  ]) {
+    for (const card of Object.values(cards(snapshot, empty))) {
+      assert.equal(card.label, "Not connected");
+      assert.equal(card.online, false);
+      assert.equal(card.canConnect, true);
+    }
+  }
+});

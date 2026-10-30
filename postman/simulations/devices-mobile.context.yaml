@@ -1,0 +1,34 @@
+purpose:
+  stands_in_for: RideGuard staging camera status and hardware claim HTTP routes.
+  unblocks: Verifying mobile camera status refresh, failures and Quick Button claim transport without assigning live devices.
+assumptions:
+  - id: camera-status-contract
+    status: supported
+    claim: The inspected staging source returns assigned cameras with an online boolean and source discriminator.
+    reason: The controller and service define the fields; the local simulation exercises the mobile HTTP adapter against that shape.
+    verification: On 2026-10-29 inspected staging 6534611 and ran verify-device-status-simulation.cjs through Postman CLI 1.73.0. The client/store/card model handled online, offline, 503, malformed response, recovery, empty assignments and 401. Physical presence and deployed behavior remain unverified.
+    source: rideguard-node origin/staging src/modules/devices/devices.controller.ts and devices.service.ts; scripts/verify-device-status-simulation.cjs; postman/mocks/rideguard-devices/default.js
+    updated_at: "2026-10-29"
+  - id: button-presence-availability
+    status: contradicted
+    claim: The inspected staging mobile API can report continuous Quick Button presence or restore its assigned ID on another installation.
+    reason: The inspected devices controller has only a camera inventory route and no button inventory or presence route. Button events and Ably attachment do not provide ongoing hardware presence.
+    verification: Inspected the staging controller and service at 6534611 on 2026-10-29. No live button presence query was possible from that contract. The simulation deliberately models no button-presence route.
+    source: rideguard-node origin/staging src/modules/devices/devices.controller.ts and devices.service.ts; docs/HARDWARE_STATUS_AND_BUTTON_NAVIGATION.md
+    updated_at: "2026-10-29"
+  - id: local-button-heartbeat-integration
+    status: supported
+    claim: The local mobile implementation can restore an owned button and display backend heartbeat presence while preserving unsupported-backend and outage distinctions.
+    reason: The new local Node contract supplies authenticated inventory and server-timestamped heartbeats; the mobile store reads its online Boolean without inferring presence from Ably or a successful press test.
+    verification: On 2026-10-29 the real mobile HTTP client, button adapter, store and shared card mapper ran against Postman fixtures. A hardware heartbeat changed Offline to Online, an aged heartbeat changed it back to Offline, 503 showed Unavailable, and 404 showed Status unavailable while retaining pairing. Backend in-memory HTTP tests separately covered authentication and account ownership. Neither exercise proves deployment or a flashed physical board.
+    source: scripts/verify-device-status-simulation.cjs; postman/mocks/rideguard-devices/default.js; rideguard-node src/modules/devices/button-presence.spec.ts; rideguard-node docs/BUTTON_PRESENCE.md
+    updated_at: "2026-10-29"
+fingerprints:
+  - id: mobile-hardware-navigation-2026-10-29
+    date: "2026-10-29"
+    commit: 3efb424e95a30c2c561be7ec3499156e5e8f827d (working tree changes)
+    cli: 1.73.0
+  - id: button-heartbeat-local-implementation
+    date: "2026-10-29"
+    commit: rideguard-node 3711628 and mobile 3efb424 (working tree changes)
+    cli: 1.73.0

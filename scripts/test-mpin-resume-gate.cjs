@@ -35,6 +35,9 @@ function harness(pathname = "/settings", params = {}) {
   const useMpinStore = Object.assign(() => mpin, { getState: () => ({ ...mpin, setReturnTo: (value) => { mpin.returnTo = value; } }) });
   const modules = {
     react, "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
+    "@/assets/icons/logos/main.svg": { default: "Logo" },
+    "@/shared/ui/skeleton-pulse": { SkeletonPulse: "Pulse" },
     "react-native": { AppState: appState, View: "View", ActivityIndicator: "Spinner", StyleSheet: { absoluteFill: {} } },
     "expo-router": { useRouter: () => router, usePathname: () => pathname, useSegments: () => ["(app)", "settings"], useGlobalSearchParams: () => params,
       useFocusEffect: (work) => { const index = effectCursor++; if (effects[index]?.work !== work) pending.push(() => {
@@ -75,7 +78,8 @@ test("normal tab and page navigation does not repeat onboarding checks or cover 
   const app = harness("/");
   app.render(); await settle(); app.render();
   assert.equal(app.progressChecks(), 1);
-  for (const path of ["/alerts", "/camera", "/settings", "/settings/account", "/contact", "/"]) {
+  for (const path of ["/alerts", "/camera", "/settings", "/settings/account", "/contact",
+    "/devices/quick-button", "/devices/button-setup", "/"]) {
     app.navigate(path);
     const tree = app.render();
     assert.equal(tree.props.children[0].props.pointerEvents, "auto");
@@ -84,6 +88,25 @@ test("normal tab and page navigation does not repeat onboarding checks or cover 
     assert.equal(app.progressChecks(), 1);
   }
   assert.equal(app.routes.length, 0);
+});
+
+test("R loading is reserved for returning to the app", async () => {
+  const app = harness();
+  const initial = app.render();
+  assert.equal(initial.props.children[1].props.children[0], null);
+  await settle(); app.render();
+  app.mpin.checkingStatus = true;
+  const routineCheck = app.render();
+  assert.equal(routineCheck.props.children[1].props.children[0], null);
+  app.appState.currentState = "background"; app.render();
+  app.appState.currentState = "active";
+  const resumed = app.render();
+  assert.equal(resumed.props.children[1].props.children[0].type, "BrandLoading");
+  await settle();
+  app.mpin.checkingStatus = false;
+  app.render();
+  app.mpin.checkingStatus = true;
+  assert.equal(app.render().props.children[1].props.children[0], null);
 });
 
 test("background locking hides protected UI without replacing the native screen in the background", async () => {
@@ -154,7 +177,7 @@ test("all normal app routes have an allowed MPIN return destination", () => {
 });
 
 test("settings hardware return preserves camera slot and settings behavior", () => {
-  for (const route of ["/devices/camera", "/devices/camera/camera-preview", "/devices/button", "/devices/button/test-page"]) {
+  for (const route of ["/devices/camera", "/devices/camera/camera-preview", "/devices/button", "/devices/button/test-page", "/register/provision"]) {
     const target = policy.mpinReturnPath(route, { source: "settings", camera: "2" });
     assert.equal(policy.safeReturnPath(target), target);
     assert.ok(target.includes("source=settings"));
@@ -164,10 +187,20 @@ test("settings hardware return preserves camera slot and settings behavior", () 
   assert.equal(policy.safeReturnPath("/devices/camera?source=onboarding&camera=2"), "/");
 });
 
+test("Quick Button pairing resumes only as an explicitly allowed Settings screen", () => {
+  assert.equal(policy.mpinReturnPath("/register/provision", { source: "settings" }),
+    "/register/provision?source=settings");
+  for (const route of ["/register/provision", "/register/provision?source=onboarding",
+    "/register/provision?source=settings&next=https://example.com", "/register/profile?source=settings"]) {
+    assert.equal(policy.safeReturnPath(route), "/");
+  }
+});
+
 test("repeated app switches do not replace existing forms or dispatch duplicate lock screens", async () => {
   for (const [route, params] of [["/settings/account/edit", {}], ["/contact/add-contact", {}],
     ["/settings/search", {}], ["/settings/archives", {}], ["/settings/sos-preferences", {}],
-    ["/alerts/alert-123", {}], ["/devices/camera", { source: "settings", camera: "2" }]]) {
+    ["/alerts/alert-123", {}], ["/devices/camera", { source: "settings", camera: "2" }],
+    ["/register/provision", { source: "settings" }]]) {
     const app = harness(route, params);
     app.render(); await settle(); app.render();
     for (let i = 0; i < 3; i++) {

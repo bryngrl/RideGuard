@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { AppState, Modal, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppState, ScrollView, StyleSheet, Text, View } from "react-native";
+import { AppModal as Modal } from "./app-modal";
 import { useReducedMotion } from "react-native-reanimated";
 import { useTheme } from "@/shared/hooks/use-theme";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
@@ -36,7 +37,7 @@ export function ConfirmationModal({ visible, title, description, primaryButtonTe
   }, [visible]);
   return <Modal transparent animationType={reducedMotion ? "none" : "fade"}
     visible={visible} onRequestClose={onRequestClose ?? onSecondaryPress}>
-    <View style={styles.overlay}>
+    <View style={[styles.overlay, { backgroundColor: theme.overlay }]}>
       <View style={[styles.card, { maxWidth, backgroundColor: theme.modalSurface, borderColor: theme.border }]}
         accessibilityViewIsModal>
         <ScrollView bounces={false} style={styles.scroll} contentContainerStyle={styles.content}>
@@ -56,7 +57,7 @@ export function ConfirmationModal({ visible, title, description, primaryButtonTe
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0, 0, 0, 0.6)", justifyContent: "center", alignItems: "center", padding: Spacing.four },
+  overlay: { flex: 1, justifyContent: "center", alignItems: "center", padding: Spacing.four },
   card: { width: "100%", maxHeight: "85%", borderWidth: 1, borderRadius: BorderRadius.lg, padding: Spacing.four },
   content: { padding: Spacing.two },
   scroll: { flexGrow: 0, flexShrink: 1 },

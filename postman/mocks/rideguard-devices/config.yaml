@@ -1,0 +1,7 @@
+version: 1
+name: rideguard-devices
+port: 4968
+interceptRequests: true
+scenarios:
+  - name: default
+    path: default.js

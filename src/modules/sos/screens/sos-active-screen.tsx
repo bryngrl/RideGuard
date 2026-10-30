@@ -155,10 +155,7 @@ export function SosActiveScreen() {
           : <Ionicons name="alert-circle-outline" size={18} color={colors.sosOnSurface} />}
         <Text accessibilityLiveRegion="polite" style={styles.title}>{title.toUpperCase()}</Text>
       </View>
-      <Pressable style={styles.iconButton} accessibilityRole="button" accessibilityLabel="SOS preferences"
-        onPress={() => router.push("/settings/sos-preferences")}>
-        <Ionicons name="settings-outline" size={22} color={colors.sosOnSurface} />
-      </Pressable>
+      <View style={styles.iconButton} />
     </View>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.content}>
       <View style={styles.hero}>

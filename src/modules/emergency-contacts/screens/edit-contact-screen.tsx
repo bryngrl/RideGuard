@@ -4,9 +4,8 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useRef, useState } from "react";
-import { BackHandler, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
+import { BackHandler, Image, Linking, Pressable as NativePressable, Text, TextInput, View } from "react-native";
 
-import { Image } from "expo-image";
 import { useColorScheme } from "@/shared/hooks/use-color-scheme";
 import ContactAbstract from "@/assets/backgrounds/contact-abstract.svg";
 import ProfilePlaceholder from "@/assets/icons/misc/profile-placeholder.svg";
@@ -554,12 +553,12 @@ export function EditContactScreen() {
           pointerEvents="none"
         />
 
-        {isDark ? <View style={styles.pageBackground} pointerEvents="none">
+        {isDark ? <View collapsable={false} style={styles.pageBackground} pointerEvents="none">
           <Image
-          source={require("@/assets/images/backgrounds/contact-information-dark.png")}
+          source={require("../../../../assets/images/backgrounds/contact-information-dark.png")}
           style={styles.darkContactBackground}
-          contentFit="contain"
-          pointerEvents="none"
+          resizeMode="contain"
+          fadeDuration={0}
           accessible={false}
           />
         </View> : <ContactAbstract

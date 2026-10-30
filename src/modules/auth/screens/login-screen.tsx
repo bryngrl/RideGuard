@@ -169,6 +169,7 @@ export default function LoginScreen() {
             <View style={styles.fields}>
               <CustomTextInput
                 label="Username or email"
+                required
                 value={username}
                 onChangeText={(value) => {
                   setUsername(value);
@@ -190,6 +191,7 @@ export default function LoginScreen() {
               <CustomTextInput
                 ref={passwordRef}
                 label="Password"
+                required
                 value={password}
                 onChangeText={(value) => {
                   setPassword(value);

@@ -9,6 +9,7 @@ function render(height, props = {}) {
   const modules = {
     react: { useState: (value) => [value, () => {}], useEffect: () => {}, useCallback: (work) => work },
     "react/jsx-runtime": require("react/jsx-runtime"),
+    "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
     "react-native": { View: "View", Text: "Text", ActivityIndicator: "Spinner", StyleSheet: { create: (value) => value },
       useWindowDimensions: () => ({ height }) },
     "react-native-safe-area-context": { SafeAreaView: "SafeArea", useSafeAreaInsets: () => ({ top: 24, bottom: 24 }) },
@@ -80,4 +81,17 @@ test("error message grows upwards before the PIN boxes without a status button",
   assert.ok(feedbackIndex >= 0 && feedbackIndex < pinIndex);
   assert.equal(find(tree, (node) => node.type === "Feedback").props.message, "Incorrect MPIN. Try again.");
   assert.equal(find(tree, (node) => node.props?.title === "Check MPIN status"), null);
+});
+
+test("fetching disables the whole lock page without adding a loading logo", () => {
+  const tree = render(850, { busy: true, footer: "emergency-action" });
+  assert.equal(tree.props.pointerEvents, "none");
+  assert.equal(tree.props.accessibilityState.busy, true);
+  assert.equal(tree.props.children.props.importantForAccessibility, "no-hide-descendants");
+  assert.equal(find(tree, (node) => node.type === "BrandLoading"), null);
+  assert.equal(find(tree, (node) => node.type === "PinPad").props.disabled, true);
+  assert.equal(find(tree, (node) => node.props?.title === "Forgot MPIN?").props.disabled, true);
+  const ready = render(850);
+  assert.equal(ready.props.pointerEvents, "auto");
+  assert.equal(ready.props.children.props.importantForAccessibility, "auto");
 });

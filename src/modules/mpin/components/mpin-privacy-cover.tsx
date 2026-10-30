@@ -3,6 +3,7 @@ import { AppState, Platform, StyleSheet, View } from "react-native";
 
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useTheme } from "@/shared/hooks/use-theme";
+import { hasVisibleAppModal, subscribeAppModals } from "@/shared/lib/app-modal-visibility";
 
 /** Best-effort app-switcher privacy; native snapshot timing still needs device QA. */
 export function MpinPrivacyCover() {
@@ -29,14 +30,20 @@ export function MpinPrivacyCover() {
     };
     const listeners = [AppState.addEventListener("change", (state) => state === "active" ? reveal() : cover())];
     if (Platform.OS === "android") {
-      // Window blur can arrive before background/snapshot capture. It hides
-      // content only; notification-shade visits do not change MPIN lock policy.
-      listeners.push(AppState.addEventListener("blur", cover));
+      // App-owned dialogs take window focus while the app remains active. Keep the
+      // form visible through their translucent backdrop; real backgrounding
+      // still covers it immediately through the AppState change listener.
+      listeners.push(AppState.addEventListener("blur", () => {
+        if (AppState.currentState !== "active" || !hasVisibleAppModal()) cover();
+      }));
       listeners.push(AppState.addEventListener("focus", () => {
         if (AppState.currentState === "active") reveal();
       }));
     }
-    return () => { cancelReveal(); listeners.forEach((listener) => listener.remove()); };
+    const unsubscribeModals = subscribeAppModals(() => {
+      if (hasVisibleAppModal() && AppState.currentState === "active") reveal();
+    });
+    return () => { cancelReveal(); unsubscribeModals(); listeners.forEach((listener) => listener.remove()); };
   }, []);
   const visible = hidden && authenticated;
   return <View collapsable={false} pointerEvents={visible ? "auto" : "none"}

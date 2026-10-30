@@ -33,6 +33,7 @@ function render({ loading = false, empty = false } = {}) {
       refresh: () => refreshed++, loadMore: () => paged++,
     }; } },
     "../components/alert-item": { AlertItem: "AlertItem" }, "../components/alerts-skeleton": { AlertsSkeleton: "Skeleton" },
+    "../components/archives-empty-state": { ArchivesEmptyState: "ArchivesEmptyState" },
     "../services/alerts.mapper": { mapAlertFieldsToItem: (value) => value, alertTimeValue: Date.parse },
     "./alerts-screen.styles": { styles: {} },
   });
@@ -63,5 +64,8 @@ test("Settings Archives reuses the archive skeleton count and empty state", () =
   assert.equal(pending.tree.props.children.props.ListEmptyComponent.type, "Skeleton");
   assert.equal(pending.tree.props.children.props.ListEmptyComponent.props.count, 1);
   const empty = render({ empty: true });
-  assert.equal(empty.tree.props.children.props.ListEmptyComponent.props.children.props.children, "No archived alerts.");
+  const state = empty.tree.props.children.props.ListEmptyComponent;
+  assert.equal(state.type, "ArchivesEmptyState");
+  state.props.onViewAlerts();
+  assert.equal(empty.routes.at(-1), "/alerts");
 });

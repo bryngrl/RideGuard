@@ -34,7 +34,7 @@ function render(kind, params, history, scheme = "light") {
   const source = readFileSync(path.join(__dirname, `../src/modules/emergency-contacts/screens/${kind}-contact-screen.tsx`), "utf8");
   const context = { exports: {}, require: (name) => {
     if (name.endsWith(".svg")) return "Svg";
-    if (name === "@/assets/images/backgrounds/contact-information-dark.png") return "contact-information-dark.png";
+    if (name.endsWith("/contact-information-dark.png")) return "contact-information-dark.png";
     assert.ok(name in modules, name); return modules[name];
   } };
   vm.runInNewContext(ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX } }).outputText, context);
@@ -67,11 +67,11 @@ test("contact details switch the background artwork without changing contact ide
     const screen = render("edit", { contactId: "contact-1", contactName: "Ana" }, true, scheme);
     const layer = screen.tree.props.children[0].props.children[1];
     const background = scheme === "dark" ? layer.props.children : layer;
-    assert.equal(background.type, scheme === "dark" ? "ArtworkImage" : "Svg");
+    assert.equal(background.type, scheme === "dark" ? "Image" : "Svg");
     if (scheme === "dark") {
       assert.equal(background.props.source, "contact-information-dark.png");
-      assert.equal(background.props.contentFit, "contain");
-      assert.equal(background.props.pointerEvents, "none");
+      assert.equal(background.props.resizeMode, "contain");
+      assert.equal(layer.props.pointerEvents, "none");
     }
     screen.tree.props.onBack();
     assert.deepEqual(screen.actions, ["back"]);
