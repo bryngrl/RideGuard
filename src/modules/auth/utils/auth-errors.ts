@@ -23,6 +23,9 @@ export function unverifiedAccountEmail(error: unknown, identifier: string): stri
 
 export function authErrorMessage(error: unknown, action: "login" | "register" | "status"): string {
   const code = codeOf(error);
+  if (error instanceof APIError && error.status === 408) {
+    return "Request timed out. Check your connection and try again.";
+  }
   if (code === "auth/network-request-failed" || error instanceof TypeError) {
     return "You're offline. Check your connection.";
   }

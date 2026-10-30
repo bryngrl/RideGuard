@@ -4,6 +4,8 @@ const fs = require("node:fs"), path = require("node:path"), vm = require("node:v
 
 test("MPIN forms render visible content without waiting for an opacity animation or resume event", () => {
   const modules = {
+    react: { useContext: () => false },
+    "@/shared/ui/onboarding-progress-context": { OnboardingProgressContext: {} },
     "react/jsx-runtime": require("react/jsx-runtime"),
     "@/shared/ui/brand-loading": { BrandLoading: "BrandLoading" },
     "@expo/vector-icons": { Ionicons: "Icon" },

@@ -1,4 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
+import { OnboardingProgressContext } from "./onboarding-progress-context";
+import Animated, { FadeInRight, useReducedMotion } from "react-native-reanimated";
 import {
   Keyboard,
   KeyboardAvoidingView,
@@ -31,18 +33,21 @@ export function KeyboardAvoidingWrapper({
   safeAreaEdges = ["top", "bottom"],
 }: KeyboardAvoidingWrapperProps) {
   const theme = useTheme();
+  const managedProgress = useContext(OnboardingProgressContext);
+  const reducedMotion = useReducedMotion();
   const { bottom } = useSafeAreaInsets();
 
   const content = (
-    <View style={[styles.innerContainer, { paddingBottom: actionFooterPadding(bottom, safeAreaEdges.includes("bottom")) }, contentContainerStyle]}>
+    <Animated.View entering={managedProgress && !reducedMotion ? FadeInRight.duration(220) : undefined}
+      style={[styles.innerContainer, { paddingBottom: actionFooterPadding(bottom, safeAreaEdges.includes("bottom")) }, contentContainerStyle]}>
       {children}
-    </View>
+    </Animated.View>
   );
 
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.background }, style]}
-      edges={safeAreaEdges}
+      edges={managedProgress ? safeAreaEdges.filter((edge) => edge !== "top") : safeAreaEdges}
     >
       <KeyboardAvoidingView
         style={styles.flex}

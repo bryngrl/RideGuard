@@ -70,6 +70,10 @@ export async function postAuthDestination(user: User, hasProfile: boolean) {
       return onboardingPaths.profile;
     }
     if (remote.completed && !remote.mpinConfigured) return onboardingPaths.mpin;
+    // An offline optional-hardware skip may be newer than the server checkpoint.
+    // Resume at mandatory MPIN; never infer device pairing or test completion.
+    if (user.email && ["provision", "button"].includes(remote.step) &&
+      await AsyncStorage.getItem(pendingKey(user.email)) === "mpin") return onboardingPaths.mpin;
     if (Object.hasOwn(onboardingPaths, remote.step) && remote.step !== "profile") {
       return remote.step === "mpin" && remote.mpinConfigured
         ? onboardingPaths["complete-setup"] : onboardingPaths[remote.step as OnboardingStep];

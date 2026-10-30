@@ -5,7 +5,7 @@ import { ActivityIndicator, Image, AppState, FlatList, ScrollView, Text, useWind
 import { AppModal as Modal } from "@/shared/ui/app-modal";
 import { useEffect, useState } from "react";
 
-import InformationIcon from "@/assets/icons/misc/information.svg";
+import { AlertSosResponse } from "../components/alert-sos-response";
 
 import { useTheme } from "@/shared/hooks/use-theme";
 import { Spacing, Typography } from "@/shared/theme";
@@ -268,7 +268,7 @@ function EvidencePreview({
 
 // Response section
 
-function Response() {
+function Response({ alertId }: { alertId?: string }) {
   const theme = useTheme();
 
   return (
@@ -283,13 +283,8 @@ function Response() {
         Response
       </Text>
 
-      <View style={responseStyles.row}>
-        <InformationIcon height={16} width={16} />
-
-        <Text style={[Typography.bodySmall, { color: theme.textInactive }]}>
-          Contact notification status is not confirmed here. Open SOS to check message submission status.
-        </Text>
-      </View>
+      {alertId ? <AlertSosResponse key={alertId} alertId={alertId} /> :
+        <Text style={[Typography.bodySmall, { color: theme.textMuted }]}>Response status is unavailable for this alert.</Text>}
     </View>
   );
 }
@@ -472,7 +467,7 @@ export function AlertDetailScreen() {
         ) : null}
 
         {/* Response */}
-        <Response />
+        <Response alertId={alert.alertId} />
       </ScrollView>
     </PageLayout>
   );

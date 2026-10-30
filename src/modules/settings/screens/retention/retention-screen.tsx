@@ -23,6 +23,7 @@ export function AutoArchiveScreen() {
   }, [loadAutoArchive]);
 
   const isSaving = status === "saving";
+  const isLoading = status === "loading";
 
   return (
     <SettingsPageLayout title="Auto archive" contentStyle={styles.content}>
@@ -51,7 +52,7 @@ export function AutoArchiveScreen() {
             subtitle={option.subtitle}
             selected={value === option.value}
             onPress={() => {
-              if (isSaving || value === option.value) return;
+              if (isSaving || isLoading || (status !== "error" && value === option.value)) return;
               // Retroactive rule: a saved period changes deadlines for existing
               // alerts, so refresh the lists once the server confirms the save.
               void saveAutoArchive(option.value).then((saved) => {
@@ -62,11 +63,11 @@ export function AutoArchiveScreen() {
         ))}
       </View>
 
-      {isSaving ? (
+      {isSaving || isLoading ? (
         <View style={styles.statusRow}>
           <ActivityIndicator size="small" color={colors.textMuted} />
           <Text style={[Typography.bodySmall, { color: colors.textMuted }]}>
-            Saving…
+            {isLoading ? "Loading your setting…" : "Saving…"}
           </Text>
         </View>
       ) : null}

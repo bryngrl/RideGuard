@@ -1,4 +1,6 @@
 import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { useContext } from "react";
+import { OnboardingProgressContext } from "./onboarding-progress-context";
 import Animated, {
   useAnimatedStyle,
   withTiming,
@@ -26,6 +28,7 @@ interface StepperProps {
   size?: number;
 
   containerStyle?: StyleProp<ViewStyle>;
+  standalone?: boolean;
 }
 
 interface StepItemProps {
@@ -68,7 +71,9 @@ const Stepper = ({
   currentStep,
   size = 4,
   containerStyle,
+  standalone = false,
 }: StepperProps) => {
+  const managed = useContext(OnboardingProgressContext);
   const safeSteps = Math.max(1, Math.floor(steps));
 
   const safeCurrentStep = Math.min(
@@ -77,6 +82,8 @@ const Stepper = ({
   );
 
   const stepArray = Array.from({ length: safeSteps }, (_, index) => index + 1);
+
+  if (managed && !standalone) return null;
 
   return (
     <View style={[styles.container, containerStyle]}>

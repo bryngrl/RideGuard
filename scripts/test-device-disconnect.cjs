@@ -22,38 +22,34 @@ function api(reply) {
     } } },
   }) };
 }
-const confirmation = (id) => ({ success: true,
-  data: { released: true, device_id: id, device_type: id.startsWith("CAM") ? "camera" : "button", assigned_user_id: null } });
+const confirmation = (id) => ({ success: true, data: { disconnected: [id], devices: [
+  { device_id: id, device_type: id.startsWith("CAM") ? "camera" : "button", status: "disconnected" },
+] } });
 
 test("camera and button disconnect target one explicit ID with Firebase authorization", async () => {
   for (const [kind, id] of [["camera", "CAM-111-AAA"], ["button", "BUT-222-BBB"]]) {
-    const adapter = api(confirmation(id));
-    const signal = new AbortController().signal;
-    await adapter.releaseDevice(` ${id} `, "session-token", kind, signal);
-    assert.equal(adapter.calls[0].route, "/devices/release");
-    assert.equal(adapter.calls[0].method, "POST");
-    assert.equal(adapter.calls[0].token, "session-token");
-    assert.equal(adapter.calls[0].signal, signal);
+    const adapter = api(confirmation(id)); const signal = new AbortController().signal;
+    await adapter.disconnectHardwareDevice(' ' + id + ' ', "session-token", kind, signal);
+    assert.equal(adapter.calls[0].route, "/devices/disconnect"); assert.equal(adapter.calls[0].method, "POST");
+    assert.equal(adapter.calls[0].token, "session-token"); assert.equal(adapter.calls[0].signal, signal);
     assert.deepEqual(JSON.parse(adapter.calls[0].body), { device: kind, device_id: id });
   }
 });
-
-test("repeat unpair accepts an explicit released ownership confirmation", async () => {
-  await api(confirmation("CAM-111-AAA")).releaseDevice("CAM-111-AAA", "token", "camera");
+test("already-offline devices accept the backend's explicit per-device confirmation", async () => {
+  const reply = confirmation("CAM-111-AAA"); reply.data.disconnected = [];
+  await api(reply).disconnectHardwareDevice("CAM-111-AAA", "token", "camera");
 });
-
-test("empty IDs, unsupported targets and unconfirmed results cannot cause local success", async () => {
+test("empty IDs, unsupported targets and unconfirmed results cannot cause success", async () => {
   const invalid = api(confirmation("CAM-111-AAA"));
-  await assert.rejects(invalid.releaseDevice(" ", "token", "camera"));
-  await assert.rejects(invalid.releaseDevice("CAM-111-AAA", "token", "all"));
+  await assert.rejects(invalid.disconnectHardwareDevice(" ", "token", "camera"));
+  await assert.rejects(invalid.disconnectHardwareDevice("CAM-111-AAA", "token", "all"));
   assert.equal(invalid.calls.length, 0);
-  for (const body of [null, {}, { success: false }, { success: true, data: {} },
-    confirmation("CAM-999-ZZZ"), { success: true, data: { disconnected: ["CAM-111-AAA"], devices: [
-      { device_id: "CAM-111-AAA", device_type: "camera", status: "disconnected" },
-    ] } }, { ...confirmation("CAM-111-AAA"), data: { ...confirmation("CAM-111-AAA").data, assigned_user_id: "owner" } },
-    { success: true, data: { ...confirmation("CAM-111-AAA").data, device_type: "button" } },
-    { success: true, data: { ...confirmation("CAM-111-AAA").data, released: false } }]) {
-    await assert.rejects(api(body).releaseDevice("CAM-111-AAA", "token", "camera"));
+  for (const body of [null, {}, { success: false }, { success: true, data: {} }, confirmation("CAM-999-ZZZ"),
+    { success: true, data: { disconnected: [], devices: [] } },
+    { success: true, data: { disconnected: ["OTHER"], devices: confirmation("CAM-111-AAA").data.devices } },
+    { success: true, data: { disconnected: [], devices: [{ device_id: "CAM-111-AAA", device_type: "button", status: "disconnected" }] } },
+    { success: true, data: { disconnected: [], devices: [{ device_id: "CAM-111-AAA", device_type: "camera", status: "connected" }] } }]) {
+    await assert.rejects(api(body).disconnectHardwareDevice("CAM-111-AAA", "token", "camera"));
   }
 });
 
@@ -81,7 +77,7 @@ function screen(request, cameraStatus = { cameras: [
     "@/shared/ui/confirmation-modal": { ConfirmationModal: "Confirmation" },
     "@/modules/settings/components/settings-page-layout": { SettingsPageLayout: "Page" },
     "@/shared/ui/notification-sheet": { NotificationSheet: "Notice" }, "@/shared/api/errors": { APIError },
-    "../services/devices.api": { releaseDevice: (...args) => { calls.push(args); return request(); } },
+    "../services/devices.api": { disconnectHardwareDevice: (...args) => { calls.push(args); return request(); } },
     "../store/devices.store": { useDeviceStore: Object.assign(() => store, { getState: () => store }) },
     "../hooks/use-device-claim-lifecycle": { useDeviceClaimLifecycle: () => life },
     "@/modules/camera-sensor/hooks/use-cameras": { useCameras: () => cameraStatus },
@@ -153,18 +149,18 @@ test("Settings uses backend camera assignments with stale saved IDs without a re
   assert.equal(app.routes[0], "/(onboarding)/devices/camera/camera-preview?camera=1&source=settings");
   assert.equal(find(tree, (node) => node.props?.title === "Refresh status"), null);
 });
-function confirm(app) {
-  find(app.render(), (node) => node.props?.title === "Disconnect").props.onPress();
+function confirm(app, title = "Disconnect") {
+  find(app.render(), (node) => node.props?.title === title).props.onPress();
   return find(app.render(), (node) => node.type === "Confirmation").props.onPrimaryPress;
 }
 
-test("confirmation sends once despite double taps and changes local state only after server success", async () => {
+test("confirmation sends once despite double taps and retains pairing after server success", async () => {
   let resolve;
   const app = screen(() => new Promise((done) => { resolve = done; }));
   const press = confirm(app); press(); press(); await settle();
   assert.equal(app.calls.length, 1); assert.equal(app.cleared.length, 0);
   resolve(); await settle();
-  assert.deepEqual(app.cleared, [["owner", "CAM-111-AAA"]]);
+  assert.deepEqual(app.cleared, []);
   assert.equal(app.render().props.overlay.props.type, "success");
 });
 
@@ -174,6 +170,30 @@ test("failed requests retain the device and show a sanitized error", async () =>
   assert.equal(app.cleared.length, 0);
   const notice = app.render().props.overlay.props;
   assert.equal(notice.type, "error"); assert.equal(notice.message.includes("private"), false);
+});
+
+test("Disconnect is the only removal action and preserves pairing", async () => {
+  let resolve;
+  const app = screen(() => new Promise((done) => { resolve = done; }));
+  const press = confirm(app, "Disconnect"); press(); press(); await settle();
+  assert.equal(app.calls.length, 1); assert.equal(find(app.render(), (node) => node.props?.title === "Unpair"), null); assert.equal(app.cleared.length, 0);
+  resolve(); await settle();
+  const notice = app.render().props.overlay.props;
+  assert.equal(notice.type, "success"); assert.match(notice.message, /remains paired/);
+  assert.equal(app.cleared.length, 0); assert.ok(app.refreshes() > 0);
+});
+
+test("a stalled disconnect exits after its deadline without success, and late completion cannot clear the device", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout"] });
+  let resolve;
+  const app = screen(() => new Promise((done) => { resolve = done; }));
+  confirm(app)(); await settle();
+  assert.equal(app.calls.length, 1);
+  t.mock.timers.tick(20_000); await settle();
+  assert.equal(app.render().props.overlay.props.type, "error");
+  assert.match(app.render().props.overlay.props.message, /timed out/);
+  assert.equal(app.cleared.length, 0);
+  resolve(); await settle(); assert.equal(app.cleared.length, 0);
 });
 
 test("late success after an account switch or leaving the screen cannot clear hardware", async () => {

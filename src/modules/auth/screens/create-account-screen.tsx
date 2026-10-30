@@ -7,18 +7,15 @@ import { Button } from "@/shared/ui/button";
 import { FormFeedback } from "@/shared/ui/form-feedback";
 import { CustomTextInput } from "@/shared/ui/text-input";
 import { useRouter } from "expo-router";
-import { signInWithEmailAndPassword } from "firebase/auth";
 import { useRef, useState } from "react";
 import { Keyboard, KeyboardAvoidingView, Platform, Text, TextInput, View } from "react-native";
 import { KeyboardAwareFormScrollView } from "@/shared/ui/keyboard-aware-form-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { auth } from "@/lib/firebase";
 
 import { styles } from "./create-account-screen.styles";
 import { registerAccount } from "../services/auth.api";
 import { markRegistrationOnboardingPending } from "../services/registration-progress";
 import { useRegistrationDraft } from "../store/registration-draft.store";
-import { sendVerificationForUser } from "../services/verification-email";
 import { authErrorMessage, registrationFieldErrors } from "../utils/auth-errors";
 import { getConfirmPasswordError, getPasswordError } from "../utils/password-validation";
 
@@ -44,6 +41,7 @@ export default function CreateAccountScreen() {
   const [formMessage, setFormMessage] = useState<string | null>(null);
   const [serverErrors, setServerErrors] = useState<Partial<Record<Field, string>>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const submitting = useRef(false);
 
   const usernameError = !username.trim()
@@ -83,27 +81,11 @@ export default function CreateAccountScreen() {
         return;
       }
       if (!created) {
+        setLoadingMessage("Creating your account and sending a verification code...");
         await registerAccount({ username: registrationUsername, email: registrationEmail, password });
         update({ created: { username: registrationUsername, email: registrationEmail } });
+        update({ resendAt: Date.now() + 60_000, deliveryFailed: false, verificationEmail: registrationEmail });
         await markRegistrationOnboardingPending(registrationEmail);
-      }
-      // The current backend creates the Firebase user but does not send the link.
-      // Retain its authenticated session for verification polling and resend.
-      try {
-        const { user } = await signInWithEmailAndPassword(auth, registrationEmail, password);
-        if (!created && !user.emailVerified) {
-          try {
-            await sendVerificationForUser(user);
-            update({ resendAt: Date.now() + 60_000 });
-          } catch {
-            // Account creation succeeded. Keep verification accessible so the
-            // existing resend action can recover delivery without another create.
-            update({ deliveryFailed: true });
-          }
-        }
-      } catch {
-        setFormMessage("Account created. Check your password and retry verification.");
-        return;
       }
       router.push({ pathname: "/(public)/check-email", params: { email: registrationEmail } });
     } catch (error) {
@@ -134,7 +116,12 @@ export default function CreateAccountScreen() {
       <Text style={[styles.heading, { color: theme.text }]}>Create account</Text>
       <Text style={[styles.description, { color: theme.textMuted }]}>Enter your details to create an account.</Text>
       {formMessage ? <View style={styles.feedback}><FormFeedback message={formMessage} /></View> : null}
+      {formMessage && !emailError && <Button title="Continue email verification" variant="ghost" onPress={() => {
+        update({ verificationEmail: email.trim().toLowerCase() });
+        router.push({ pathname: "/(public)/check-email", params: { email: email.trim().toLowerCase() } });
+      }} />}
 
+      {isLoading && <Text accessibilityLiveRegion="polite" style={{ color: theme.textMuted, marginBottom: Spacing.two }}>{loadingMessage || "Connecting..."}</Text>}
       <View style={styles.fields}>
         <CustomTextInput
           ref={usernameRef}

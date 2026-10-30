@@ -28,6 +28,7 @@ function harness(check) {
     "@/shared/api/errors": { APIError },
     "../store/auth.store": { useAuthStore: (selector) => selector(store) },
     "../services/auth.api": { ensureEmailPasswordProfile: () => check(), checkIsOldUser: () => check() },
+    "../services/firebase-user-refresh": { refreshFirebaseUser: (user) => user.reload() },
   };
   function load(relative) {
     const compiled = ts.transpileModule(readFileSync(path.join(__dirname, "..", relative), "utf8"), {
@@ -66,6 +67,24 @@ test("unverified account does not run authenticated profile checks", async () =>
   assert.equal(checks, 0);
   assert.equal(app.store.isAuthenticated, false);
   assert.equal(app.render().sessionError, null);
+});
+
+test("a profile timeout retains Firebase login and logs the failing endpoint without credentials", async () => {
+  let timesOut = true;
+  const app = harness(async () => { if (timesOut) throw new APIError(408); return true; });
+  app.firebase.currentUser.providerData = [{ providerId: "google.com" }];
+  app.render(); await app.settle();
+  const failure = app.render();
+  assert.match(failure.sessionError, /connect/);
+  assert.equal(app.store.isAuthenticated, false);
+  assert.equal(app.firebase.currentUser.uid, "owner");
+  assert.equal(app.logs[0][1].stage, "rideguard-profile");
+  assert.equal(app.logs[0][1].endpoint, "/auth/is-old-user");
+  assert.equal(app.logs[0][1].status, 408);
+  assert.equal(app.logs[0][1].reason, "request-timeout");
+  assert.equal(JSON.stringify(app.logs).includes("test-token"), false);
+  timesOut = false; failure.retrySession(); app.render(); await app.settle();
+  assert.equal(app.store.isAuthenticated, true);
 });
 
 test("temporary Firebase connection failure keeps the session and retries before any profile request", async () => {

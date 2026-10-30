@@ -11,7 +11,7 @@ import { SettingsPageLayout } from "@/modules/settings/components/settings-page-
 import { NotificationSheet } from "@/shared/ui/notification-sheet";
 import { APIError } from "@/shared/api/errors";
 
-import { releaseDevice } from "../services/devices.api";
+import { disconnectHardwareDevice } from "../services/devices.api";
 import { useDeviceStore } from "../store/devices.store";
 import { useDeviceClaimLifecycle } from "../hooks/use-device-claim-lifecycle";
 import { useCameras } from "@/modules/camera-sensor/hooks/use-cameras";
@@ -104,21 +104,20 @@ export function DeviceStatusScreen() {
     setDisconnectingId(device.deviceId);
     setNotice(null);
     try {
-      const token = await Promise.race([user.getIdToken(true), interrupted]);
+      const token = await Promise.race([user.getIdToken(), interrupted]);
       if (!lifecycle.isCurrent(attempt) || controller.signal.aborted) return;
-      await releaseDevice(device.deviceId, token, device.type, controller.signal);
+      await Promise.race([disconnectHardwareDevice(device.deviceId, token, device.type, controller.signal), interrupted]);
       if (!lifecycle.isCurrent(attempt)) return;
-      useDeviceStore.getState().clearDisconnectedDevice(user.uid, device.deviceId);
       void cameraStatus.refresh();
       void buttonStatus.refresh();
-      setNotice({ message: `${device.name} disconnected and unpaired.`, type: "success" });
+      setNotice({ message: `${device.name} marked disconnected. It remains paired and may reconnect automatically.`, type: "success" });
     } catch (error) {
       if (!lifecycle.isCurrent(attempt)) return;
       const message = error instanceof APIError && error.status === 401 ? "Session expired. Log in again."
         : error instanceof APIError && error.status === 403 ? "You can't disconnect this device."
-        : error instanceof APIError && error.status === 404 ? "Hardware unpairing is not available yet."
-        : controller.signal.aborted ? "Request timed out. Try again."
-        : "Couldn't unpair device. Try again.";
+        : error instanceof APIError && error.status === 404 ? "Device unavailable or disconnect not supported."
+        : controller.signal.aborted ? "Couldn't confirm disconnection before the request timed out. Check device status before retrying."
+        : "Couldn't disconnect device. Try again.";
       setNotice({ message, type: "error" });
     } finally {
       clearTimeout(timeout);
@@ -214,8 +213,8 @@ export function DeviceStatusScreen() {
       </View>
       <ConfirmationModal
         visible={deviceToDisconnect !== null}
-        title={`Disconnect and unpair ${deviceToDisconnect?.name ?? "device"}?`}
-        description="This will remove the hardware from your account so another account and phone can connect it."
+        title={`Disconnect ${deviceToDisconnect?.name ?? "device"}?`}
+        description="The device stays paired and may reconnect automatically when it reports activity."
         primaryButtonText="Disconnect"
         secondaryButtonText="Cancel"
         primaryButtonColor={theme.error}

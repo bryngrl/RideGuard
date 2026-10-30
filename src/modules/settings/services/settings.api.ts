@@ -8,13 +8,12 @@ import type {
 import { toE164 } from "@/shared/lib/phone-utils";
 
 /*
- * BACKEND GUIDE
+ * Server endpoints currently available:
  * GET /settings/auto-archive -> getAutoArchive
  * PATCH /settings/auto-archive -> updateAutoArchive
- * PATCH /settings/notifications -> updateNotifications
- * PATCH /settings/location -> updateLocationSharing
- * PATCH /settings/theme -> updateTheme
  * PATCH /profile/me -> updateAccountDetails
+ * Notification, location and display preferences below are device-local.
+ * Staging has no settings-wide, notifications, location or theme endpoints.
  */
 
 interface StandardEnvelope<T> {
@@ -28,12 +27,16 @@ interface AutoArchiveData {
   autoArchiveHours: AutoArchiveHours;
 }
 
-function normalizeHours(value: unknown): AutoArchiveHours {
-  return value === 24 || value === 48 || value === 72 ? value : null;
+function readAutoArchive(envelope: StandardEnvelope<AutoArchiveData>): AutoArchiveHours {
+  const value = envelope?.data?.autoArchiveHours;
+  if (!envelope?.success || !(value === null || value === 24 || value === 48 || value === 72)) {
+    throw new Error("The server did not confirm your auto-archive setting.");
+  }
+  return value;
 }
 
 export async function getSettings() {
-  // BACKEND: replace body with GET /settings.
+  // No settings-wide endpoint exists; individual stores own local preferences.
   return null;
 }
 
@@ -45,7 +48,18 @@ export async function getAutoArchive(
     "/settings/auto-archive",
     firebaseToken,
   );
-  return normalizeHours(envelope?.data?.autoArchiveHours);
+  return readAutoArchive(envelope);
+}
+
+/** The settings endpoint maps both missing and explicitly disabled to null. */
+export async function hasSavedAutoArchive(firebaseToken: string): Promise<boolean> {
+  const envelope = await apiClient.get<StandardEnvelope<Record<string, unknown>>>(
+    "/profile/me", firebaseToken,
+  );
+  if (!envelope?.success || !envelope.data || typeof envelope.data !== "object") {
+    throw new Error("Unable to confirm your saved auto-archive preference.");
+  }
+  return Object.prototype.hasOwnProperty.call(envelope.data, "autoArchiveHours");
 }
 
 /** PATCH /settings/auto-archive -> the saved period echoed back. */
@@ -58,7 +72,7 @@ export async function updateAutoArchive(
     { autoArchiveHours: value },
     firebaseToken,
   );
-  const saved = normalizeHours(envelope?.data?.autoArchiveHours);
+  const saved = readAutoArchive(envelope);
   if (saved !== value) throw new Error("The server did not save the selected auto-archive period.");
   return saved;
 }
@@ -69,7 +83,7 @@ export async function updateNotifications(payload: {
   soundEnabled?: boolean;
   vibrationEnabled?: boolean;
 }) {
-  // BACKEND: replace body with PATCH /settings/notifications payload.
+  // The caller persists this device-local preference in settings.store.
   return payload;
 }
 
@@ -77,12 +91,12 @@ export async function updateLocationSharing(payload: {
   locationInApp?: boolean;
   locationWithContacts?: boolean;
 }) {
-  // BACKEND: replace body with PATCH /settings/location payload.
+  // The caller persists this device-local preference in settings.store.
   return payload;
 }
 
 export async function updateTheme(value: ThemePreference) {
-  // BACKEND: replace body with PATCH /settings/theme { themePreference: value }.
+  // The caller persists this device-local preference in settings.store.
   return value;
 }
 

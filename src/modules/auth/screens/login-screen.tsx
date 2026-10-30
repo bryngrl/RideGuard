@@ -27,6 +27,10 @@ import { useAuthStore } from "../store/auth.store";
 import { isTemporarySessionFailure } from "../utils/session-errors";
 
 import { styles } from "./login-screen.styles";
+import { beginVerifiedSuccess, getVerifiedSuccess } from "../services/verified-success";
+import { refreshFirebaseUser } from "../services/firebase-user-refresh";
+import { traceLoginStage } from "../utils/auth-diagnostics";
+import { useRegistrationDraft } from "../store/registration-draft.store";
 
 
 export default function LoginScreen() {
@@ -34,7 +38,7 @@ export default function LoginScreen() {
   const { registrationEmail } = useLocalSearchParams<{ registrationEmail?: string }>();
   const theme = useTheme();
 
-  const { signIn } = useGoogleSignin();
+  const { signIn, isNewAccount } = useGoogleSignin();
 
   const passwordRef = useRef<TextInput>(null);
   const [username, setUsername] = useState(registrationEmail ?? "");
@@ -47,6 +51,7 @@ export default function LoginScreen() {
   const [isCredentialLoading, setIsCredentialLoading] = useState(false);
   const credentialPending = useRef(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const googlePending = useRef(false);
 
   const usernameError =
     (submitted || usernameTouched) && !username.trim()
@@ -58,7 +63,7 @@ export default function LoginScreen() {
       : undefined;
 
   const handleCredentialSignIn = async () => {
-    if (credentialPending.current) return;
+    if (credentialPending.current || googlePending.current) return;
     setSubmitted(true);
     setCredentialError(null);
     setVerificationEmail(null);
@@ -72,20 +77,22 @@ export default function LoginScreen() {
     setIsCredentialLoading(true);
     let signedInWithPassword = false;
     try {
-      const identity = await loginAccount(username.trim(), password);
-      const credential = await signInWithEmailAndPassword(auth, identity.email, password);
+      const identity = await traceLoginStage("backend-login", () => loginAccount(username.trim(), password));
+      const credential = await traceLoginStage("firebase-sign-in", () => signInWithEmailAndPassword(auth, identity.email, password));
       signedInWithPassword = true;
-      await credential.user.reload();
+      await traceLoginStage("account-refresh", () => refreshFirebaseUser(credential.user));
       if (!credential.user.emailVerified) {
         setVerificationEmail(identity.email);
         setCredentialError("Email not verified. Check your inbox.");
         return;
       }
-      const hasProfile = await ensureEmailPasswordProfile(credential.user);
-      const destination = await postAuthDestination(credential.user, hasProfile);
+      const hasProfile = await traceLoginStage("profile-check", () => ensureEmailPasswordProfile(credential.user));
+      const destination = await traceLoginStage("session-routing", () => postAuthDestination(credential.user, hasProfile));
       useAuthStore.getState().setUser(credential.user);
       useAuthStore.getState().setIsOldUser(hasProfile);
-      router.replace(destination);
+      if (useRegistrationDraft.getState().verificationEmail?.toLowerCase() === credential.user.email?.toLowerCase()) useRegistrationDraft.getState().clear();
+      router.replace(getVerifiedSuccess()?.uid === credential.user.uid
+        ? "/(public)/account-verified" : destination);
     } catch (error) {
       if (signedInWithPassword && !isTemporarySessionFailure(error)) await signOut(auth).catch(() => undefined);
       if (isUnverifiedAccount(error)) setVerificationEmail(unverifiedAccountEmail(error, username));
@@ -97,6 +104,10 @@ export default function LoginScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (googlePending.current || credentialPending.current) return;
+    googlePending.current = true;
+    setCredentialError(null);
+    setVerificationEmail(null);
     try {
       setIsGoogleLoading(true);
 
@@ -106,11 +117,17 @@ export default function LoginScreen() {
         const firebaseToken = await user.getIdToken();
         const isOldUser = await checkIsOldUser(firebaseToken);
 
-        router.replace(await postAuthDestination(user, isOldUser));
+        const destination = await postAuthDestination(user, isOldUser);
+        if (auth.currentUser?.uid !== user.uid) return;
+        if (isNewAccount() && !isOldUser && user.emailVerified) {
+          beginVerifiedSuccess(user.uid, destination);
+          router.replace("/(public)/account-verified");
+        } else router.replace(destination);
       }
     } catch (error) {
       setCredentialError(authErrorMessage(error, "login"));
     } finally {
+      googlePending.current = false;
       setIsGoogleLoading(false);
     }
   };
@@ -122,22 +139,13 @@ export default function LoginScreen() {
   };
 
   const continueVerification = async () => {
-    if (credentialPending.current) return;
+    if (credentialPending.current || googlePending.current) return;
     if (!verificationEmail || !password) {
       setCredentialError("Enter your registered email and password.");
       return;
     }
-    credentialPending.current = true;
-    setIsCredentialLoading(true);
-    try {
-      const { user } = await signInWithEmailAndPassword(auth, verificationEmail, password);
-      router.push({ pathname: "/(public)/check-email", params: { email: user.email ?? verificationEmail } });
-    } catch (error) {
-      setCredentialError(authErrorMessage(error, "login"));
-    } finally {
-      credentialPending.current = false;
-      setIsCredentialLoading(false);
-    }
+    useRegistrationDraft.getState().update({ email: verificationEmail, verificationEmail, password });
+    router.push({ pathname: "/(public)/check-email", params: { email: verificationEmail } });
   };
 
   return (
@@ -162,7 +170,7 @@ export default function LoginScreen() {
             <ThemedText style={[styles.subtitle, { color: theme.textMuted }]}>Enter your credentials or continue with Google.</ThemedText>
             {credentialError ? <View style={styles.feedback}><FormFeedback message={credentialError} /></View> : null}
             {verificationEmail !== null ? <Pressable onPress={continueVerification} disabled={isCredentialLoading} accessibilityRole="button" style={styles.verifyLink}>
-              <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Resend Verification Link</ThemedText>
+              <ThemedText style={[styles.forgotText, { color: theme.accent }]}>Verify email with a code</ThemedText>
             </Pressable> : null}
           </View>
           <View style={styles.formSection}>

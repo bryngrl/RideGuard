@@ -1,9 +1,11 @@
 import {
   GoogleSignin,
   isSuccessResponse,
+  isErrorWithCode,
+  statusCodes,
 } from "@react-native-google-signin/google-signin";
-import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { useState } from "react";
+import { getAdditionalUserInfo, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { useRef, useState } from "react";
 
 import { auth } from "@/lib/firebase";
 
@@ -25,8 +27,13 @@ export async function signOutGoogle(): Promise<void> {
 
 export function useGoogleSignin() {
   const [isLoading, setIsLoading] = useState(false);
+  const pending = useRef(false);
+  const newAccount = useRef(false);
 
   const signIn = async () => {
+    if (pending.current) return null;
+    pending.current = true;
+    newAccount.current = false;
     try {
       setIsLoading(true);
 
@@ -53,9 +60,14 @@ export function useGoogleSignin() {
       const credential = GoogleAuthProvider.credential(googleIdToken);
 
       const userCredential = await signInWithCredential(auth, credential);
+      newAccount.current = getAdditionalUserInfo(userCredential)?.isNewUser === true;
 
       return userCredential.user;
+    } catch (error) {
+      if (isErrorWithCode(error) && error.code === statusCodes.SIGN_IN_CANCELLED) return null;
+      throw error;
     } finally {
+      pending.current = false;
       setIsLoading(false);
     }
   };
@@ -63,5 +75,6 @@ export function useGoogleSignin() {
   return {
     signIn,
     isLoading,
+    isNewAccount: () => newAccount.current,
   };
 }

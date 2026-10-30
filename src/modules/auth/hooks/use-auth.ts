@@ -6,6 +6,7 @@ import { APIError } from "@/shared/api/errors";
 import { checkIsOldUser, ensureEmailPasswordProfile } from "../services/auth.api";
 import { useAuthStore } from "../store/auth.store";
 import { isTemporarySessionFailure } from "../utils/session-errors";
+import { refreshFirebaseUser } from "../services/firebase-user-refresh";
 
 export function useAuth() {
   const authRevision = useRef(0);
@@ -49,13 +50,16 @@ export function useAuth() {
         try {
           setCheckingAuth(true);
           if (firebaseUser.providerData.some((provider) => provider.providerId === "password")) {
-            await firebaseUser.reload();
+            const wasVerified = firebaseUser.emailVerified;
+            await refreshFirebaseUser(firebaseUser);
             if (revision !== authRevision.current) return;
             if (!firebaseUser.emailVerified) {
               setUser(null);
               setIsOldUser(null);
               return;
             }
+            // Only a newly changed verification claim needs a forced refresh.
+            if (!wasVerified) await firebaseUser.getIdToken(true);
           }
 
           stage = "firebase-token";
@@ -81,9 +85,10 @@ export function useAuth() {
             // Keep the full Firebase code visible on narrow terminals without
             // logging the user object, credentials or a long wrapped stack.
             console.info("RideGuard Firebase session check failed:", { stage, code });
-          } else if ((error instanceof APIError && error.status >= 500) || error instanceof TypeError) {
+          } else if ((error instanceof APIError && (error.status >= 500 || error.status === 408)) || error instanceof TypeError) {
             console.info("RideGuard profile check failed:", error instanceof APIError
-              ? { status: error.status, endpoint: error.endpoint }
+              ? { stage, status: error.status, endpoint: error.endpoint,
+                ...(error.status === 408 ? { reason: "request-timeout" } : {}) }
               : { reason: "network-request-failed" });
           } else {
             // Login displays account setup errors in its form. Logging them as
