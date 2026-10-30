@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AppState, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { AppState, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { AppModal as Modal } from "./app-modal";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -124,7 +125,7 @@ export function PhotoOptionsBottomSheet({
       onRequestClose={() => close()}
     >
       <View style={styles.overlay}>
-        <Animated.View pointerEvents="none" style={[styles.backdrop, backdropStyle]} />
+        <Animated.View pointerEvents="none" style={[styles.backdrop, { backgroundColor: theme.overlay }, backdropStyle]} />
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={() => close()}
@@ -177,7 +178,6 @@ const styles = StyleSheet.create({
   },
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: "rgba(0, 0, 0, 0.65)",
   },
   sheet: {
     width: "100%",

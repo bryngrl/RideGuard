@@ -90,6 +90,25 @@ test("normal tab and page navigation does not repeat onboarding checks or cover 
   assert.equal(app.routes.length, 0);
 });
 
+test("R loading is reserved for returning to the app", async () => {
+  const app = harness();
+  const initial = app.render();
+  assert.equal(initial.props.children[1].props.children[0], null);
+  await settle(); app.render();
+  app.mpin.checkingStatus = true;
+  const routineCheck = app.render();
+  assert.equal(routineCheck.props.children[1].props.children[0], null);
+  app.appState.currentState = "background"; app.render();
+  app.appState.currentState = "active";
+  const resumed = app.render();
+  assert.equal(resumed.props.children[1].props.children[0].type, "BrandLoading");
+  await settle();
+  app.mpin.checkingStatus = false;
+  app.render();
+  app.mpin.checkingStatus = true;
+  assert.equal(app.render().props.children[1].props.children[0], null);
+});
+
 test("background locking hides protected UI without replacing the native screen in the background", async () => {
   const app = harness(); app.render(); await settle();
   const ready = app.render();

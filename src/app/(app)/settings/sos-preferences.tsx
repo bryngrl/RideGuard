@@ -1,3 +1,5 @@
-import { SosPreferencesScreen } from "@/modules/settings/screens/sos-preferences/sos-preferences-screen";
+import { Redirect } from "expo-router";
 
-export default SosPreferencesScreen;
+export default function SosPreferencesRoute() {
+  return <Redirect href="/settings" />;
+}

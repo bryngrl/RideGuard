@@ -3,7 +3,8 @@ import LoadingIcon from "@/assets/icons/status/loading.svg";
 import SuccessIcon from "@/assets/icons/status/success.svg";
 import { BorderRadius, Spacing, Typography } from "@/shared/theme";
 import { useEffect, useState } from "react";
-import { Modal, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
+import { AppModal as Modal } from "./app-modal";
 import { useTheme } from "@/shared/hooks/use-theme";
 
 interface LoadingModalProps {
@@ -44,7 +45,7 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
       visible={visible}
       onRequestClose={() => {}}
     >
-      <View style={styles.modalOverlay}>
+      <View style={[styles.modalOverlay, { backgroundColor: theme.overlay }]}>
         <View style={[styles.alertBox, { backgroundColor: theme.modalSurface }]}>
           <View style={styles.contentContainer}>
             {status === "loading" && <LoadingIcon width={56} height={56} />}
@@ -70,7 +71,6 @@ export function LoadingModal({ visible, status, message }: LoadingModalProps) {
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.2)",
     justifyContent: "center",
     alignItems: "center",
   },

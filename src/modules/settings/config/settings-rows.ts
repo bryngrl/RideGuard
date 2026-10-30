@@ -10,14 +10,6 @@ export const settingsRows: SettingsRowDefinition[] = [
     searchKeywords: ["mpin", "pin", "security", "password", "change", "reset"],
   },
   {
-    id: "sos-preferences",
-    title: "SOS Preferences",
-    section: "Safety & Monitoring",
-    iconKey: "sos",
-    route: "/settings/sos-preferences",
-    searchKeywords: ["sos", "automatic", "emergency", "threat"],
-  },
-  {
     id: "contacts",
     title: "Emergency contacts",
     section: "Safety & Monitoring",

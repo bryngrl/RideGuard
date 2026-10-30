@@ -13,6 +13,8 @@ test("MPIN forms render visible content without waiting for an opacity animation
     "@/shared/hooks/use-theme": { useTheme: () => ({}) },
     "@/shared/theme": { actionFooterPadding: () => 24, BorderRadius: {}, PinLayout: {}, Spacing: {}, Typography: {} },
     "@/shared/ui/form-feedback": { FormFeedback: "Feedback" },
+    "@/shared/ui/back-arrow-icon": { BackArrowIcon: "BackArrow", BACK_ARROW_TOUCH_LEFT: 16, BACK_ARROW_TOUCH_SIZE: 48 },
+    "@/shared/ui/feedback-pressable": { FeedbackPressable: "Pressable" },
     "@/shared/ui/keyboard-aware-form-scroll-view": { KeyboardAwareFormScrollView: "Scroll" },
     "@/shared/ui/success-indicator": { SuccessIndicator: "Success" },
     "@/shared/ui/stepper": { default: "Stepper" },
@@ -32,4 +34,11 @@ test("MPIN forms render visible content without waiting for an opacity animation
   };
   visit(context.exports.MpinLayout({ title: "Enter current MPIN", description: "Verify your current MPIN.", children: "keypad" }));
   assert.equal(found, true);
+  const busy = context.exports.MpinLayout({ title: "Enter current MPIN", description: "Verify your current MPIN.", children: "keypad", busy: true });
+  assert.equal(busy.props.pointerEvents, "none");
+  assert.equal(busy.props.accessibilityState.busy, true);
+  const keyboard = busy.props.children[0];
+  assert.equal(keyboard.props.importantForAccessibility, "no-hide-descendants");
+  assert.equal(keyboard.props.children.props.scrollEnabled, false);
+  assert.equal(JSON.stringify(busy).includes("BrandLoading"), false);
 });

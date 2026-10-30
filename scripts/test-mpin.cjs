@@ -136,12 +136,18 @@ function emailFlow(step, methods = {}, mode = "reset") {
     "@/shared/ui/verification-code-input": { VerificationCodeInput: "CodeInput" },
     "../components/mpin-layout": { MpinLayout: "Layout", mpinStyles: {} },
     "../components/mpin-unlock-experience": { MpinUnlockExperience: "Unlock" },
+    "../components/mpin-settings-motion": { MpinSettingsMotion: ({ children }) => children },
     "../hooks/use-mpin-request": { useMpinRequest: (failure) => { task.failure = failure; return task; } },
     "../services/mpin.api": { ...api, mpinApi: { ...api.mpinApi, ...methods } },
     "../store/mpin.store": { useMpinStore: Object.assign(() => store.getState(), { getState: store.getState }) },
     "../utils/mpin-policy": policy,
   } }).default;
-  return { routes, dismissals, task, render: () => { cursor = 0; const outer = screen(); return outer.type(outer.props); } };
+  return { routes, dismissals, task, render: () => {
+    cursor = 0;
+    let tree = screen();
+    while (typeof tree.type === "function") tree = tree.type(tree.props);
+    return tree;
+  } };
 }
 
 test("unlock dismisses to the original contact instead of replacing its form", async () => {

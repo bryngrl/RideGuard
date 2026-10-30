@@ -49,10 +49,7 @@ export function SosTriggerScreen() {
         <Ionicons name="chevron-back" size={22} color={colors.text} />
       </Pressable>
       <Text accessibilityRole="header" style={styles.headerTitle}>SOS</Text>
-      <Pressable style={styles.headerAction} accessibilityRole="button" accessibilityLabel="SOS preferences"
-        onPress={() => router.push("/settings/sos-preferences")}>
-        <Ionicons name="help-circle-outline" size={22} color={colors.text} />
-      </Pressable>
+      <View style={styles.headerAction} />
     </View>
     <ScrollView contentContainerStyle={[styles.content, { paddingBottom: actionFooterPadding(bottom, true) }]} showsVerticalScrollIndicator={false}>
     <View style={styles.sosSection}>

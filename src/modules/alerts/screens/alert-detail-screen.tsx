@@ -1,7 +1,8 @@
 import { BrandedAlert as RNAlert } from "@/shared/lib/branded-alert";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Ionicons } from "@expo/vector-icons";
-import { ActivityIndicator, Image, Modal, AppState, FlatList, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { ActivityIndicator, Image, AppState, FlatList, ScrollView, Text, useWindowDimensions, View } from "react-native";
+import { AppModal as Modal } from "@/shared/ui/app-modal";
 import { useEffect, useState } from "react";
 
 import InformationIcon from "@/assets/icons/misc/information.svg";

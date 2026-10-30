@@ -1,6 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useRef, useState } from "react";
-import { Keyboard, Modal, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Keyboard, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { AppModal as Modal } from "@/shared/ui/app-modal";
 import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from "react-native-reanimated";
 
 import { useTheme } from "@/shared/hooks/use-theme";

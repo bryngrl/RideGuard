@@ -12,6 +12,7 @@ import { VerificationCodeInput } from "@/shared/ui/verification-code-input";
 
 import { MpinLayout, mpinStyles as styles } from "../components/mpin-layout";
 import { MpinUnlockExperience } from "../components/mpin-unlock-experience";
+import { MpinSettingsMotion } from "../components/mpin-settings-motion";
 import { useMpinRequest } from "../hooks/use-mpin-request";
 import { MpinError, mpinApi, setupAndUnlockMpin, type MpinMode, type MpinStatus } from "../services/mpin.api";
 import { useMpinStore } from "../store/mpin.store";
@@ -56,7 +57,9 @@ export default function MpinFlowScreen() {
       mode="setup" preview={false} onboarding={false} resumeManagement />;
   }
   // Remount local fields when a route's step changes, rather than retaining PINs.
-  return <MpinStep key={`${step}/${mode}/${preview}/${onboarding}`} step={step} mode={mode} preview={preview} onboarding={onboarding} />;
+  const screen = <MpinStep key={`${step}/${mode}/${preview}/${onboarding}`} step={step} mode={mode} preview={preview} onboarding={onboarding} />;
+  return !onboarding && (step === "manage" || mode === "change")
+    ? <MpinSettingsMotion key={`${step}/${mode}`}>{screen}</MpinSettingsMotion> : screen;
 }
 
 function MpinStep({ step, mode, preview, onboarding, resumeManagement = false }: {
@@ -472,8 +475,8 @@ function MpinStep({ step, mode, preview, onboarding, resumeManagement = false }:
     error={task.error} busy={task.loading}>
     <Text style={[styles.note, { color: theme.textMuted }]}>We'll send a six-digit code to</Text>
     <Text style={[styles.note, { color: theme.accent }]}>{user?.email}</Text>
-    <Button title={requestRetrySeconds ? `Try again in ${requestRetrySeconds}s` : "Send reset code"} onPress={requestRecovery} isLoading={task.loading}
-      disabled={!user?.email || !mpinApi.emailCodesEnabled || requestRetrySeconds > 0} style={styles.secondary} />
+    <Button title={requestRetrySeconds ? `Try again in ${requestRetrySeconds}s` : "Send reset code"} onPress={requestRecovery}
+      disabled={task.loading || !user?.email || !mpinApi.emailCodesEnabled || requestRetrySeconds > 0} style={styles.secondary} />
   </MpinLayout>;
 
   if (!mpinApi.emailCodesEnabled && (step === "verify-identity" || step === "current" && !directChange)) {
@@ -495,8 +498,8 @@ function MpinStep({ step, mode, preview, onboarding, resumeManagement = false }:
     {resent && <Text accessibilityLiveRegion="polite" style={[styles.note, { color: theme.textMuted }]}>A new code was sent. Use the latest email.</Text>}
     <VerificationCodeInput value={pin} onChange={(value) => { setPin(value); task.setError(null); }}
       disabled={task.loading || codeBlocked || (!preview && (!delivery || deliveryExpired))} error={!!task.error || deliveryExpired} />
-    <Button title="Verify code" onPress={() => { Keyboard.dismiss(); verifyIdentity(pin); }} isLoading={task.loading}
-      disabled={codeBlocked || requestRetrySeconds > 0 || pin.length !== 6 || (!preview && (!delivery || deliveryExpired))} style={styles.secondary} />
+    <Button title="Verify code" onPress={() => { Keyboard.dismiss(); verifyIdentity(pin); }}
+      disabled={task.loading || codeBlocked || requestRetrySeconds > 0 || pin.length !== 6 || (!preview && (!delivery || deliveryExpired))} style={styles.secondary} />
     <Button title={requestRetrySeconds ? `Try again in ${requestRetrySeconds}s` : codeRetrySeconds ? `Try again in ${codeRetrySeconds}s` : resendSeconds ? `Resend in ${resendSeconds}s` : !delivery && mode === "change" && !preview ? "Verify current MPIN again" : "Resend Code"} variant="ghost"
       onPress={preview ? () => task.setError("No email is sent in this design preview.") : resend}
       disabled={task.loading || resendSeconds > 0 || resendRestricted || requestRetrySeconds > 0} style={styles.secondary} />
@@ -511,7 +514,7 @@ function MpinStep({ step, mode, preview, onboarding, resumeManagement = false }:
     const copy = stepCopy[step];
     const title = step === "create" && mode !== "setup" ? "Create new MPIN" : step === "confirm" && mode !== "setup" ? "Confirm new MPIN" : copy.title;
     return <MpinLayout onboarding={onboarding} title={title} description={copy.description} onBack={cannotBack ? undefined : back} preview={preview}
-      error={task.error ?? unavailableMessage} busy={task.loading}>
+      error={task.error ?? unavailableMessage} busy={task.loading || state.checkingStatus}>
       {entryBlocked && <Text accessibilityRole="alert" style={[styles.note, { color: theme.error }]}>
         {cooldownSeconds ? `Try again in ${cooldownSeconds}s, or reset your MPIN.` : "MPIN locked. Check its status or reset it."}
       </Text>}

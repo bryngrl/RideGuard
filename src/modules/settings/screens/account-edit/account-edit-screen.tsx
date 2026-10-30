@@ -277,7 +277,7 @@ export function AccountEditScreen() {
         <Pressable
           onPress={cancel}
           disabled={edit.saving || savingPhoto || pickingPhoto}
-          style={[styles.cancel, { borderColor: colors.primary }]}
+          style={styles.cancel}
           feedbackRadius={BorderRadius.full}
           accessibilityRole="button"
         >
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   form: { gap: Spacing.two, paddingHorizontal: Spacing.two },
   buttons: { flexDirection: "column", gap: Spacing.two, marginTop: "auto", paddingTop: Spacing.four, paddingHorizontal: Spacing.two },
   cancel: {
-    width: "100%", minHeight: 48, borderWidth: 1, borderRadius: BorderRadius.full,
+    width: "100%", minHeight: 48, borderRadius: BorderRadius.full,
     alignItems: "center", justifyContent: "center",
   },
   save: {
