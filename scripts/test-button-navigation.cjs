@@ -17,6 +17,9 @@ function load(file, modules = {}, globals = {}) {
   return context.exports;
 }
 const common = {
+  react: { useRef: (value) => ({ current: value }), useState: (value) => [value, () => {}] },
+  "@/modules/onboarding/services/skip-hardware": { skipHardware: async () => {} },
+  "../services/skip-hardware": { skipHardware: async () => {} },
   "react/jsx-runtime": require("react/jsx-runtime"),
   "react-native": { View: "View", Text: "Text", StyleSheet: { create: (styles) => styles }, Keyboard: { dismiss() {} } },
   "@/shared/hooks/use-theme": { useTheme: () => ({}) },
@@ -50,7 +53,7 @@ function pressScreen({ id = "BUT-123-ABC", connectionState = "ready", params = {
     "../hooks/use-button-test": { useButtonTest: (_test, done) => {
       complete = done;
       return { state: "waiting", recognizedButtons: {}, pressedButtons: {}, connectionState,
-        handleRetry: () => retries++ };
+        stop: () => {}, handleRetry: () => retries++ };
     } },
   });
   return { render: (props = { source: "settings" }) => ButtonTestScreen(props), routes,

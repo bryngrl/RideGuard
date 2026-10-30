@@ -10,19 +10,20 @@ import { useDeviceStore } from "@/modules/devices";
 import { BUTTON_EVENTS_CHANNEL, parseButtonEvent } from "../utils/button-events";
 import type { ButtonHardwareEvent } from "../types/button-test";
 
-export function useButtonRealtime(onButtonEvent: (event: ButtonHardwareEvent) => void) {
+export function useButtonRealtime(onButtonEvent: (event: ButtonHardwareEvent) => void, enabled = true) {
   const user = useAuthStore((state) => state.user);
   const buttonDeviceId = useDeviceStore((state) => state.buttonDeviceId);
   const callback = useRef(onButtonEvent);
   callback.current = onButtonEvent;
   const [connectionState, setConnectionState] = useState<"connecting" | "ready" | "error">("connecting");
   const [retry, setRetry] = useState(0);
+  const disposeNow = useRef<(() => void) | undefined>(undefined);
 
   useFocusEffect(useCallback(() => {
     let dispose: (() => void) | undefined;
     const connect = () => {
       dispose?.(); dispose = undefined;
-      if (AppState.currentState !== "active") return;
+      if (!enabled || AppState.currentState !== "active") return;
       if (!user || !buttonDeviceId) { setConnectionState("error"); return; }
       setConnectionState("connecting");
       let cancelled = false;
@@ -63,11 +64,12 @@ export function useButtonRealtime(onButtonEvent: (event: ButtonHardwareEvent) =>
         cancelled = true;
         channel.unsubscribe(onMessage); channel.off(); client.connection.off(); client.close();
       };
+      disposeNow.current = dispose;
     };
     connect();
     const listener = AppState.addEventListener("change", connect);
-    return () => { listener.remove(); dispose?.(); };
-  }, [user, buttonDeviceId, retry]));
+    return () => { listener.remove(); dispose?.(); disposeNow.current = undefined; };
+  }, [user, buttonDeviceId, retry, enabled]));
 
-  return { connectionState, retryConnect: () => setRetry((value) => value + 1) };
+  return { connectionState, retryConnect: () => setRetry((value) => value + 1), stopListening: () => disposeNow.current?.() };
 }

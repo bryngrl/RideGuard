@@ -2,6 +2,7 @@ import WelcomeScreen from "@/modules/auth/screens/welcome-screen";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { postAuthDestination } from "@/modules/auth/services/registration-progress";
 import { auth } from "@/lib/firebase";
+import { getVerifiedSuccess } from "@/modules/auth/services/verified-success";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 
@@ -45,7 +46,8 @@ export default function Index() {
     let cancelled = false;
     void postAuthDestination(user, isOldUser)
       .then((destination) => {
-        if (!cancelled) router.replace(destination);
+        if (!cancelled) router.replace(getVerifiedSuccess()?.uid === user.uid
+          ? "/(public)/account-verified" : destination);
       })
       .catch(() => {
         if (!cancelled) router.replace("/(onboarding)/register/profile");

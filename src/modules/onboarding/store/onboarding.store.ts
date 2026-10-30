@@ -18,6 +18,7 @@ export interface OnboardingState {
   contactName: string;
   emergencyPhone: string;
   relationship: string;
+  hardwareSetup: "" | "connection-skipped" | "tests-skipped";
 
   updateDraft: (
     data: Partial<Omit<OnboardingState, "updateDraft" | "clearDraft">>,
@@ -50,6 +51,7 @@ export const useOnboardingStore = create<OnboardingState>()(
       contactName: "",
       emergencyPhone: "",
       relationship: "",
+      hardwareSetup: "",
 
       updateDraft: (data) =>
         set((state) => ({
@@ -72,6 +74,7 @@ export const useOnboardingStore = create<OnboardingState>()(
           contactName: "",
           emergencyPhone: "",
           relationship: "",
+          hardwareSetup: "",
         }),
     }),
     {

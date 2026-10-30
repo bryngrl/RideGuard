@@ -104,9 +104,9 @@ export function DeviceStatusScreen() {
     setDisconnectingId(device.deviceId);
     setNotice(null);
     try {
-      const token = await Promise.race([user.getIdToken(true), interrupted]);
+      const token = await Promise.race([user.getIdToken(), interrupted]);
       if (!lifecycle.isCurrent(attempt) || controller.signal.aborted) return;
-      await releaseDevice(device.deviceId, token, device.type, controller.signal);
+      await Promise.race([releaseDevice(device.deviceId, token, device.type, controller.signal), interrupted]);
       if (!lifecycle.isCurrent(attempt)) return;
       useDeviceStore.getState().clearDisconnectedDevice(user.uid, device.deviceId);
       void cameraStatus.refresh();
@@ -117,7 +117,7 @@ export function DeviceStatusScreen() {
       const message = error instanceof APIError && error.status === 401 ? "Session expired. Log in again."
         : error instanceof APIError && error.status === 403 ? "You can't disconnect this device."
         : error instanceof APIError && error.status === 404 ? "Hardware unpairing is not available yet."
-        : controller.signal.aborted ? "Request timed out. Try again."
+        : controller.signal.aborted ? "Couldn't confirm unpairing before the request timed out. Check device status before retrying."
         : "Couldn't unpair device. Try again.";
       setNotice({ message, type: "error" });
     } finally {

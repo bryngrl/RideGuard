@@ -4,5 +4,5 @@ import { APIError } from "@/shared/api/errors";
 export function isTemporarySessionFailure(error: unknown): boolean {
   const code = error && typeof error === "object" && "code" in error ? error.code : null;
   return error instanceof TypeError || code === "auth/network-request-failed" ||
-    (error instanceof APIError && (error.status >= 500 || error.status === 429));
+    (error instanceof APIError && (error.status >= 500 || error.status === 429 || error.status === 408));
 }

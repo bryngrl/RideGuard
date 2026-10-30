@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { type ReactNode } from "react";
+import { type ReactNode, useContext } from "react";
+import { OnboardingProgressContext } from "@/shared/ui/onboarding-progress-context";
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -19,9 +20,10 @@ export function MpinLayout({ title, description, children, onBack, busy, error, 
   onboarding?: boolean;
 }) {
   const theme = useTheme();
+  const managedProgress = useContext(OnboardingProgressContext);
   const { bottom } = useSafeAreaInsets();
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: theme.background }]}
+    <SafeAreaView edges={managedProgress ? ["left", "right", "bottom"] : undefined} style={[styles.screen, { backgroundColor: theme.background }]}
       pointerEvents={busy ? "none" : "auto"} accessibilityState={{ busy: !!busy, disabled: !!busy }}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === "ios" ? "padding" : undefined}
         accessibilityElementsHidden={!!busy} importantForAccessibility={busy ? "no-hide-descendants" : "auto"}>

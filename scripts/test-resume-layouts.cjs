@@ -20,6 +20,10 @@ test("reused hardware layouts apply the app lock for Settings and preserve onboa
     let stateIndex = 0;
     const Stack = Object.assign(() => {}, { Screen: "StackScreen" });
     const { default: Layout } = load("src/app/(onboarding)/_layout.tsx", {
+      "react-native-safe-area-context": { SafeAreaView: "SafeArea" },
+      "@/shared/ui/onboarding-progress-context": { OnboardingProgressContext: { Provider: "ProgressProvider" } },
+      "@/shared/ui/stepper": { __esModule: true, default: "Stepper" },
+      "@/shared/theme": { Spacing: {}, MaxContentWidth: 440 },
       react: { ...react, useState: (initial) => [stateIndex++ === 0 ? true : initial, () => {}] }, "react/jsx-runtime": require("react/jsx-runtime"),
       "@/shared/hooks/use-theme": { useTheme: () => ({}) },
       "react-native": { View: "View", ActivityIndicator: "Spinner", Platform: { OS: "android" } },
@@ -33,8 +37,14 @@ test("reused hardware layouts apply the app lock for Settings and preserve onboa
       "@/modules/mpin/components/mpin-app-gate": { MpinAppGate: "SecurityGate" },
     });
     const tree = Layout();
-    assert.equal(tree.type, source === "settings" ? "SecurityGate" : Stack);
+    assert.equal(tree.type, source === "settings" ? "SecurityGate" : "ProgressProvider");
     if (source === "settings") assert.equal(tree.props.children.type, Stack);
+    else {
+      const [header, content] = tree.props.children.props.children;
+      assert.equal(header.props.children.type, "Stepper");
+      assert.equal(header.props.children.props.currentStep, 5);
+      assert.equal(content.props.children.type, Stack);
+    }
   }
 });
 test("Account Edit has a safe destination when opened without back history", () => {

@@ -17,6 +17,31 @@ export class APIClient {
   }
 
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    // Auth and onboarding gate navigation. Bound both headers and body reads,
+    // abort the transport, and never retry a potentially committed mutation.
+    if (!endpoint.startsWith("/auth/") && !endpoint.startsWith("/profile/")) return this.performRequest<T>(endpoint, options);
+    const controller = new AbortController();
+    const abort = () => controller.abort();
+    if (options.signal?.aborted) controller.abort();
+    else options.signal?.addEventListener("abort", abort, { once: true });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      return await Promise.race([
+        this.performRequest<T>(endpoint, { ...options, signal: controller.signal }),
+        new Promise<never>((_resolve, reject) => {
+          timer = setTimeout(() => {
+            reject(new APIError("Request timed out. Check your connection and try again.", 408, null, endpoint));
+            controller.abort();
+          }, 25_000);
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+      options.signal?.removeEventListener("abort", abort);
+    }
+  }
+
+  private async performRequest<T>(endpoint: string, options: RequestOptions): Promise<T> {
     const { token, headers, ...fetchOptions } = options;
 
     const response = await fetch(`${this.baseUrl}${endpoint}`, {

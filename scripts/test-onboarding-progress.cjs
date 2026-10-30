@@ -101,3 +101,12 @@ test("a server completion flag cannot bypass a missing personal profile", async 
   const remote = { step: "complete-setup", completed: true, mpinConfigured: true };
   assert.equal(await loadProgress(new Map(), remote).api.postAuthDestination(account(), false), "/(onboarding)/register/profile");
 });
+
+test("a locally saved hardware skip wins over a stale remote hardware step and still requires MPIN", async () => {
+  for (const step of ["button", "provision"]) {
+    const remote = { step, completed: false, mpinConfigured: false, data: { frontendFlowVersion: 2 } };
+    const storage = new Map([["rideguard:onboarding-pending:driver@gmail.com", "mpin"]]);
+    assert.equal(await loadProgress(storage, remote).api.postAuthDestination(account(), true), "/(onboarding)/register/mpin");
+    assert.equal(await loadProgress(storage, remote).api.postAuthDestination(account(), false), "/(onboarding)/register/profile");
+  }
+});

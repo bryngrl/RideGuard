@@ -3,6 +3,7 @@ import type { User } from "firebase/auth";
 
 import { apiClient } from "@/shared/api";
 import { APIError } from "@/shared/api/errors";
+import { beginVerifiedSuccess } from "./verified-success";
 
 /**
  * Standard success envelope wrapped around every backend response.
@@ -84,12 +85,17 @@ export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
   const existing = profileChecks.get(user.uid);
   if (existing) return existing;
   const pending = (async () => {
-    const token = await user.getIdToken(true);
+    // Verification callers refresh the token after reload. Firebase refreshes
+    // expired tokens itself; repeating forced refreshes adds network round trips.
+    const token = await user.getIdToken();
     const hasProfile = await checkIsOldUser(token);
     if (hasProfile) return true;
     if (await hasRegistrationProfile(token)) return false;
     try {
       await verifyRegisteredAccount(token);
+      // Also retain confirmation when verification finishes during app startup
+      // or password login, rather than only on the Check Email screen.
+      beginVerifiedSuccess(user.uid, "/(onboarding)/register/profile");
     } catch (error) {
       if (!isRegistrationNoLongerPending(error)) throw error;
 
@@ -103,7 +109,7 @@ export function ensureEmailPasswordProfile(user: User): Promise<boolean> {
     }
     // Verification creates an identity stub. The backend now reports old-user
     // only after personalInfo exists, so do not skip unfinished onboarding.
-    return checkIsOldUser(await user.getIdToken(true));
+    return checkIsOldUser(token);
   })();
   profileChecks.set(user.uid, pending);
   void pending.finally(() => profileChecks.delete(user.uid)).catch(() => undefined);
@@ -125,9 +131,20 @@ export const getCurrentUser = async (
   return unwrap(envelope);
 };
 
-export const checkIsOldUser = async (
+const userStatusRequests = new Map<string, Promise<boolean>>();
+
+export const checkIsOldUser = (
   firebaseToken: string,
 ): Promise<boolean> => {
+  const existing = userStatusRequests.get(firebaseToken);
+  if (existing) return existing;
+  const pending = fetchUserStatus(firebaseToken);
+  userStatusRequests.set(firebaseToken, pending);
+  void pending.finally(() => userStatusRequests.delete(firebaseToken)).catch(() => undefined);
+  return pending;
+};
+
+async function fetchUserStatus(firebaseToken: string): Promise<boolean> {
   const data = await apiClient.get<StandardEnvelope<boolean>>("/auth/is-old-user", firebaseToken);
 
   // Reject an unexpected payload instead of interpreting it as a new user.
@@ -138,7 +155,7 @@ export const checkIsOldUser = async (
   }
 
   return unwrap(data);
-};
+}
 
 export const getAblyToken = async (
   firebaseToken: string,

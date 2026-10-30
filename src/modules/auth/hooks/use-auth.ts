@@ -49,6 +49,7 @@ export function useAuth() {
         try {
           setCheckingAuth(true);
           if (firebaseUser.providerData.some((provider) => provider.providerId === "password")) {
+            const wasVerified = firebaseUser.emailVerified;
             await firebaseUser.reload();
             if (revision !== authRevision.current) return;
             if (!firebaseUser.emailVerified) {
@@ -56,6 +57,8 @@ export function useAuth() {
               setIsOldUser(null);
               return;
             }
+            // Only a newly changed verification claim needs a forced refresh.
+            if (!wasVerified) await firebaseUser.getIdToken(true);
           }
 
           stage = "firebase-token";
