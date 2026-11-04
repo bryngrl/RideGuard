@@ -4,11 +4,15 @@ import { useReducedMotion } from "react-native-reanimated";
 
 import { MpinAppGate } from "@/modules/mpin/components/mpin-app-gate";
 import { useSosLifecycle } from "@/modules/sos/hooks/use-sos-lifecycle";
+import { useSosRealtime } from "@/modules/sos/hooks/use-sos-realtime";
+import { useButtonCancelRealtime } from "@/modules/sos/hooks/use-button-cancel-realtime";
 import { useAuthStore } from "@/modules/auth/store/auth.store";
 import { useSettingsStore } from "@/modules/settings/store/settings.store";
 
 export default function AppLayout() {
   useSosLifecycle();
+  useSosRealtime();
+  useButtonCancelRealtime();
   const uid = useAuthStore((state) => state.user?.uid);
   const loadAutoArchive = useSettingsStore((state) => state.loadAutoArchive);
   useEffect(() => {

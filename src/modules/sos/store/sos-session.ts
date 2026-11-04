@@ -36,6 +36,7 @@ export type SosState = {
   begin(alertId?: string): Promise<void>;
   cancelCountdown(notice?: string): void;
   refresh(discover?: boolean): Promise<void>;
+  adoptExternalSos(): Promise<void>;
   refreshStatus(): Promise<void>;
   retry(): Promise<void>;
   stop(): Promise<void>;
@@ -233,6 +234,12 @@ export function createSosStore(deps: Dependencies) {
             set({ phase: "checking", error: "Saved SOS unavailable. Check status first." });
           } else set({ phase: "idle", error: null });
         } finally { if (version === ownerVersion && refreshVersion === refreshAttempt) set({ refreshing: false }); }
+      },
+      adoptExternalSos: async () => {
+        if (!get().owner || !get().ready) return;
+        get().cancelCountdown();
+        if (get().phase === "submitting") set({ phase: "checking" });
+        await get().refresh(true);
       },
       refreshStatus: async () => {
         const { owner, record } = get();
