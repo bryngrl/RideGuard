@@ -14,10 +14,11 @@ import type { AlertFields } from "../types/alert.types";
 // locally, not through a separate backend status.
 export type AlertListStatus = "active" | "archived";
 
-// Refetch the visible list this often while the screen is focused, so a change
-// made on another device (or the background archive pass) shows up without the
-// user doing anything. Matches the ~60s backend pass cadence.
-const VISIBLE_REFRESH_MS = 60_000;
+// Fallback only: the global Ably subscription in shared/hooks/use-ably.ts
+// delivers new alerts, and the screen already refreshes on focus and on
+// foreground. This timer exists for the case where realtime never connects, so
+// it is deliberately slow — every tick costs one read per row (`limit + 1`).
+const VISIBLE_REFRESH_MS = 300_000;
 
 /** True when an entity belongs in the selected view. */
 function matchesStatus(alert: AlertFields, status: AlertListStatus): boolean {
@@ -28,10 +29,11 @@ function matchesStatus(alert: AlertFields, status: AlertListStatus): boolean {
 /**
  * Owns one view's list: it pages through saved alerts, keeps its own
  * pagination cursor and ordered membership, and
- * refreshes on focus, on foreground, every 60s while visible, and whenever the
- * auto-archive preference changes. Membership uses the returned isArchived
- * field, so an alert that moves lists drops out on refresh; a brand-new
- * realtime alert is still shown immediately on the active list.
+ * refreshes on focus, on foreground, on a slow fallback timer while visible,
+ * and whenever the auto-archive preference changes. Membership uses the
+ * returned isArchived field, so an alert that moves lists drops out on
+ * refresh; a brand-new realtime alert is still shown immediately on the active
+ * list.
  *
  * The store holds alert *entities* (so seen/false-alarm/archive updates reflect
  * live); this hook holds the ordered IDs for its status.

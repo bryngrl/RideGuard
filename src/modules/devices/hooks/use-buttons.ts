@@ -13,7 +13,7 @@ export function useButtons() {
     const check = () => { if (AppState.currentState === "active") void refresh(); };
     check();
     const listener = AppState.addEventListener("change", check);
-    const timer = setInterval(check, 15_000);
+    const timer = setInterval(check, 60_000);
     return () => { clearInterval(timer); listener.remove(); };
   }, [user, refresh]));
   const owned = !!user && state.uid === user.uid;
