@@ -16,7 +16,7 @@ export async function saveOnboardingDetails(payload: ProfilePayload, includeCont
       useOnboardingStore.getState().owner !== user.uid) throw new Error("Account changed. Reopen setup.");
   };
   current();
-  const { contact_name, emergency_phone_number, relationship, ...profile } = payload;
+  const { contact_name, emergency_phone_number, contact_email, relationship, ...profile } = payload;
   const snapshot = JSON.stringify(profile);
   const token = await user.getIdToken();
   current();
@@ -25,7 +25,7 @@ export async function saveOnboardingDetails(payload: ProfilePayload, includeCont
   // Recognize the earlier combined checkpoint without resubmitting a confirmed profile.
   if (!sameProfile && saved) {
     try {
-      const { contact_name: _name, emergency_phone_number: _phone, relationship: _relationship, ...old } = JSON.parse(saved);
+      const { contact_name: _name, emergency_phone_number: _phone, contact_email: _email, relationship: _relationship, ...old } = JSON.parse(saved);
       sameProfile = Object.keys(profile).every((key) => old[key] === profile[key as keyof typeof profile]);
     } catch { /* Invalid checkpoints cannot suppress a server save. */ }
   }
@@ -45,7 +45,7 @@ export async function saveOnboardingDetails(payload: ProfilePayload, includeCont
   }
   current();
   if (includeContact) {
-    if (!contact_name || !emergency_phone_number || !relationship) throw new Error("Complete the contact details.");
+    if (!contact_name || !emergency_phone_number || !contact_email || !relationship) throw new Error("Complete the contact details.");
     // A fresh GET reconciles a successful POST whose response was lost and the
     // earlier backend's embedded-contact migration, avoiding duplicate retries.
     const contacts = await listContacts({ force: true });
@@ -53,9 +53,9 @@ export async function saveOnboardingDetails(payload: ProfilePayload, includeCont
     const savedId = useOnboardingStore.getState().savedContactId;
     const existing = contacts.find((contact) => contact.id === savedId) ??
       contacts.find((contact) => nationalMobile(contact.phoneNumber) === nationalMobile(emergency_phone_number));
-    const input = { name: contact_name, phone: emergency_phone_number, relationship };
+    const input = { name: contact_name, phone: emergency_phone_number, email: contact_email, relationship };
     const unchanged = existing && existing.name === input.name && existing.relationship === input.relationship &&
-      nationalMobile(existing.phoneNumber) === nationalMobile(input.phone);
+      existing.email === input.email && nationalMobile(existing.phoneNumber) === nationalMobile(input.phone);
     const contact = unchanged ? existing : existing
       ? await updateContact(existing.id, input) : await createContact(input);
     current();
