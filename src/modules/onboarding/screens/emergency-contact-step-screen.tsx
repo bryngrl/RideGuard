@@ -32,14 +32,17 @@ export default function RegisterStepThreeScreen() {
   const submitting = useRef(false);
   const nameRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
 
   const [contactNameError, setContactNameError] = useState("");
   const [emergencyPhoneError, setEmergencyPhoneError] = useState("");
+  const [contactEmailError, setContactEmailError] = useState("");
   const [relationshipError, setRelationshipError] = useState("");
 
   const hasAnyInput = !!(
     store.contactName.trim() ||
     store.emergencyPhone.trim() ||
+    store.contactEmail.trim() ||
     store.relationship.trim()
   );
 
@@ -50,6 +53,7 @@ export default function RegisterStepThreeScreen() {
     setSaveError(null);
     setContactNameError("");
     setEmergencyPhoneError("");
+    setContactEmailError("");
     setRelationshipError("");
 
     if (!store.firstName.trim() || !store.lastName.trim() || !validNationalMobile(store.phone)) {
@@ -89,6 +93,16 @@ export default function RegisterStepThreeScreen() {
         isValid = false;
       }
 
+      const trimmedEmail = store.contactEmail.trim().toLowerCase();
+
+      if (!trimmedEmail) {
+        setContactEmailError("Enter an email address.");
+        isValid = false;
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+        setContactEmailError("Enter a valid email address.");
+        isValid = false;
+      }
+
       if (!store.relationship.trim()) {
         setRelationshipError("Select a relationship.");
         isValid = false;
@@ -97,6 +111,7 @@ export default function RegisterStepThreeScreen() {
       if (!isValid) {
         if (!store.contactName.trim()) nameRef.current?.focus();
         else if (!validNationalMobile(store.emergencyPhone)) phoneRef.current?.focus();
+        else if (!trimmedEmail) emailRef.current?.focus();
         else { Keyboard.dismiss(); setIsRelationshipOpen(true); }
         return false;
       }
@@ -107,6 +122,8 @@ export default function RegisterStepThreeScreen() {
       payload.emergency_phone_number = `+63${store.emergencyPhone
         .trim()
         .replace(/^0/, "")}`;
+
+      payload.contact_email = trimmedEmail;
 
       payload.relationship = store.relationship.trim();
     }
@@ -183,8 +200,8 @@ export default function RegisterStepThreeScreen() {
                 { color: theme.textMuted, marginTop: Spacing.three },
               ]}
             >
-              They'll get an SOS text with your location if you trigger an alert
-              or if an attack is detected.
+              They'll get an SOS text and email with your location if you trigger
+              an alert or if an attack is detected.
             </Text>
           </View>
 
@@ -219,9 +236,33 @@ export default function RegisterStepThreeScreen() {
               onBlur={() => {
                 if (store.emergencyPhone && !validNationalMobile(store.emergencyPhone)) setEmergencyPhoneError("Enter a valid 10-digit mobile number.");
               }}
+              onSubmitEditing={() => emailRef.current?.focus()}
               onChangeText={(text) => {
                 store.updateDraft({ emergencyPhone: text });
                 if (emergencyPhoneError) setEmergencyPhoneError("");
+              }}
+              containerStyle={{ paddingBottom: Spacing.two }}
+            />
+
+            <CustomTextInput
+              ref={emailRef}
+              label="Email address"
+              required
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="email-address"
+              autoComplete="email"
+              returnKeyType="done"
+              value={store.contactEmail}
+              error={contactEmailError}
+              onBlur={() => {
+                const trimmed = store.contactEmail.trim();
+                if (!trimmed) setContactEmailError("Enter an email address.");
+                else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) setContactEmailError("Enter a valid email address.");
+              }}
+              onChangeText={(text) => {
+                store.updateDraft({ contactEmail: text });
+                if (contactEmailError) setContactEmailError("");
               }}
               containerStyle={{ paddingBottom: Spacing.two }}
             />
