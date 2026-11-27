@@ -49,8 +49,13 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@eslint/compat": "2.1.1",
+    "@eslint/eslintrc": "3.3.7",
     "@types/react": "~19.2.2",
+    "eslint": "9.39.5",
+    "eslint-config-universe": "16.1.2",
     "eslint-plugin-simple-import-sort": "^14.0.0",
+    "prettier": "3.10.1",
     "react-native-svg-transformer": "^1.5.3",
     "typescript": "~6.0.3"
   },
