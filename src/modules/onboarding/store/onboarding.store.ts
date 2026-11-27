@@ -18,6 +18,7 @@ export interface OnboardingState {
 
   contactName: string;
   emergencyPhone: string;
+  contactEmail: string;
   relationship: string;
   hardwareSetup: "" | "connection-skipped" | "tests-skipped";
 
@@ -52,6 +53,7 @@ export const useOnboardingStore = create<OnboardingState>()(
 
       contactName: "",
       emergencyPhone: "",
+      contactEmail: "",
       relationship: "",
       hardwareSetup: "",
 
@@ -76,6 +78,7 @@ export const useOnboardingStore = create<OnboardingState>()(
 
           contactName: "",
           emergencyPhone: "",
+          contactEmail: "",
           relationship: "",
           hardwareSetup: "",
         }),

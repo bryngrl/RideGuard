@@ -10,6 +10,7 @@ export interface ProfilePayload {
   color: string;
   contact_name?: string;
   emergency_phone_number?: string;
+  contact_email?: string;
   relationship?: string;
 }
 
