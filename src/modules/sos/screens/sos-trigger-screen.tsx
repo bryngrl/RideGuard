@@ -2,7 +2,7 @@ import { BrandedAlert as Alert } from "@/shared/lib/branded-alert";
 import { useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Image, ScrollView, Text, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { FeedbackPressable as Pressable } from "@/shared/ui/feedback-pressable";
 import { Button } from "@/shared/ui/button";
@@ -13,7 +13,6 @@ import { useSosStore } from "../store/sos.store";
 import { useSosStatus } from "../hooks/use-sos-lifecycle";
 import { createStyles } from "./sos-trigger-screen.styles";
 import { actionFooterPadding } from "@/shared/theme";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export function SosTriggerScreen() {
   const colors = useTheme();
