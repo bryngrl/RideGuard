@@ -92,6 +92,17 @@ npm run lint
 
 Test the changed screens and the related user flow. Do not test only the first screen.
 
+Run `npm ci` to install the locked lint tools. `npm run lint` uses
+`eslint.config.js` to adapt the existing `.eslintrc.json` and `universe/native`
+rules with ESLint's official compatibility utilities. Keep project rule changes
+in `.eslintrc.json`; do not replace the preset with a different recommended set.
+ESLint 9 is pinned because the existing React plugin does not support ESLint 10.
+Warnings retain their existing severity; source errors must be fixed before merge.
+
+Also run `npx tsc --noEmit` after Expo has generated the route types under
+`.expo/types/`. Generating those types on a fresh checkout is tracked separately
+in `mobile-typecheck-stale-route-types.md` in the documentation repository.
+
 ### 4. Commit and push
 
 Check which files changed:
